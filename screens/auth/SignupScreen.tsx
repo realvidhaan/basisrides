@@ -16,7 +16,7 @@ import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { FormScroll } from '@/components/ui/FormScroll';
+import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
@@ -124,7 +124,7 @@ export function SignupScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
       <StatusBar style="dark" />
 
       <View style={styles.header}>

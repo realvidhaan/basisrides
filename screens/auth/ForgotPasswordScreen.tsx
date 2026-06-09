@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
-import { FormScroll } from '@/components/ui/FormScroll';
+import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type ForgotPasswordNavigationProp = StackNavigationProp<
@@ -67,7 +67,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
       <StatusBar style="dark" />
 
       <View style={styles.backRow}>
