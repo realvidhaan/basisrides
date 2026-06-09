@@ -13,7 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Picker } from '@react-native-picker/picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { AuthStackParamList, Grade, SignupFormValues } from '@/types';
-import { GRADES } from '@/types';
+import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -31,7 +31,7 @@ export function SignupScreen({ navigation }: Props) {
   const [form, setForm] = useState<SignupFormValues>({
     fullName: '',
     childName: '',
-    grade: '5th',
+    grade: '6th',
     neighborhood: '',
     carCapacity: '0',
     email: '',
@@ -45,7 +45,6 @@ export function SignupScreen({ navigation }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const childNameRef = useRef<TextInput>(null);
-  const neighborhoodRef = useRef<TextInput>(null);
   const carCapacityRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -68,7 +67,7 @@ export function SignupScreen({ navigation }: Props) {
     const errors: FieldErrors = {};
     if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
     if (!form.childName.trim()) errors.childName = "Child's name is required.";
-    if (!form.neighborhood.trim()) errors.neighborhood = 'Neighborhood is required.';
+    if (!form.neighborhood) errors.neighborhood = 'Please select your city.';
     const cap = Number(form.carCapacity);
     if (!form.carCapacity.trim() || isNaN(cap) || cap < 0 || cap > 6) {
       errors.carCapacity = 'Enter a number from 0 to 6.';
@@ -166,7 +165,7 @@ export function SignupScreen({ navigation }: Props) {
           placeholder="Alex Smith"
           error={fieldErrors.childName}
           returnKeyType="next"
-          onSubmitEditing={() => neighborhoodRef.current?.focus()}
+          onSubmitEditing={() => carCapacityRef.current?.focus()}
         />
 
         <View style={styles.pickerWrapper}>
@@ -185,16 +184,30 @@ export function SignupScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <Input
-          ref={neighborhoodRef}
-          label="Neighborhood"
-          value={form.neighborhood}
-          onChangeText={(t) => updateField('neighborhood', t)}
-          placeholder="Cupertino, Santa Clara…"
-          error={fieldErrors.neighborhood}
-          returnKeyType="next"
-          onSubmitEditing={() => carCapacityRef.current?.focus()}
-        />
+        <View style={styles.pickerWrapper}>
+          <Text style={styles.pickerLabel}>Neighborhood</Text>
+          <View
+            style={[
+              styles.pickerContainer,
+              fieldErrors.neighborhood ? styles.pickerContainerError : null,
+            ]}
+          >
+            <Picker<string>
+              selectedValue={form.neighborhood}
+              onValueChange={(val) => updateField('neighborhood', val)}
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+            >
+              <Picker.Item label="Select your city" value="" color="#A0A0A0" />
+              {NEIGHBORHOODS.map((city) => (
+                <Picker.Item key={city} label={city} value={city} />
+              ))}
+            </Picker>
+          </View>
+          {fieldErrors.neighborhood ? (
+            <Text style={styles.fieldError}>{fieldErrors.neighborhood}</Text>
+          ) : null}
+        </View>
 
         <Input
           ref={carCapacityRef}
@@ -297,6 +310,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     padding: 24,
     paddingBottom: 48,
   },
@@ -317,6 +331,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: Platform.OS === 'ios' ? 160 : 52,
     justifyContent: 'center',
+  },
+  pickerContainerError: {
+    borderColor: '#DC143C',
+  },
+  fieldError: {
+    fontSize: 12,
+    color: '#DC143C',
+    marginTop: 4,
   },
   picker: {
     color: '#0A0A0A',

@@ -13,7 +13,6 @@ export type MainStackParamList = {
 };
 
 export type Grade =
-  | '5th'
   | '6th'
   | '7th'
   | '8th'
@@ -23,7 +22,6 @@ export type Grade =
   | '12th';
 
 export const GRADES: Grade[] = [
-  '5th',
   '6th',
   '7th',
   '8th',
@@ -31,6 +29,26 @@ export const GRADES: Grade[] = [
   '10th',
   '11th',
   '12th',
+];
+
+// Silicon Valley cities served by the BISV carpool community.
+export const NEIGHBORHOODS: string[] = [
+  'San Jose',
+  'Santa Clara',
+  'Sunnyvale',
+  'Cupertino',
+  'Mountain View',
+  'Palo Alto',
+  'Los Altos',
+  'Los Gatos',
+  'Saratoga',
+  'Campbell',
+  'Milpitas',
+  'Fremont',
+  'Newark',
+  'Union City',
+  'Morgan Hill',
+  'Menlo Park',
 ];
 
 export interface UserProfile {

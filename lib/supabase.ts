@@ -49,6 +49,12 @@ export function mapSupabaseError(error: { message: string } | null): string {
   if (msg.includes('at least') && msg.includes('character')) {
     return 'Password must be at least 8 characters.';
   }
+  if (msg.includes('sending') && msg.includes('email')) {
+    return 'We could not send the email right now. Please try again shortly.';
+  }
+  if (msg.includes('rate limit') || msg.includes('too many')) {
+    return 'Too many attempts. Please wait a minute and try again.';
+  }
   if (
     msg.includes('network') ||
     msg.includes('failed to fetch') ||
