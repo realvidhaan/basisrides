@@ -1,11 +1,6 @@
 import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -13,6 +8,7 @@ import type { AuthStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
@@ -44,75 +40,89 @@ export function LoginScreen({ navigation }: Props) {
     if (authError) {
       setError(mapSupabaseError(authError));
     }
-    // On success, App.tsx onAuthStateChange drives navigation to HomeScreen
+    // On success, App.tsx onAuthStateChange drives navigation to HomeScreen.
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
 
-      <View style={styles.inner}>
-        <Text style={styles.wordmark}>BasisRide</Text>
-        <Text style={styles.subtitle}>Carpool for BISV families</Text>
+      <View style={styles.backRow}>
+        <BackButton onPress={() => navigation.goBack()} />
+      </View>
 
-        <View style={styles.form}>
-          <ErrorMessage message={error} />
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        extraScrollHeight={16}
+      >
+        <Text style={styles.heading}>
+          Welcome back to BasisRides. Glad to see you again!
+        </Text>
 
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              setError(null);
-            }}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-          />
+        <ErrorMessage message={error} />
 
-          <Input
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={(t) => {
-              setPassword(t);
-              setError(null);
-            }}
-            placeholder="••••••••"
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-            rightAccessory={
-              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                <Text style={styles.showHide}>{showPassword ? 'Hide' : 'Show'}</Text>
-              </TouchableOpacity>
-            }
-          />
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={(t) => {
+            setEmail(t);
+            setError(null);
+          }}
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+        />
 
-          <View style={styles.buttonRow}>
-            <Button
-              title="Log in"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={!email || !password}
-            />
-          </View>
-        </View>
+        <Input
+          ref={passwordRef}
+          label="Password"
+          value={password}
+          onChangeText={(t) => {
+            setPassword(t);
+            setError(null);
+          }}
+          placeholder="Enter your password"
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+          rightAccessory={
+            <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+              <Text style={styles.showHide}>{showPassword ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          }
+        />
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('Signup')}
-          style={styles.signupLink}
+          style={styles.forgotRow}
+          onPress={() => navigation.navigate('ForgotPassword')}
         >
-          <Text style={styles.signupLinkText}>
-            New to BasisRide?{' '}
-            <Text style={styles.signupLinkBold}>Sign up</Text>
-          </Text>
+          <Text style={styles.forgotText}>Forgot Password?</Text>
         </TouchableOpacity>
-      </View>
+
+        <Button
+          title="Login"
+          onPress={handleLogin}
+          loading={loading}
+          disabled={!email || !password}
+        />
+      </KeyboardAwareScrollView>
+
+      <TouchableOpacity
+        style={styles.registerRow}
+        onPress={() => navigation.navigate('Signup')}
+      >
+        <Text style={styles.registerText}>
+          Don&apos;t have an account?{' '}
+          <Text style={styles.registerLink}>Register Now</Text>
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -122,46 +132,54 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  inner: {
+  backRow: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    paddingTop: 8,
+    paddingBottom: 24,
   },
-  wordmark: {
-    fontSize: 36,
+  heading: {
+    fontSize: 30,
     fontWeight: '700',
-    color: '#DC143C',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#6B6B6B',
-    marginBottom: 40,
-  },
-  form: {
-    width: '100%',
-  },
-  buttonRow: {
-    marginTop: 8,
-  },
-  signupLink: {
-    position: 'absolute',
-    bottom: 32,
-    alignSelf: 'center',
-  },
-  signupLinkText: {
-    fontSize: 14,
-    color: '#6B6B6B',
-  },
-  signupLinkBold: {
-    color: '#DC143C',
-    fontWeight: '600',
+    color: '#1E232C',
+    lineHeight: 39,
+    letterSpacing: -0.3,
+    marginBottom: 32,
   },
   showHide: {
     fontSize: 13,
     color: '#DC143C',
     fontWeight: '500',
     paddingLeft: 8,
+  },
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginTop: -4,
+    marginBottom: 24,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6A707C',
+  },
+  registerRow: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    alignItems: 'center',
+  },
+  registerText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E232C',
+  },
+  registerLink: {
+    color: '#DC143C',
   },
 });

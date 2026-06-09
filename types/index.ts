@@ -1,6 +1,11 @@
 export type AuthStackParamList = {
+  Welcome: undefined;
   Login: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
+  OTPVerification: { email: string; flow: 'reset' | 'signup' };
+  ResetPassword: { email: string };
+  PasswordChanged: undefined;
 };
 
 export type MainStackParamList = {

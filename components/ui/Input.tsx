@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 interface InputProps {
-  label: string;
+  label?: string;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
@@ -47,7 +47,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     return (
       <View style={styles.wrapper}>
-        <Text style={styles.label}>{label}</Text>
+        {label ? <Text style={styles.label}>{label}</Text> : null}
         <View
           style={[
             styles.inputContainer,

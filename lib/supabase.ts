@@ -33,6 +33,23 @@ export function mapSupabaseError(error: { message: string } | null): string {
     return 'An account with this email already exists.';
   }
   if (
+    msg.includes('otp') ||
+    msg.includes('token') ||
+    msg.includes('expired')
+  ) {
+    return 'Code expired or incorrect. Please request a new one.';
+  }
+  if (
+    msg.includes('same password') ||
+    msg.includes('should be different') ||
+    msg.includes('different from the old')
+  ) {
+    return 'New password must be different from your current password.';
+  }
+  if (msg.includes('at least') && msg.includes('character')) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (
     msg.includes('network') ||
     msg.includes('failed to fetch') ||
     msg.includes('fetch')
