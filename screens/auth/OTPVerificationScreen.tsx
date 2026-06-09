@@ -27,7 +27,7 @@ interface Props {
   route: OTPRoute;
 }
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 8;
 
 export function OTPVerificationScreen({ navigation, route }: Props) {
   const { email, flow } = route.params;
@@ -259,16 +259,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 28,
+    maxWidth: 380,
+    alignSelf: 'center',
+    width: '100%',
   },
   otpBox: {
-    width: 48,
-    height: 56,
+    width: 36,
+    height: 50,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#DADADA',
     backgroundColor: '#FFFFFF',
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1E232C',
   },

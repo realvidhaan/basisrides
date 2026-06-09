@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Bound the root to viewport height on web so that flex:1 ScrollView
+   containers get a real maximum height and can scroll. Without this,
+   flex:1 containers expand to fit their content and overflow is never
+   triggered. Also hides any accidental page-level scrollbar. */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
