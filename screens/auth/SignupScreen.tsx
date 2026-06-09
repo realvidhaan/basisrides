@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Picker } from '@react-native-picker/picker';
@@ -17,6 +16,7 @@ import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { FormScroll } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
@@ -138,13 +138,7 @@ export function SignupScreen({ navigation }: Props) {
         <Text style={styles.title}>Create your account</Text>
       </View>
 
-      <KeyboardAwareScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        extraScrollHeight={16}
-      >
+      <FormScroll style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <ErrorMessage message={globalError} />
 
         <Input
@@ -275,7 +269,7 @@ export function SignupScreen({ navigation }: Props) {
         <View style={styles.submitRow}>
           <Button title="Create account" onPress={handleSignup} loading={loading} />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScroll>
     </SafeAreaView>
   );
 }

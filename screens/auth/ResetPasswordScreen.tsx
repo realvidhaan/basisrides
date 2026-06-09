@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { RouteProp } from '@react-navigation/native';
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
+import { FormScroll } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type ResetNavigationProp = StackNavigationProp<AuthStackParamList, 'ResetPassword'>;
@@ -72,13 +72,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
         <BackButton onPress={() => navigation.goBack()} />
       </View>
 
-      <KeyboardAwareScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        extraScrollHeight={16}
-      >
+      <FormScroll style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Create new password</Text>
         <Text style={styles.subtext}>
           Your new password must be different from previously used passwords.
@@ -137,7 +131,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
             disabled={!canSubmit}
           />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScroll>
     </SafeAreaView>
   );
 }

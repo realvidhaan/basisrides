@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
+import { FormScroll } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 
 type ForgotPasswordNavigationProp = StackNavigationProp<
@@ -29,8 +29,31 @@ export function ForgotPasswordScreen({ navigation }: Props) {
     setError(null);
     setLoading(true);
 
+    const trimmed = email.trim();
+
+    // Confirm an account actually exists before sending a reset code. Supabase's
+    // resetPasswordForEmail silently succeeds for unknown emails (anti-enumeration),
+    // which would otherwise send users to the code screen for an account that
+    // doesn't exist. A SECURITY DEFINER RPC checks auth.users safely.
+    const { data: exists, error: lookupError } = await supabase.rpc(
+      'email_exists',
+      { p_email: trimmed },
+    );
+
+    if (lookupError) {
+      setLoading(false);
+      setError(mapSupabaseError(lookupError));
+      return;
+    }
+
+    if (!exists) {
+      setLoading(false);
+      setError('No account found with this email.');
+      return;
+    }
+
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
+      trimmed,
     );
 
     setLoading(false);
@@ -40,9 +63,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
       return;
     }
 
-    // Supabase returns no error even when the email is not registered (by design),
-    // so always move forward on success.
-    navigation.navigate('OTPVerification', { email: email.trim(), flow: 'reset' });
+    navigation.navigate('OTPVerification', { email: trimmed, flow: 'reset' });
   }
 
   return (
@@ -53,13 +74,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
         <BackButton onPress={() => navigation.goBack()} />
       </View>
 
-      <KeyboardAwareScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        extraScrollHeight={16}
-      >
+      <FormScroll style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Forgot Password?</Text>
         <Text style={styles.subtext}>
           Don&apos;t worry! Please enter the email address linked with your
@@ -92,7 +107,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
             disabled={!email.trim()}
           />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScroll>
 
       <TouchableOpacity
         style={styles.bottomRow}
