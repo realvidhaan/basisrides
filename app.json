@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BasisRide",
-    "slug": "BasisRide",
+    "slug": "basisrides",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,6 +21,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5ffe6fcd-0b69-4339-9e8f-7689991fefb4"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5ffe6fcd-0b69-4339-9e8f-7689991fefb4"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "realvidhaan"
   }
 }
