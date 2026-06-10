@@ -8,7 +8,7 @@
  *    group volunteered, the whole group is "unmatched" (no car that day).
  *  - Riders are grouped per zone by a sliding 30-minute window: anyone whose
  *    pickup time is within 30 min of the group's earliest rider shares a car,
- *    picked up at the earlier time.
+ *    picked up at the latest time in the group so every child is already out.
  *  - Among volunteer drivers, the one who has driven the FEWEST days so far
  *    this school year drives next (even-out rotation); ties break toward whoever
  *    has used more hardship passes, then by id. This balances driving over time.
@@ -49,7 +49,7 @@ export interface CarMember {
 export interface UserAssignment {
   role: 'drive' | 'ride' | 'unmatched';
   zone: string;
-  time: string; // the car's unified pickup time (earliest in the group)
+  time: string; // the car's unified pickup time (latest in the group)
   driver: CarMember | null; // the car's driver (null when unmatched)
   riders: CarMember[]; // the car's riders (excludes the driver)
 }
@@ -115,7 +115,9 @@ function computeSingleDay(
       }
       i = j;
 
-      const pickup = anchor.time; // earliest time in the cluster
+      // Pick up at the LATEST time in the cluster so every child is already
+      // dismissed when the driver arrives (cluster is sorted ascending).
+      const pickup = cluster[cluster.length - 1].time;
 
       const candidates = cluster.filter(
         (p) =>
