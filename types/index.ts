@@ -82,33 +82,21 @@ export interface SignupFormValues {
   confirmPassword: string;
 }
 
-// The five carpool weekdays and the per-day role a parent can choose.
+// The five carpool weekdays.
 export type WeekdayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri';
-export type DayRole = 'off' | 'ride' | 'drive';
 
-// A single day of the signed-in parent's recurring weekly schedule.
+// A single day of the signed-in parent's recurring weekly schedule. Parents
+// only choose whether they participate + their pickup time; the system decides
+// drive vs ride by fair rotation.
 export interface MyScheduleDay {
   day: WeekdayKey;
-  role: DayRole;
+  participating: boolean;
   dismissalTime: string | null; // 'HH:MM' (local clock time), or null when Off
 }
 
-// One person within an automatically-formed carpool group.
-export interface CarpoolMember {
-  userId: string;
-  name: string;
-  time: string | null; // Postgres TIME string, e.g. '15:15:00'
-}
-
-// One driver + the riders auto-assigned to them for a weekday.
-export interface CarpoolGroup {
-  driver: CarpoolMember;
-  riders: CarpoolMember[];
-  zone: string | null;
-}
-
-// Everything the schedule view needs for a single weekday.
-export interface DayCarpool {
-  groups: CarpoolGroup[];
-  unmatchedRiders: CarpoolMember[];
+// What a single calendar cell should display.
+export interface DayWidget {
+  kind: 'drive' | 'ride' | 'unmatched' | 'off' | 'blocked';
+  time: string | null; // 'HH:MM' for drive/ride
+  label: string | null; // e.g. "Winter Break", "Summer", "Early dismissal"
 }

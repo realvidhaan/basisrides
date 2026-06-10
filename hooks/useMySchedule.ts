@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import type { DayRole, MyScheduleDay, WeekdayKey } from '@/types';
+import type { MyScheduleDay, WeekdayKey } from '@/types';
 
 const DAY_KEYS: WeekdayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 function emptyWeek(): Record<WeekdayKey, MyScheduleDay> {
   return {
-    mon: { day: 'mon', role: 'off', dismissalTime: null },
-    tue: { day: 'tue', role: 'off', dismissalTime: null },
-    wed: { day: 'wed', role: 'off', dismissalTime: null },
-    thu: { day: 'thu', role: 'off', dismissalTime: null },
-    fri: { day: 'fri', role: 'off', dismissalTime: null },
+    mon: { day: 'mon', participating: false, dismissalTime: null },
+    tue: { day: 'tue', participating: false, dismissalTime: null },
+    wed: { day: 'wed', participating: false, dismissalTime: null },
+    thu: { day: 'thu', participating: false, dismissalTime: null },
+    fri: { day: 'fri', participating: false, dismissalTime: null },
   };
 }
 
 interface RawScheduleRow {
   day_of_week: string;
-  role: DayRole | null;
+  participating: boolean | null;
   dismissal_time: string | null;
 }
 
@@ -26,13 +26,17 @@ export interface UseMyScheduleResult {
   loading: boolean;
   error: string | null;
   carCapacity: number;
-  setDay: (day: WeekdayKey, role: DayRole, time: string | null) => Promise<void>;
+  setDay: (
+    day: WeekdayKey,
+    participating: boolean,
+    time: string | null,
+  ) => Promise<void>;
 }
 
 /**
- * Loads and edits the signed-in parent's recurring weekly schedule (stored in
- * the `availability` table as role + dismissal_time per weekday). setDay does an
- * optimistic upsert with rollback on failure.
+ * Loads and edits the signed-in parent's recurring weekly schedule. Parents
+ * only set participation + pickup time per weekday; the rotation engine decides
+ * drive vs ride. Optimistic upsert with rollback.
  */
 export function useMySchedule(): UseMyScheduleResult {
   const { user } = useCurrentUser();
@@ -53,7 +57,7 @@ export function useMySchedule(): UseMyScheduleResult {
       try {
         const { data, error: loadError } = await supabase
           .from('availability')
-          .select('day_of_week, role, dismissal_time')
+          .select('day_of_week, participating, dismissal_time')
           .eq('user_id', user.id);
         if (!active) return;
         if (loadError) {
@@ -67,7 +71,7 @@ export function useMySchedule(): UseMyScheduleResult {
             const key = row.day_of_week as WeekdayKey;
             next[key] = {
               day: key,
-              role: row.role ?? 'off',
+              participating: Boolean(row.participating),
               dismissalTime: row.dismissal_time
                 ? row.dismissal_time.slice(0, 5)
                 : null,
@@ -88,17 +92,21 @@ export function useMySchedule(): UseMyScheduleResult {
   }, [user]);
 
   const setDay = useCallback(
-    async (day: WeekdayKey, role: DayRole, time: string | null): Promise<void> => {
+    async (
+      day: WeekdayKey,
+      participating: boolean,
+      time: string | null,
+    ): Promise<void> => {
       if (!user) {
         setError('You must be signed in.');
         return;
       }
       const snapshot = daysRef.current;
-      const dismissalTime = role === 'off' ? null : time;
+      const dismissalTime = participating ? time : null;
       setError(null);
       setDays((prev) => ({
         ...prev,
-        [day]: { day, role, dismissalTime },
+        [day]: { day, participating, dismissalTime },
       }));
 
       try {
@@ -106,9 +114,10 @@ export function useMySchedule(): UseMyScheduleResult {
           {
             user_id: user.id,
             day_of_week: day,
-            role,
+            participating,
             dismissal_time: dismissalTime,
-            is_driving: role === 'drive',
+            role: participating ? 'ride' : 'off', // legacy column; unused by rotation
+            is_driving: false,
           },
           { onConflict: 'user_id,day_of_week' },
         );

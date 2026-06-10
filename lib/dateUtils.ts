@@ -78,6 +78,20 @@ export function parseISO(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Fixed Monday epoch used to rotate the driver each week. Any fixed Monday works.
+const WEEK_EPOCH_UTC = Date.UTC(2026, 0, 5); // Monday, Jan 5 2026
+
+/**
+ * Whole weeks between `date` and the fixed epoch (can be negative). Used to
+ * rotate which car-owner drives each calendar week. Computed from the local
+ * Y/M/D via UTC to avoid DST drift.
+ */
+export function weekIndex(date: Date): number {
+  const utc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((utc - WEEK_EPOCH_UTC) / (7 * DAY_MS));
+}
+
 /** e.g. "Monday, Jun 9". */
 export function formatDayLabel(date: Date): string {
   return `${DAYS_FULL[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;

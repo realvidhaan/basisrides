@@ -30,6 +30,7 @@ export function ProfileScreen() {
   const { user, loading } = useCurrentUser();
 
   const [seats, setSeats] = useState<number>(0);
+  const [passesLeft, setPassesLeft] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -37,6 +38,32 @@ export function ProfileScreen() {
 
   useEffect(() => {
     if (user) setSeats(user.car_capacity);
+  }, [user]);
+
+  // Hardship passes remaining this calendar month (max 2).
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void (async () => {
+      try {
+        const now = new Date();
+        const first = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-01`;
+        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const nextFirst = `${next.getFullYear()}-${`${next.getMonth() + 1}`.padStart(2, '0')}-01`;
+        const { count } = await supabase
+          .from('hardship_passes')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('pass_date', first)
+          .lt('pass_date', nextFirst);
+        if (active) setPassesLeft(Math.max(0, 2 - (count ?? 0)));
+      } catch {
+        if (active) setPassesLeft(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -158,6 +185,16 @@ export function ProfileScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Driving rotation</Text>
+          <View style={styles.card}>
+            <View style={styles.stepperRow}>
+              <Text style={styles.rowLabel}>Hardship passes left this month</Text>
+              <Text style={styles.passValue}>
+                {passesLeft === null ? '—' : `${passesLeft}/2`}
+              </Text>
             </View>
           </View>
 
@@ -315,6 +352,11 @@ const styles = StyleSheet.create({
     color: '#1E232C',
     minWidth: 40,
     textAlign: 'center',
+  },
+  passValue: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#DC143C',
   },
   logoutRow: {
     marginTop: 8,

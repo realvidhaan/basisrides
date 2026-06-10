@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatMonthYear } from '@/lib/dateUtils';
+import type { DayWidget } from '@/types';
 
 interface CalendarPickerProps {
   selected: Date;
   onSelect: (date: Date) => void;
+  /** Optional per-day widget (carpool status / no-school label). */
+  dayInfo?: (date: Date) => DayWidget;
 }
 
 const WEEKDAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -19,8 +22,8 @@ function sameDay(a: Date, b: Date): boolean {
 
 function buildGrid(viewYear: number, viewMonth: number): Date[] {
   const first = new Date(viewYear, viewMonth, 1);
-  const jsDay = first.getDay(); // 0 = Sun
-  const offset = (jsDay + 6) % 7; // Monday-first: Mon -> 0
+  const jsDay = first.getDay();
+  const offset = (jsDay + 6) % 7; // Monday-first
   const start = new Date(viewYear, viewMonth, 1 - offset);
   return Array.from({ length: 42 }, (_, i) => {
     const d = new Date(start);
@@ -29,11 +32,42 @@ function buildGrid(viewYear: number, viewMonth: number): Date[] {
   });
 }
 
+function Chip({ info }: { info: DayWidget }) {
+  if (info.kind === 'drive' || info.kind === 'ride') {
+    const drive = info.kind === 'drive';
+    return (
+      <View style={[styles.chip, drive ? styles.chipDrive : styles.chipRide]}>
+        <Text
+          style={[styles.chipText, drive ? styles.chipTextDrive : styles.chipTextRide]}
+          numberOfLines={1}
+        >
+          {drive ? '▲' : '●'} {info.time}
+        </Text>
+      </View>
+    );
+  }
+  if (info.kind === 'unmatched') {
+    return (
+      <View style={[styles.chip, styles.chipUnmatched]}>
+        <Text style={[styles.chipText, styles.chipTextUnmatched]}>no car</Text>
+      </View>
+    );
+  }
+  if (info.kind === 'blocked' && info.label) {
+    return (
+      <Text style={styles.blockedLabel} numberOfLines={1}>
+        {info.label}
+      </Text>
+    );
+  }
+  return null;
+}
+
 /**
- * Material-style month calendar (Monday-first) recreated in the BasisRide brand.
- * Selected day = filled crimson square; today = crimson ring; other-month = muted.
+ * Material-style month calendar (Monday-first) in the BasisRide brand, with an
+ * optional per-day status widget (Drive/Pickup chip, or a no-school label).
  */
-export function CalendarPicker({ selected, onSelect }: CalendarPickerProps) {
+export function CalendarPicker({ selected, onSelect, dayInfo }: CalendarPickerProps) {
   const [view, setView] = useState<{ year: number; month: number }>(() => ({
     year: selected.getFullYear(),
     month: selected.getMonth(),
@@ -73,7 +107,7 @@ export function CalendarPicker({ selected, onSelect }: CalendarPickerProps) {
 
       <View style={styles.weekRow}>
         {WEEKDAY_HEADERS.map((w) => (
-          <View key={w} style={styles.cell}>
+          <View key={w} style={styles.headerCell}>
             <Text style={styles.weekdayText}>{w}</Text>
           </View>
         ))}
@@ -85,30 +119,26 @@ export function CalendarPicker({ selected, onSelect }: CalendarPickerProps) {
             const inMonth = d.getMonth() === view.month;
             const isSelected = sameDay(d, selected);
             const isToday = sameDay(d, today);
+            const info = dayInfo ? dayInfo(d) : undefined;
+            const blocked = info?.kind === 'blocked';
             return (
               <TouchableOpacity
                 key={d.toISOString()}
-                style={styles.cell}
+                style={[styles.cell, isSelected ? styles.cellSelected : null]}
                 onPress={() => onSelect(d)}
                 activeOpacity={0.7}
               >
-                <View
+                <Text
                   style={[
-                    styles.dayPill,
-                    isToday && !isSelected ? styles.dayToday : null,
-                    isSelected ? styles.daySelected : null,
+                    styles.dayText,
+                    !inMonth || blocked ? styles.dayMuted : null,
+                    isToday ? styles.dayToday : null,
+                    isSelected ? styles.daySelectedText : null,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      !inMonth ? styles.dayMuted : null,
-                      isSelected ? styles.daySelectedText : null,
-                    ]}
-                  >
-                    {d.getDate()}
-                  </Text>
-                </View>
+                  {d.getDate()}
+                </Text>
+                {info ? <Chip info={info} /> : null}
               </TouchableOpacity>
             );
           })}
@@ -124,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#E8ECF4',
-    padding: 12,
+    padding: 10,
   },
   header: {
     flexDirection: 'row',
@@ -154,40 +184,77 @@ const styles = StyleSheet.create({
   weekRow: {
     flexDirection: 'row',
   },
-  cell: {
+  headerCell: {
     flex: 1,
-    aspectRatio: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 4,
   },
   weekdayText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#8391A1',
   },
-  dayPill: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+  cell: {
+    flex: 1,
+    height: 54,
+    borderRadius: 8,
+    paddingTop: 4,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayToday: {
     borderWidth: 1.5,
-    borderColor: '#DC143C',
+    borderColor: 'transparent',
   },
-  daySelected: {
-    backgroundColor: '#DC143C',
+  cellSelected: {
+    borderColor: '#DC143C',
+    backgroundColor: '#FFF7F8',
   },
   dayText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1E232C',
   },
   dayMuted: {
     color: '#C9CDD4',
   },
+  dayToday: {
+    color: '#DC143C',
+    fontWeight: '800',
+  },
   daySelectedText: {
-    color: '#FFFFFF',
+    color: '#DC143C',
+  },
+  chip: {
+    marginTop: 3,
+    borderRadius: 5,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    maxWidth: '96%',
+  },
+  chipDrive: {
+    backgroundColor: '#FFF1F1',
+  },
+  chipRide: {
+    backgroundColor: '#F0FDF4',
+  },
+  chipUnmatched: {
+    backgroundColor: '#F7F8F9',
+  },
+  chipText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  chipTextDrive: {
+    color: '#DC143C',
+  },
+  chipTextRide: {
+    color: '#16A34A',
+  },
+  chipTextUnmatched: {
+    color: '#8391A1',
+  },
+  blockedLabel: {
+    marginTop: 3,
+    fontSize: 8,
+    fontWeight: '600',
+    color: '#A0A0A0',
   },
 });
