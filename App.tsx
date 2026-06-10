@@ -20,7 +20,7 @@ import { OTPVerificationScreen } from '@/screens/auth/OTPVerificationScreen';
 import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { PasswordChangedScreen } from '@/screens/auth/PasswordChangedScreen';
 import { ScheduleScreen } from '@/screens/ScheduleScreen';
-import { DayDetailScreen } from '@/screens/DayDetailScreen';
+import { EditScheduleScreen } from '@/screens/EditScheduleScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import type {
   AuthStackParamList,
@@ -53,7 +53,7 @@ function ScheduleStackNavigator() {
   return (
     <ScheduleStack.Navigator screenOptions={{ headerShown: false }}>
       <ScheduleStack.Screen name="Schedule" component={ScheduleScreen} />
-      <ScheduleStack.Screen name="DayDetail" component={DayDetailScreen} />
+      <ScheduleStack.Screen name="EditSchedule" component={EditScheduleScreen} />
     </ScheduleStack.Navigator>
   );
 }

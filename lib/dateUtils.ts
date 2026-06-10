@@ -6,6 +6,8 @@
  * to UTC and can shift the day across midnight, so we never use it here.
  */
 
+import type { WeekdayKey } from '@/types';
+
 const MONTHS = [
   'Jan',
   'Feb',
@@ -89,4 +91,61 @@ export function formatShortDay(date: Date): string {
 /** e.g. "Week of Jun 9" (formats whatever date is passed, normally the week start). */
 export function formatWeekLabel(date: Date): string {
   return `Week of ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
+/** e.g. "June 2026" — full month + year, for the calendar header. */
+export function formatMonthYear(date: Date): string {
+  return `${MONTHS_FULL[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+const MONTHS_FULL = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
+
+/** The five carpool weekdays, Monday-first, with display labels. */
+export const WEEKDAYS: { key: WeekdayKey; label: string; short: string }[] = [
+  { key: 'mon', label: 'Monday', short: 'Mon' },
+  { key: 'tue', label: 'Tuesday', short: 'Tue' },
+  { key: 'wed', label: 'Wednesday', short: 'Wed' },
+  { key: 'thu', label: 'Thursday', short: 'Thu' },
+  { key: 'fri', label: 'Friday', short: 'Fri' },
+];
+
+const DAY_INDEX_TO_KEY: Record<number, WeekdayKey> = {
+  1: 'mon',
+  2: 'tue',
+  3: 'wed',
+  4: 'thu',
+  5: 'fri',
+};
+
+/** Maps a Date to its carpool weekday key, or null for weekends. */
+export function weekdayKeyFromDate(date: Date): WeekdayKey | null {
+  return DAY_INDEX_TO_KEY[date.getDay()] ?? null;
+}
+
+/**
+ * Formats a Postgres TIME ("HH:MM" or "HH:MM:SS") as a 12-hour label, e.g.
+ * "15:15:00" -> "3:15 PM". Returns "" for null/empty.
+ */
+export function formatTime(value: string | null | undefined): string {
+  if (!value) return '';
+  const parts = value.split(':');
+  const h = Number(parts[0]);
+  const m = parts[1] ?? '00';
+  if (Number.isNaN(h)) return '';
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${m.padStart(2, '0')} ${ampm}`;
 }

@@ -12,7 +12,7 @@ export type AuthStackParamList = {
 // Schedule tab is a nested stack; Profile tab is standalone.
 export type ScheduleStackParamList = {
   Schedule: undefined;
-  DayDetail: { date: string };
+  EditSchedule: undefined;
 };
 
 export type MainTabParamList = {
@@ -82,27 +82,33 @@ export interface SignupFormValues {
   confirmPassword: string;
 }
 
-// A row from the `rides` table enriched with the joined driver/rider info the
-// schedule UI renders. driverName/driverCapacity describe the day's driver;
-// riderName is the passenger on this specific row (used by the riders list);
-// driverNeighborhood is shown on the day-detail driver card.
-export interface RideWithDriver {
-  id: string;
-  driver_id: string;
-  rider_id: string;
-  date: string;
-  status: string;
-  created_at: string;
-  driverName: string;
-  driverCapacity: number;
-  driverNeighborhood: string;
-  riderName: string;
+// The five carpool weekdays and the per-day role a parent can choose.
+export type WeekdayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri';
+export type DayRole = 'off' | 'ride' | 'drive';
+
+// A single day of the signed-in parent's recurring weekly schedule.
+export interface MyScheduleDay {
+  day: WeekdayKey;
+  role: DayRole;
+  dismissalTime: string | null; // 'HH:MM' (local clock time), or null when Off
 }
 
-// Everything the schedule needs for a single weekday, keyed by ISO date.
-export interface DayData {
-  date: string;
-  driver: RideWithDriver | null; // the self-row (driver_id === rider_id), enriched
-  riders: RideWithDriver[]; // rows where rider_id !== driver_id
-  seatsAvailable: number;
+// One person within an automatically-formed carpool group.
+export interface CarpoolMember {
+  userId: string;
+  name: string;
+  time: string | null; // Postgres TIME string, e.g. '15:15:00'
+}
+
+// One driver + the riders auto-assigned to them for a weekday.
+export interface CarpoolGroup {
+  driver: CarpoolMember;
+  riders: CarpoolMember[];
+  zone: string | null;
+}
+
+// Everything the schedule view needs for a single weekday.
+export interface DayCarpool {
+  groups: CarpoolGroup[];
+  unmatchedRiders: CarpoolMember[];
 }

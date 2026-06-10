@@ -10,19 +10,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { ScheduleStackParamList } from '@/types';
+import type { CarpoolMember, ScheduleStackParamList } from '@/types';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
+import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { webScreenFix } from '@/components/ui/FormScroll';
-import { useWeekRides } from '@/hooks/useWeekRides';
-import {
-  formatDayLabel,
-  formatWeekLabel,
-  getWeekDates,
-  getWeekEnd,
-  getWeekStart,
-  toISO,
-} from '@/lib/dateUtils';
+import { useCarpoolWeek } from '@/hooks/useCarpoolWeek';
+import { formatDayLabel, formatTime, weekdayKeyFromDate } from '@/lib/dateUtils';
 
 type ScheduleNavigationProp = StackNavigationProp<
   ScheduleStackParamList,
@@ -40,30 +34,139 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function MemberRow({ member, dark }: { member: CarpoolMember; dark?: boolean }) {
+  return (
+    <View style={styles.memberRow}>
+      <View style={[styles.avatar, dark ? styles.avatarDark : null]}>
+        <Text style={styles.avatarText}>{initials(member.name)}</Text>
+      </View>
+      <Text style={styles.memberName} numberOfLines={1}>
+        {member.name}
+      </Text>
+      {member.time ? (
+        <Text style={styles.memberTime}>{formatTime(member.time)}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export function ScheduleScreen({ navigation }: Props) {
-  const [weekStart, setWeekStart] = useState<Date>(() =>
-    getWeekStart(new Date()),
+  const [selected, setSelected] = useState<Date>(() => new Date());
+  const { byDay, loading, error, currentUserId } = useCarpoolWeek();
+
+  const dayKey = weekdayKeyFromDate(selected);
+  const dayCarpool = dayKey ? byDay[dayKey] : null;
+
+  // Work out the signed-in parent's perspective for the selected day.
+  const myDriverGroup =
+    dayCarpool && currentUserId
+      ? dayCarpool.groups.find((g) => g.driver.userId === currentUserId)
+      : undefined;
+  const myRiderGroup =
+    dayCarpool && currentUserId
+      ? dayCarpool.groups.find((g) =>
+          g.riders.some((r) => r.userId === currentUserId),
+        )
+      : undefined;
+  const amUnmatched = Boolean(
+    dayCarpool &&
+      currentUserId &&
+      dayCarpool.unmatchedRiders.some((r) => r.userId === currentUserId),
   );
 
-  const weekStartISO = toISO(weekStart);
-  const weekEndISO = toISO(getWeekEnd(weekStart));
-
-  const {
-    ridesByDate,
-    loading,
-    error,
-    currentUserId,
-    offerToDrive,
-    claimSeat,
-  } = useWeekRides(weekStartISO, weekEndISO);
-
-  function shiftWeek(deltaDays: number): void {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + deltaDays);
-    setWeekStart(getWeekStart(d));
+  function renderGroup() {
+    if (!dayKey) {
+      return (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoText}>No school carpool on weekends.</Text>
+        </View>
+      );
+    }
+    if (myDriverGroup) {
+      return (
+        <View style={styles.groupCard}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusDriving}>You&apos;re driving</Text>
+            {myDriverGroup.zone ? (
+              <View style={styles.zoneBadge}>
+                <Text style={styles.zoneBadgeText}>{myDriverGroup.zone}</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.subtle}>
+            Pickup around {formatTime(myDriverGroup.driver.time)}
+          </Text>
+          <Text style={styles.sectionLabel}>
+            Your riders ({myDriverGroup.riders.length})
+          </Text>
+          {myDriverGroup.riders.length === 0 ? (
+            <Text style={styles.infoText}>
+              No riders matched to you yet. We&apos;ll pair nearby families with a
+              similar pickup time.
+            </Text>
+          ) : (
+            myDriverGroup.riders.map((r) => (
+              <MemberRow key={r.userId} member={r} />
+            ))
+          )}
+        </View>
+      );
+    }
+    if (myRiderGroup) {
+      const coRiders = myRiderGroup.riders.filter(
+        (r) => r.userId !== currentUserId,
+      );
+      return (
+        <View style={styles.groupCard}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusRiding}>You&apos;re riding</Text>
+            {myRiderGroup.zone ? (
+              <View style={styles.zoneBadge}>
+                <Text style={styles.zoneBadgeText}>{myRiderGroup.zone}</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.sectionLabel}>Driver</Text>
+          <MemberRow member={myRiderGroup.driver} dark />
+          <Text style={styles.sectionLabel}>
+            Other riders ({coRiders.length})
+          </Text>
+          {coRiders.length === 0 ? (
+            <Text style={styles.infoText}>Just you so far.</Text>
+          ) : (
+            coRiders.map((r) => <MemberRow key={r.userId} member={r} />)
+          )}
+        </View>
+      );
+    }
+    if (amUnmatched) {
+      return (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>No match yet</Text>
+          <Text style={styles.infoText}>
+            We couldn&apos;t find a driver in your area within 30 minutes of your
+            pickup time. You&apos;ll be paired automatically as more families set
+            their schedules.
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.infoCard}>
+        <Text style={styles.infoTitle}>Not carpooling this day</Text>
+        <Text style={styles.infoText}>
+          Set whether you&apos;re driving or riding and your pickup time to get
+          matched automatically.
+        </Text>
+        <View style={styles.infoButton}>
+          <Button
+            title="Edit my schedule"
+            onPress={() => navigation.navigate('EditSchedule')}
+          />
+        </View>
+      </View>
+    );
   }
-
-  const weekDates = getWeekDates(weekStart);
 
   return (
     <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
@@ -71,143 +174,33 @@ export function ScheduleScreen({ navigation }: Props) {
 
       <View style={styles.header}>
         <Text style={styles.wordmark}>BasisRide</Text>
-        <View style={styles.weekNav}>
-          <TouchableOpacity
-            onPress={() => shiftWeek(-7)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Previous week"
-          >
-            <Text style={styles.chevron}>‹</Text>
-          </TouchableOpacity>
-          {loading ? (
-            <ActivityIndicator
-              color="#DC143C"
-              size="small"
-              style={styles.weekSpinner}
-            />
-          ) : (
-            <Text style={styles.weekLabel}>{formatWeekLabel(weekStart)}</Text>
-          )}
-          <TouchableOpacity
-            onPress={() => shiftWeek(7)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Next week"
-          >
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('EditSchedule')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.editLink}>Edit</Text>
+        </TouchableOpacity>
       </View>
 
-      {error ? (
-        <View style={styles.errorWrap}>
-          <ErrorMessage message={error} />
-        </View>
-      ) : null}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {error ? <ErrorMessage message={error} /> : null}
 
-      {loading ? (
-        <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {weekDates.map((date) => {
-            const iso = toISO(date);
-            const day = ridesByDate[iso];
-            const driver = day?.driver ?? null;
-            const riders = day?.riders ?? [];
-            const capacity = driver?.driverCapacity ?? 0;
-            const occupied = driver ? 1 + riders.length : 0;
-            const isDriver = Boolean(
-              driver && currentUserId && driver.driver_id === currentUserId,
-            );
-            const isRider = Boolean(
-              currentUserId && riders.some((r) => r.rider_id === currentUserId),
-            );
-            const full = driver ? occupied >= capacity : false;
-            const fillPct =
-              capacity > 0 ? Math.min(100, (occupied / capacity) * 100) : 0;
+        <CalendarPicker selected={selected} onSelect={setSelected} />
 
-            return (
-              <TouchableOpacity
-                key={iso}
-                activeOpacity={0.9}
-                style={styles.card}
-                onPress={() => navigation.navigate('DayDetail', { date: iso })}
-              >
-                <Text style={styles.dayLabel}>{formatDayLabel(date)}</Text>
+        <Text style={styles.dayHeading}>{formatDayLabel(selected)}</Text>
 
-                {!driver ? (
-                  <View style={styles.noDriverBlock}>
-                    <Text style={styles.noDriverText}>No driver yet</Text>
-                    <Button
-                      title="Offer to drive"
-                      onPress={() => offerToDrive(iso)}
-                    />
-                  </View>
-                ) : (
-                  <View>
-                    <View style={styles.driverRow}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                          {initials(driver.driverName)}
-                        </Text>
-                      </View>
-                      <View style={styles.driverInfo}>
-                        <Text style={styles.driverName} numberOfLines={1}>
-                          {driver.driverName}
-                        </Text>
-                      </View>
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>Driving</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.progressTrack}>
-                      <View
-                        style={[styles.progressFill, { width: `${fillPct}%` }]}
-                      />
-                    </View>
-                    <Text style={styles.seatText}>
-                      {occupied} of {capacity} seats
-                    </Text>
-
-                    <View style={styles.actionRow}>
-                      {isDriver ? (
-                        <View>
-                          <Text style={styles.youDriving}>You&apos;re driving</Text>
-                          <TouchableOpacity
-                            onPress={() =>
-                              navigation.navigate('DayDetail', { date: iso })
-                            }
-                          >
-                            <Text style={styles.swapLink}>
-                              Can&apos;t make it? Request a swap →
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : isRider ? (
-                        <Text style={styles.youRiding}>You&apos;re riding</Text>
-                      ) : full ? (
-                        <Button title="Full" disabled onPress={() => undefined} />
-                      ) : (
-                        <Button
-                          title="Claim a seat"
-                          variant="outline"
-                          onPress={() => claimSeat(iso)}
-                        />
-                      )}
-                    </View>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+        {loading ? (
+          <View style={styles.loadingArea}>
+            <ActivityIndicator color="#DC143C" size="large" />
+          </View>
+        ) : (
+          renderGroup()
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -233,34 +226,10 @@ const styles = StyleSheet.create({
     color: '#DC143C',
     letterSpacing: -0.5,
   },
-  weekNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  chevron: {
-    fontSize: 26,
-    lineHeight: 28,
-    color: '#1E232C',
-    paddingHorizontal: 8,
-  },
-  weekLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E232C',
-    minWidth: 96,
-    textAlign: 'center',
-  },
-  weekSpinner: {
-    minWidth: 96,
-  },
-  errorWrap: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  loadingArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  editLink: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#DC143C',
   },
   scroll: {
     flex: 1,
@@ -269,103 +238,117 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 40,
   },
-  card: {
+  dayHeading: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E232C',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  loadingArea: {
+    paddingVertical: 32,
+    alignItems: 'center',
+  },
+  groupCard: {
     borderWidth: 1.5,
     borderColor: '#E8ECF4',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
   },
-  dayLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E232C',
-    marginBottom: 12,
-  },
-  noDriverBlock: {
-    gap: 12,
-  },
-  noDriverText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8391A1',
-  },
-  driverRow: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#DC143C',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+  statusDriving: {
+    fontSize: 16,
     fontWeight: '700',
+    color: '#16A34A',
   },
-  driverInfo: {
-    flex: 1,
+  statusRiding: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#16A34A',
   },
-  driverName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1E232C',
-  },
-  badge: {
-    backgroundColor: '#F0FDF4',
+  zoneBadge: {
+    backgroundColor: '#F7F8F9',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#DADADA',
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  badgeText: {
+  zoneBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#16A34A',
-    letterSpacing: 0.2,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E8ECF4',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#DC143C',
-  },
-  seatText: {
-    fontSize: 12,
     color: '#6A707C',
-    marginTop: 6,
-    marginBottom: 12,
   },
-  actionRow: {
-    marginTop: 4,
+  subtle: {
+    fontSize: 13,
+    color: '#6A707C',
+    marginBottom: 8,
   },
-  youDriving: {
-    fontSize: 14,
+  sectionLabel: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#16A34A',
+    color: '#8391A1',
+    marginTop: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 12,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DC143C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarDark: {
+    backgroundColor: '#1E232C',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  memberName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#1E232C',
+  },
+  memberTime: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6A707C',
+  },
+  infoCard: {
+    borderWidth: 1.5,
+    borderColor: '#E8ECF4',
+    borderRadius: 12,
+    padding: 16,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E232C',
     marginBottom: 6,
   },
-  youRiding: {
+  infoText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#16A34A',
-  },
-  swapLink: {
-    fontSize: 13,
-    fontWeight: '500',
     color: '#6A707C',
+    lineHeight: 20,
+  },
+  infoButton: {
+    marginTop: 16,
   },
 });
