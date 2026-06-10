@@ -6,6 +6,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
@@ -17,11 +19,18 @@ import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
 import { OTPVerificationScreen } from '@/screens/auth/OTPVerificationScreen';
 import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { PasswordChangedScreen } from '@/screens/auth/PasswordChangedScreen';
-import { HomeScreen } from '@/screens/HomeScreen';
-import type { AuthStackParamList, MainStackParamList } from '@/types';
+import { ScheduleScreen } from '@/screens/ScheduleScreen';
+import { DayDetailScreen } from '@/screens/DayDetailScreen';
+import { ProfileScreen } from '@/screens/ProfileScreen';
+import type {
+  AuthStackParamList,
+  ScheduleStackParamList,
+  MainTabParamList,
+} from '@/types';
 
 const AuthStack = createStackNavigator<AuthStackParamList>();
-const MainStack = createStackNavigator<MainStackParamList>();
+const ScheduleStack = createStackNavigator<ScheduleStackParamList>();
+const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 function AuthNavigator() {
   return (
@@ -40,11 +49,46 @@ function AuthNavigator() {
   );
 }
 
+function ScheduleStackNavigator() {
+  return (
+    <ScheduleStack.Navigator screenOptions={{ headerShown: false }}>
+      <ScheduleStack.Screen name="Schedule" component={ScheduleScreen} />
+      <ScheduleStack.Screen name="DayDetail" component={DayDetailScreen} />
+    </ScheduleStack.Navigator>
+  );
+}
+
 function MainNavigator() {
   return (
-    <MainStack.Navigator screenOptions={{ headerShown: false }}>
-      <MainStack.Screen name="Home" component={HomeScreen} />
-    </MainStack.Navigator>
+    <MainTab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: '#DC143C',
+        tabBarInactiveTintColor: '#8391A1',
+        tabBarIcon: ({ focused, color, size }) => {
+          const name =
+            route.name === 'ScheduleTab'
+              ? focused
+                ? 'calendar'
+                : 'calendar-outline'
+              : focused
+                ? 'person'
+                : 'person-outline';
+          return <Ionicons name={name} size={size} color={color} />;
+        },
+      })}
+    >
+      <MainTab.Screen
+        name="ScheduleTab"
+        component={ScheduleStackNavigator}
+        options={{ title: 'Schedule' }}
+      />
+      <MainTab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ title: 'Profile' }}
+      />
+    </MainTab.Navigator>
   );
 }
 

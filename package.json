@@ -4,8 +4,10 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-runtime": "~56.0.14",
+    "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-picker/picker": "2.11.4",
+    "@react-navigation/bottom-tabs": "^7.17.2",
     "@react-navigation/native": "^7.3.0",
     "@react-navigation/stack": "^7.10.1",
     "@supabase/supabase-js": "^2.108.0",
