@@ -2,33 +2,54 @@
  * Deterministic, fair carpool assignment — runs identically on every client
  * over the same shared schedule data, so no server compute is needed.
  *
- * For a given date, within each (zone, 30-min time slot) group, the car-owners
- * take turns driving by week number (rotation = fairness). Chosen drivers' seats
- * are filled with the remaining members as riders; any overflow is unmatched.
- * A hardship pass removes its holder from the driver rotation for that date.
+ * Model (Day 5):
+ *  - Parents pick which weekdays they're WILLING to drive (`canDrive`). Only
+ *    volunteers can be assigned to drive; everyone else rides. If nobody in a
+ *    group volunteered, the whole group is "unmatched" (no car that day).
+ *  - Riders are grouped per zone by a sliding 30-minute window: anyone whose
+ *    pickup time is within 30 min of the group's earliest rider shares a car,
+ *    picked up at the earlier time.
+ *  - Among volunteer drivers, the one who has driven the FEWEST days so far
+ *    this school year drives next (even-out rotation); ties break toward whoever
+ *    has used more hardship passes, then by id. This balances driving over time.
+ *  - A hardship pass removes its holder from the driver pool for that one date.
+ *
+ * Fairness needs cumulative drive history, so assignments are produced by a
+ * season engine (createRotationEngine) that walks school days in order from the
+ * school-year start, carrying a running per-parent drive count. Results are
+ * memoized per date, so it stays cheap and fully deterministic.
  */
-import { weekIndex, weekdayKeyFromDate } from '@/lib/dateUtils';
+import { toISO, weekdayKeyFromDate } from '@/lib/dateUtils';
+import {
+  schoolDayStatus,
+  schoolYearEnd,
+  schoolYearStart,
+} from '@/lib/schoolCalendar';
 import type { WeekdayKey } from '@/types';
+
+/** Riders within this many minutes of the earliest in a zone share a car. */
+const CLUSTER_WINDOW_MIN = 30;
 
 export interface Participant {
   userId: string;
   name: string;
   weekday: WeekdayKey;
-  time: string; // 'HH:MM'
+  time: string; // 'HH:MM' — this parent's own pickup time
   zone: string;
   capacity: number;
+  canDrive: boolean; // willing to drive this weekday
 }
 
 export interface CarMember {
   userId: string;
   name: string;
-  time: string;
+  time: string; // the member's own pickup time
 }
 
 export interface UserAssignment {
   role: 'drive' | 'ride' | 'unmatched';
   zone: string;
-  time: string;
+  time: string; // the car's unified pickup time (earliest in the group)
   driver: CarMember | null; // the car's driver (null when unmatched)
   riders: CarMember[]; // the car's riders (excludes the driver)
 }
@@ -38,7 +59,10 @@ function minutes(time: string): number {
   return h * 60 + m;
 }
 
-function bySortKey(a: Participant, b: Participant): number {
+function byTimeThenId(a: Participant, b: Participant): number {
+  const ta = minutes(a.time);
+  const tb = minutes(b.time);
+  if (ta !== tb) return ta - tb;
   return a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0;
 }
 
@@ -47,15 +71,14 @@ function member(p: Participant): CarMember {
 }
 
 /**
- * Computes everyone's assignment for a single date.
- * @param participants all participating parents (any weekday)
- * @param hardship set of `${userId}|${iso}` strings (driver opt-outs)
- * @param date the calendar date
- * @param iso the date's local YYYY-MM-DD (matches the hardship keys)
+ * Computes everyone's assignment for a single date and increments `driveCount`
+ * for whoever is chosen to drive (so later dates see the updated history).
  */
-export function computeDay(
+function computeSingleDay(
   participants: Participant[],
   hardship: Set<string>,
+  hardshipCount: Map<string, number>,
+  driveCount: Map<string, number>,
   date: Date,
   iso: string,
 ): Map<string, UserAssignment> {
@@ -65,102 +88,200 @@ export function computeDay(
 
   const members = participants.filter((p) => p.weekday === weekday);
 
-  // Group by zone + 30-minute slot.
-  const groups = new Map<string, Participant[]>();
+  // Group by zone (same zone = close enough to share a ride).
+  const byZone = new Map<string, Participant[]>();
   for (const m of members) {
-    const slot = Math.floor(minutes(m.time) / 30);
-    const key = `${m.zone}|${slot}`;
-    const arr = groups.get(key);
+    const arr = byZone.get(m.zone);
     if (arr) arr.push(m);
-    else groups.set(key, [m]);
+    else byZone.set(m.zone, [m]);
   }
 
-  const wk = weekIndex(date);
+  for (const zoneMembers of byZone.values()) {
+    const sorted = [...zoneMembers].sort(byTimeThenId);
 
-  for (const group of groups.values()) {
-    const sorted = [...group].sort(bySortKey);
-    const eligible = sorted.filter(
-      (p) => p.capacity >= 1 && !hardship.has(`${p.userId}|${iso}`),
-    );
-
-    if (eligible.length === 0) {
-      for (const p of sorted) {
-        result.set(p.userId, {
-          role: 'unmatched',
-          zone: p.zone,
-          time: p.time,
-          driver: null,
-          riders: [],
-        });
+    // Sliding 30-minute clusters: a cluster holds everyone within
+    // CLUSTER_WINDOW_MIN of its earliest member; pickup is that earliest time.
+    let i = 0;
+    while (i < sorted.length) {
+      const anchor = sorted[i];
+      const cluster: Participant[] = [anchor];
+      let j = i + 1;
+      while (
+        j < sorted.length &&
+        minutes(sorted[j].time) <= minutes(anchor.time) + CLUSTER_WINDOW_MIN
+      ) {
+        cluster.push(sorted[j]);
+        j += 1;
       }
-      continue;
-    }
+      i = j;
 
-    // Rotate driver order by week so turns are fair across weeks.
-    const start = ((wk % eligible.length) + eligible.length) % eligible.length;
-    const rotated = [...eligible.slice(start), ...eligible.slice(0, start)];
+      const pickup = anchor.time; // earliest time in the cluster
 
-    // Choose drivers until their combined seats cover the whole group.
-    const chosen: Participant[] = [];
-    let seats = 0;
-    for (const d of rotated) {
-      if (seats >= sorted.length) break;
-      chosen.push(d);
-      seats += d.capacity;
-    }
-    const chosenIds = new Set(chosen.map((d) => d.userId));
+      const candidates = cluster.filter(
+        (p) =>
+          p.canDrive &&
+          p.capacity >= 1 &&
+          !hardship.has(`${p.userId}|${iso}`),
+      );
 
-    // Riders = everyone not chosen as a driver.
-    const riders = sorted.filter((p) => !chosenIds.has(p.userId));
-
-    // Fill each driver up to capacity-1 riders (driver's own child takes a seat).
-    const riderOf = new Map<string, Participant>(); // riderId -> driver
-    const carRiders = new Map<string, Participant[]>(); // driverId -> riders
-    for (const d of chosen) carRiders.set(d.userId, []);
-    let ri = 0;
-    for (const d of chosen) {
-      let free = Math.max(0, d.capacity - 1);
-      while (free > 0 && ri < riders.length) {
-        const r = riders[ri];
-        riderOf.set(r.userId, d);
-        carRiders.get(d.userId)?.push(r);
-        ri += 1;
-        free -= 1;
+      // Nobody volunteered to drive — the whole cluster goes without a car.
+      if (candidates.length === 0) {
+        for (const p of cluster) {
+          result.set(p.userId, {
+            role: 'unmatched',
+            zone: p.zone,
+            time: p.time,
+            driver: null,
+            riders: [],
+          });
+        }
+        continue;
       }
-    }
 
-    // Emit assignments.
-    for (const d of chosen) {
-      result.set(d.userId, {
-        role: 'drive',
-        zone: d.zone,
-        time: d.time,
-        driver: member(d),
-        riders: (carRiders.get(d.userId) ?? []).map(member),
+      // Even-out rotation: fewest drives so far drives next; ties go to whoever
+      // has used more hardship passes (they've skipped more), then by id.
+      const ordered = [...candidates].sort((a, b) => {
+        const da = driveCount.get(a.userId) ?? 0;
+        const db = driveCount.get(b.userId) ?? 0;
+        if (da !== db) return da - db;
+        const ha = hardshipCount.get(a.userId) ?? 0;
+        const hb = hardshipCount.get(b.userId) ?? 0;
+        if (ha !== hb) return hb - ha;
+        return a.userId < b.userId ? -1 : 1;
       });
-    }
-    for (let i = 0; i < riders.length; i += 1) {
-      const r = riders[i];
-      const d = riderOf.get(r.userId);
-      if (d) {
-        result.set(r.userId, {
-          role: 'ride',
-          zone: r.zone,
-          time: r.time,
+
+      // Choose as few drivers as needed to seat the whole cluster.
+      const chosen: Participant[] = [];
+      let seats = 0;
+      for (const d of ordered) {
+        if (seats >= cluster.length) break;
+        chosen.push(d);
+        seats += d.capacity;
+      }
+      const chosenIds = new Set(chosen.map((d) => d.userId));
+      const riders = cluster.filter((p) => !chosenIds.has(p.userId));
+
+      // Fill each driver up to capacity-1 riders (their own child takes a seat).
+      const carRiders = new Map<string, Participant[]>();
+      for (const d of chosen) carRiders.set(d.userId, []);
+      let ri = 0;
+      for (const d of chosen) {
+        let free = Math.max(0, d.capacity - 1);
+        while (free > 0 && ri < riders.length) {
+          carRiders.get(d.userId)?.push(riders[ri]);
+          ri += 1;
+          free -= 1;
+        }
+      }
+
+      // Emit drivers (and bump their season drive count).
+      for (const d of chosen) {
+        driveCount.set(d.userId, (driveCount.get(d.userId) ?? 0) + 1);
+        result.set(d.userId, {
+          role: 'drive',
+          zone: d.zone,
+          time: pickup,
           driver: member(d),
           riders: (carRiders.get(d.userId) ?? []).map(member),
         });
-      } else {
-        result.set(r.userId, {
-          role: 'unmatched',
-          zone: r.zone,
-          time: r.time,
-          driver: null,
-          riders: [],
-        });
+      }
+
+      // Emit seated riders.
+      const seatedRiderIds = new Set<string>();
+      for (const d of chosen) {
+        const list = carRiders.get(d.userId) ?? [];
+        for (const r of list) {
+          seatedRiderIds.add(r.userId);
+          result.set(r.userId, {
+            role: 'ride',
+            zone: r.zone,
+            time: pickup,
+            driver: member(d),
+            riders: list.map(member),
+          });
+        }
+      }
+
+      // Anyone who couldn't be seated is unmatched.
+      for (const r of riders) {
+        if (!seatedRiderIds.has(r.userId)) {
+          result.set(r.userId, {
+            role: 'unmatched',
+            zone: r.zone,
+            time: r.time,
+            driver: null,
+            riders: [],
+          });
+        }
       }
     }
   }
 
   return result;
+}
+
+export interface RotationEngine {
+  /** Everyone's assignment for a date (empty map outside the school year). */
+  assignmentsFor: (date: Date) => Map<string, UserAssignment>;
+}
+
+function atMidnight(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Builds a memoized engine that walks school days from the school-year start,
+ * carrying cumulative drive counts so the "even-out" rotation is fair and
+ * identical on every client. Recreate it whenever schedules/passes change.
+ */
+export function createRotationEngine(
+  participants: Participant[],
+  hardship: Set<string>,
+): RotationEngine {
+  const hardshipCount = new Map<string, number>();
+  for (const key of hardship) {
+    const uid = key.slice(0, key.indexOf('|'));
+    hardshipCount.set(uid, (hardshipCount.get(uid) ?? 0) + 1);
+  }
+
+  const driveCount = new Map<string, number>();
+  const cache = new Map<string, Map<string, UserAssignment>>();
+
+  const start = atMidnight(schoolYearStart());
+  const end = atMidnight(schoolYearEnd());
+  let cursor = new Date(start); // next day to process
+
+  function processThrough(target: Date): void {
+    const cap = target.getTime() < end.getTime() ? target : end;
+    while (cursor.getTime() <= cap.getTime()) {
+      const iso = toISO(cursor);
+      if (schoolDayStatus(cursor).blocked) {
+        cache.set(iso, new Map());
+      } else {
+        cache.set(
+          iso,
+          computeSingleDay(
+            participants,
+            hardship,
+            hardshipCount,
+            driveCount,
+            new Date(cursor),
+            iso,
+          ),
+        );
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  return {
+    assignmentsFor(date: Date): Map<string, UserAssignment> {
+      const d = atMidnight(date);
+      if (d.getTime() < start.getTime() || d.getTime() > end.getTime()) {
+        return new Map();
+      }
+      processThrough(d);
+      return cache.get(toISO(d)) ?? new Map();
+    },
+  };
 }

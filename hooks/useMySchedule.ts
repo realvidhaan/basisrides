@@ -5,13 +5,17 @@ import type { MyScheduleDay, WeekdayKey } from '@/types';
 
 const DAY_KEYS: WeekdayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
+function emptyDay(day: WeekdayKey): MyScheduleDay {
+  return { day, participating: false, dismissalTime: null, canDrive: false };
+}
+
 function emptyWeek(): Record<WeekdayKey, MyScheduleDay> {
   return {
-    mon: { day: 'mon', participating: false, dismissalTime: null },
-    tue: { day: 'tue', participating: false, dismissalTime: null },
-    wed: { day: 'wed', participating: false, dismissalTime: null },
-    thu: { day: 'thu', participating: false, dismissalTime: null },
-    fri: { day: 'fri', participating: false, dismissalTime: null },
+    mon: emptyDay('mon'),
+    tue: emptyDay('tue'),
+    wed: emptyDay('wed'),
+    thu: emptyDay('thu'),
+    fri: emptyDay('fri'),
   };
 }
 
@@ -19,6 +23,7 @@ interface RawScheduleRow {
   day_of_week: string;
   participating: boolean | null;
   dismissal_time: string | null;
+  can_drive: boolean | null;
 }
 
 export interface UseMyScheduleResult {
@@ -30,6 +35,7 @@ export interface UseMyScheduleResult {
     day: WeekdayKey,
     participating: boolean,
     time: string | null,
+    canDrive: boolean,
   ) => Promise<void>;
 }
 
@@ -75,6 +81,7 @@ export function useMySchedule(): UseMyScheduleResult {
               dismissalTime: row.dismissal_time
                 ? row.dismissal_time.slice(0, 5)
                 : null,
+              canDrive: Boolean(row.can_drive),
             };
           }
         }
@@ -96,6 +103,7 @@ export function useMySchedule(): UseMyScheduleResult {
       day: WeekdayKey,
       participating: boolean,
       time: string | null,
+      canDrive: boolean,
     ): Promise<void> => {
       if (!user) {
         setError('You must be signed in.');
@@ -103,10 +111,11 @@ export function useMySchedule(): UseMyScheduleResult {
       }
       const snapshot = daysRef.current;
       const dismissalTime = participating ? time : null;
+      const driving = participating && canDrive;
       setError(null);
       setDays((prev) => ({
         ...prev,
-        [day]: { day, participating, dismissalTime },
+        [day]: { day, participating, dismissalTime, canDrive: driving },
       }));
 
       try {
@@ -116,6 +125,7 @@ export function useMySchedule(): UseMyScheduleResult {
             day_of_week: day,
             participating,
             dismissal_time: dismissalTime,
+            can_drive: driving,
             role: participating ? 'ride' : 'off', // legacy column; unused by rotation
             is_driving: false,
           },

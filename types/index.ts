@@ -92,6 +92,7 @@ export interface MyScheduleDay {
   day: WeekdayKey;
   participating: boolean;
   dismissalTime: string | null; // 'HH:MM' (local clock time), or null when Off
+  canDrive: boolean; // willing to drive this weekday (only the rotation decides who actually drives)
 }
 
 // What a single calendar cell should display.

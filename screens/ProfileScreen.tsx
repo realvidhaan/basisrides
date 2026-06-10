@@ -18,6 +18,25 @@ import { cityZone } from '@/lib/zones';
 
 const MIN_SEATS = 0;
 const MAX_SEATS = 6;
+const HARDSHIP_LIMIT = 2;
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+// Unique realtime topic per mount (matches the Day 2 channel pattern).
+let profileChannelSeq = 0;
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -40,11 +59,14 @@ export function ProfileScreen() {
     if (user) setSeats(user.car_capacity);
   }, [user]);
 
-  // Hardship passes remaining this calendar month (max 2).
+  // Hardship passes remaining this calendar month (max 2), kept live via
+  // realtime so it updates the moment a pass is used or undone elsewhere.
+  const monthName = MONTH_NAMES[new Date().getMonth()];
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void (async () => {
+
+    async function fetchPasses(): Promise<void> {
       try {
         const now = new Date();
         const first = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-01`;
@@ -53,16 +75,35 @@ export function ProfileScreen() {
         const { count } = await supabase
           .from('hardship_passes')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .gte('pass_date', first)
           .lt('pass_date', nextFirst);
-        if (active) setPassesLeft(Math.max(0, 2 - (count ?? 0)));
+        if (active) setPassesLeft(Math.max(0, HARDSHIP_LIMIT - (count ?? 0)));
       } catch {
         if (active) setPassesLeft(null);
       }
-    })();
+    }
+
+    void fetchPasses();
+
+    profileChannelSeq += 1;
+    const channel = supabase
+      .channel(`profile-passes-${profileChannelSeq}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hardship_passes',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => void fetchPasses(),
+      )
+      .subscribe();
+
     return () => {
       active = false;
+      void supabase.removeChannel(channel);
     };
   }, [user]);
 
@@ -191,9 +232,14 @@ export function ProfileScreen() {
           <Text style={styles.sectionTitle}>Driving rotation</Text>
           <View style={styles.card}>
             <View style={styles.stepperRow}>
-              <Text style={styles.rowLabel}>Hardship passes left this month</Text>
+              <View style={styles.passLabelWrap}>
+                <Text style={styles.rowLabel}>Hardship passes left</Text>
+                <Text style={styles.passHint}>
+                  {monthName} · resets each month
+                </Text>
+              </View>
               <Text style={styles.passValue}>
-                {passesLeft === null ? '—' : `${passesLeft}/2`}
+                {passesLeft === null ? '—' : `${passesLeft}/${HARDSHIP_LIMIT}`}
               </Text>
             </View>
           </View>
@@ -353,6 +399,8 @@ const styles = StyleSheet.create({
     minWidth: 40,
     textAlign: 'center',
   },
+  passLabelWrap: { flex: 1 },
+  passHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
   passValue: {
     fontSize: 17,
     fontWeight: '700',

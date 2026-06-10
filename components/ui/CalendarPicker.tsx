@@ -37,11 +37,8 @@ function Chip({ info }: { info: DayWidget }) {
     const drive = info.kind === 'drive';
     return (
       <View style={[styles.chip, drive ? styles.chipDrive : styles.chipRide]}>
-        <Text
-          style={[styles.chipText, drive ? styles.chipTextDrive : styles.chipTextRide]}
-          numberOfLines={1}
-        >
-          {drive ? '▲' : '●'} {info.time}
+        <Text style={styles.chipText} numberOfLines={1}>
+          {drive ? '🚗' : '🧍'} {info.time}
         </Text>
       </View>
     );
@@ -230,26 +227,21 @@ const styles = StyleSheet.create({
     maxWidth: '96%',
   },
   chipDrive: {
-    backgroundColor: '#FFF1F1',
+    backgroundColor: '#DC143C',
   },
   chipRide: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#16A34A',
   },
   chipUnmatched: {
-    backgroundColor: '#F7F8F9',
+    backgroundColor: '#FEF3C7',
   },
   chipText: {
     fontSize: 9,
-    fontWeight: '700',
-  },
-  chipTextDrive: {
-    color: '#DC143C',
-  },
-  chipTextRide: {
-    color: '#16A34A',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   chipTextUnmatched: {
-    color: '#8391A1',
+    color: '#B45309',
   },
   blockedLabel: {
     marginTop: 3,

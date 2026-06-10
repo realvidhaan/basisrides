@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
 import { toISO } from '@/lib/dateUtils';
-import { computeDay, type Participant, type UserAssignment } from '@/lib/pairing';
+import {
+  createRotationEngine,
+  type Participant,
+  type UserAssignment,
+} from '@/lib/pairing';
 import type { WeekdayKey } from '@/types';
 
 const HARDSHIP_LIMIT = 2;
@@ -12,6 +16,7 @@ interface RawParticipantRow {
   user_id: string;
   day_of_week: string;
   dismissal_time: string | null;
+  can_drive: boolean | null;
   user: {
     full_name: string;
     neighborhood: string;
@@ -62,7 +67,7 @@ export function useCarpool(): UseCarpoolResult {
           supabase
             .from('availability')
             .select(
-              'user_id, day_of_week, dismissal_time,' +
+              'user_id, day_of_week, dismissal_time, can_drive,' +
                 ' user:users!availability_user_id_fkey(full_name,neighborhood,car_capacity)',
             )
             .eq('participating', true),
@@ -89,6 +94,7 @@ export function useCarpool(): UseCarpoolResult {
             time: row.dismissal_time.slice(0, 5),
             zone: cityZone(row.user.neighborhood),
             capacity: row.user.car_capacity,
+            canDrive: Boolean(row.can_drive),
           });
         }
 
@@ -136,13 +142,19 @@ export function useCarpool(): UseCarpoolResult {
     };
   }, [fetchAll]);
 
+  // One engine per data snapshot; it memoizes per-date results internally and
+  // carries cumulative drive history for the even-out rotation.
+  const engine = useMemo(
+    () => createRotationEngine(participants, hardship),
+    [participants, hardship],
+  );
+
   const assignmentFor = useCallback(
     (date: Date): UserAssignment | null => {
       if (!uid) return null;
-      const map = computeDay(participants, hardship, date, toISO(date));
-      return map.get(uid) ?? null;
+      return engine.assignmentsFor(date).get(uid) ?? null;
     },
-    [participants, hardship, uid],
+    [engine, uid],
   );
 
   const hasPass = useCallback(

@@ -34,13 +34,32 @@ export function EditScheduleScreen({ navigation }: Props) {
   const { days, loading, error, carCapacity, setDay } = useMySchedule();
   const [openDay, setOpenDay] = useState<WeekdayKey | null>(null);
 
+  const canDriveCount = WEEKDAYS.filter(
+    ({ key }) => days[key].participating && days[key].canDrive,
+  ).length;
+  const hasCar = carCapacity >= 1;
+
   function handleToggle(day: WeekdayKey, on: boolean): void {
-    void setDay(day, on, on ? days[day].dismissalTime ?? DEFAULT_TIME : null);
+    void setDay(
+      day,
+      on,
+      on ? days[day].dismissalTime ?? DEFAULT_TIME : null,
+      on ? days[day].canDrive : false,
+    );
   }
 
   function handleConfirmTime(value: string): void {
-    if (openDay) void setDay(openDay, true, value);
+    if (openDay) void setDay(openDay, true, value, days[openDay].canDrive);
     setOpenDay(null);
+  }
+
+  function handleDriveToggle(day: WeekdayKey, canDrive: boolean): void {
+    void setDay(
+      day,
+      true,
+      days[day].dismissalTime ?? DEFAULT_TIME,
+      canDrive,
+    );
   }
 
   return (
@@ -61,15 +80,25 @@ export function EditScheduleScreen({ navigation }: Props) {
 
         <Text style={styles.intro}>
           Turn on the weekdays you need carpool and set your child&apos;s pickup
-          time (3:15–6:00 PM). Drivers are chosen automatically on a fair rotation
-          — use a hardship pass on a specific day from the calendar if you
-          can&apos;t drive.
+          time (3:15–6:00 PM). Then mark the days you can drive — the app shares
+          driving fairly among everyone who volunteers, so you only drive a
+          couple of days a week. Use a hardship pass from the calendar if you
+          can&apos;t drive on a day you&apos;re scheduled to.
         </Text>
-        <Text style={styles.note}>
-          {carCapacity >= 1
-            ? `You have ${carCapacity} seats, so you're in the driving rotation.`
-            : 'You have no car seats set, so you’ll only ever be a rider. Add seats in Profile to share driving.'}
-        </Text>
+        {!hasCar ? (
+          <Text style={styles.note}>
+            You have no car seats set, so you&apos;ll only ever be a rider. Add
+            seats in Profile to share driving.
+          </Text>
+        ) : (
+          <Text
+            style={[styles.note, canDriveCount < 2 ? styles.noteWarn : null]}
+          >
+            {canDriveCount < 2
+              ? `Please pick at least 2 days you can drive (you've picked ${canDriveCount}). The more days everyone offers, the fewer times each parent drives.`
+              : `You can drive on ${canDriveCount} days — the rotation will pick roughly 2 of them for you each week.`}
+          </Text>
+        )}
 
         {loading ? (
           <View style={styles.loadingArea}>
@@ -91,16 +120,35 @@ export function EditScheduleScreen({ navigation }: Props) {
                   />
                 </View>
                 {day.participating ? (
-                  <TouchableOpacity
-                    style={styles.timeButton}
-                    onPress={() => setOpenDay(key)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.timeLabel}>Pickup time</Text>
-                    <Text style={styles.timeValue}>
-                      {formatTime(day.dismissalTime) || 'Set time →'}
-                    </Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={styles.timeButton}
+                      onPress={() => setOpenDay(key)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.timeLabel}>Pickup time</Text>
+                      <Text style={styles.timeValue}>
+                        {formatTime(day.dismissalTime) || 'Set time →'}
+                      </Text>
+                    </TouchableOpacity>
+                    {hasCar ? (
+                      <View style={styles.driveRow}>
+                        <View style={styles.driveLabelWrap}>
+                          <Text style={styles.driveLabel}>I can drive</Text>
+                          <Text style={styles.driveHint}>
+                            Offer to drive this day
+                          </Text>
+                        </View>
+                        <Switch
+                          value={day.canDrive}
+                          onValueChange={(v) => handleDriveToggle(key, v)}
+                          trackColor={{ false: '#E8ECF4', true: '#16A34A' }}
+                          thumbColor="#FFFFFF"
+                          ios_backgroundColor="#E8ECF4"
+                        />
+                      </View>
+                    ) : null}
+                  </>
                 ) : null}
               </View>
             );
@@ -140,6 +188,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 16,
   },
+  noteWarn: {
+    color: '#B45309',
+  },
   loadingArea: { paddingVertical: 32, alignItems: 'center' },
   dayCard: {
     borderWidth: 1.5,
@@ -167,4 +218,16 @@ const styles = StyleSheet.create({
   },
   timeLabel: { fontSize: 14, fontWeight: '500', color: '#1E232C' },
   timeValue: { fontSize: 15, fontWeight: '700', color: '#DC143C' },
+  driveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E8ECF4',
+  },
+  driveLabelWrap: { flex: 1 },
+  driveLabel: { fontSize: 14, fontWeight: '600', color: '#16A34A' },
+  driveHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
 });

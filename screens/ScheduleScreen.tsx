@@ -118,11 +118,19 @@ export function ScheduleScreen({ navigation }: Props) {
     return (
       <View style={styles.groupCard}>
         <View style={styles.statusRow}>
-          <Text style={a.role === 'unmatched' ? styles.statusWarn : styles.statusGood}>
+          <Text
+            style={
+              a.role === 'drive'
+                ? styles.statusDrive
+                : a.role === 'ride'
+                  ? styles.statusGood
+                  : styles.statusWarn
+            }
+          >
             {a.role === 'drive'
-              ? "You're driving"
+              ? '🚗 You’re driving'
               : a.role === 'ride'
-                ? "You're being picked up"
+                ? '🧍 You’re being picked up'
                 : 'No match yet'}
           </Text>
           <View style={styles.zoneBadge}>
@@ -271,6 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   statusGood: { fontSize: 16, fontWeight: '700', color: '#16A34A' },
+  statusDrive: { fontSize: 16, fontWeight: '700', color: '#DC143C' },
   statusWarn: { fontSize: 16, fontWeight: '700', color: '#FF9500' },
   zoneBadge: {
     backgroundColor: '#F7F8F9',

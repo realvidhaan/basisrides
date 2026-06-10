@@ -6,7 +6,7 @@
  * year by editing SCHOOL_YEAR / BREAKS / EARLY_DISMISSAL below — nothing else
  * needs to change.
  */
-import { toISO } from '@/lib/dateUtils';
+import { parseISO, toISO } from '@/lib/dateUtils';
 
 interface DateRange {
   start: string; // YYYY-MM-DD inclusive
@@ -46,6 +46,16 @@ export interface SchoolDayStatus {
 
 function inRange(iso: string, r: DateRange): boolean {
   return iso >= r.start && iso <= r.end; // ISO date strings sort lexicographically
+}
+
+/** First day of the school year (local Date) — the rotation's fairness epoch. */
+export function schoolYearStart(): Date {
+  return parseISO(SCHOOL_YEAR.firstDay);
+}
+
+/** Last day of the school year (local Date). */
+export function schoolYearEnd(): Date {
+  return parseISO(SCHOOL_YEAR.lastDay);
 }
 
 /**
