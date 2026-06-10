@@ -29,6 +29,12 @@ function tempId(): string {
   return `optimistic-${tempCounter}`;
 }
 
+// Monotonic counter so every hook instance gets a UNIQUE realtime channel topic.
+// Two screens (Schedule + DayDetail) can observe the same week at once; a
+// topic keyed only on the week would be deduped by supabase-js and adding a
+// second `.on()` after the first channel subscribed throws.
+let channelSeq = 0;
+
 function seatsFor(capacity: number, occupied: number): number {
   return Math.max(0, capacity - occupied);
 }
@@ -149,8 +155,10 @@ export function useWeekRides(
   useEffect(() => {
     void fetchWeek(false);
 
+    channelSeq += 1;
+    const topic = `rides-${weekStart}-${channelSeq}`;
     const channel = supabase
-      .channel(`rides-${weekStart}`)
+      .channel(topic)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rides' },
