@@ -177,7 +177,8 @@ export function ScheduleScreen({ navigation }: Props) {
         {usedPass ? (
           <View style={styles.hardshipRow}>
             <Text style={styles.hardshipNote}>
-              Hardship pass used — you&apos;re not driving this day.
+              Hardship pass used — not driving this day. {left} of 2 left this
+              month.
             </Text>
             <TouchableOpacity onPress={() => dropPass(selected)}>
               <Text style={styles.hardshipUndo}>Undo</Text>

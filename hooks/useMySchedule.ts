@@ -63,7 +63,7 @@ export function useMySchedule(): UseMyScheduleResult {
       try {
         const { data, error: loadError } = await supabase
           .from('availability')
-          .select('day_of_week, participating, dismissal_time')
+          .select('day_of_week, participating, dismissal_time, can_drive')
           .eq('user_id', user.id);
         if (!active) return;
         if (loadError) {
