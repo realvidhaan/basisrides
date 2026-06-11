@@ -89,6 +89,9 @@ export function SignupScreen({ navigation }: Props) {
     if (!isNaN(cap) && cap > 0 && !form.carModel.trim()) {
       errors.carModel = 'Tell parents your car so they can spot it at pickup.';
     }
+    if (!isNaN(cap) && cap > 0 && !form.licensePlate.trim()) {
+      errors.licensePlate = 'Add your plate so riders can confirm the right car.';
+    }
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address.';
     }
@@ -140,7 +143,7 @@ export function SignupScreen({ navigation }: Props) {
       car_color: hasCar ? form.carColor : null,
       car_type: hasCar ? form.carType : null,
       car_model: hasCar ? form.carModel.trim() : null,
-      license_plate: hasCar && form.licensePlate.trim() ? form.licensePlate.trim() : null,
+      license_plate: hasCar ? form.licensePlate.trim() : null,
       email: form.email.trim().toLowerCase(),
     });
 
@@ -271,7 +274,10 @@ export function SignupScreen({ navigation }: Props) {
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus()}
         />
-        <Text style={styles.helperText}>Enter 0 if you don't drive</Text>
+        <Text style={styles.helperText}>
+          Enter 0 if you don&apos;t drive. Set 1 or more to add your car details
+          below.
+        </Text>
 
         {Number(form.carCapacity) > 0 ? (
           <View style={styles.carSection}>
@@ -293,6 +299,7 @@ export function SignupScreen({ navigation }: Props) {
                 updateField('licensePlate', next.plate);
               }}
               modelError={fieldErrors.carModel}
+              plateError={fieldErrors.licensePlate}
             />
           </View>
         ) : null}

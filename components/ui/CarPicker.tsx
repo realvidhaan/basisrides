@@ -21,6 +21,7 @@ interface Props {
   values: CarPickerValues;
   onChange: (next: CarPickerValues) => void;
   modelError?: string;
+  plateError?: string;
 }
 
 /**
@@ -28,7 +29,7 @@ interface Props {
  * the car that updates as the parent picks a color and body type, plus text
  * fields for the make/model and license plate. Fully controlled.
  */
-export function CarPicker({ values, onChange, modelError }: Props) {
+export function CarPicker({ values, onChange, modelError, plateError }: Props) {
   function set<K extends keyof CarPickerValues>(
     key: K,
     value: CarPickerValues[K],
@@ -99,12 +100,13 @@ export function CarPicker({ values, onChange, modelError }: Props) {
       />
 
       <Input
-        label="License plate (optional)"
+        label="License plate"
         value={values.plate}
         onChangeText={(t) => set('plate', t)}
         placeholder="7ABC123"
         autoCapitalize="characters"
         autoCorrect={false}
+        error={plateError}
       />
     </View>
   );
