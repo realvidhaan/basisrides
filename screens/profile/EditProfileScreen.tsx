@@ -15,8 +15,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
-import { CarPicker } from '@/components/ui/CarPicker';
-import { carColor, carType, type CarColorKey, type CarTypeKey } from '@/lib/carOptions';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { geocodeAddress } from '@/lib/geocode';
@@ -37,11 +35,6 @@ export function EditProfileScreen({ navigation }: Props) {
   const [childName, setChildName] = useState('');
   const [address, setAddress] = useState('');
   const [seats, setSeats] = useState(0);
-  const [carColorKey, setCarColorKey] = useState<CarColorKey>('silver');
-  const [carTypeKey, setCarTypeKey] = useState<CarTypeKey>('sedan');
-  const [carModel, setCarModel] = useState('');
-  const [plate, setPlate] = useState('');
-  const [carModelError, setCarModelError] = useState<string | undefined>(undefined);
   const [seeded, setSeeded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,10 +46,6 @@ export function EditProfileScreen({ navigation }: Props) {
       setChildName(user.child_name);
       setAddress(user.address ?? '');
       setSeats(user.car_capacity);
-      setCarColorKey(carColor(user.car_color).key);
-      setCarTypeKey(carType(user.car_type));
-      setCarModel(user.car_model ?? '');
-      setPlate(user.license_plate ?? '');
       setSeeded(true);
     }
   }, [user, seeded]);
@@ -79,13 +68,6 @@ export function EditProfileScreen({ navigation }: Props) {
       setError('Enter your home address so drivers know where to go.');
       return;
     }
-    const hasCar = seats > 0;
-    if (hasCar && !carModel.trim()) {
-      setCarModelError('Tell parents your car so they can spot it at pickup.');
-      setError(null);
-      return;
-    }
-    setCarModelError(undefined);
     setSaving(true);
     setError(null);
     try {
@@ -106,10 +88,6 @@ export function EditProfileScreen({ navigation }: Props) {
           latitude: lat,
           longitude: lng,
           car_capacity: seats,
-          car_color: hasCar ? carColorKey : null,
-          car_type: hasCar ? carTypeKey : null,
-          car_model: hasCar ? carModel.trim() : null,
-          license_plate: hasCar && plate.trim() ? plate.trim() : null,
         })
         .eq('id', user.id);
       if (upErr) {
@@ -207,31 +185,6 @@ export function EditProfileScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {seats > 0 ? (
-              <View style={styles.carSection}>
-                <Text style={styles.carSectionTitle}>Your vehicle</Text>
-                <Text style={styles.carSectionHint}>
-                  Shown to riders so they can spot your car at pickup.
-                </Text>
-                <CarPicker
-                  values={{
-                    colorKey: carColorKey,
-                    type: carTypeKey,
-                    model: carModel,
-                    plate,
-                  }}
-                  onChange={(next) => {
-                    setCarColorKey(next.colorKey);
-                    setCarTypeKey(next.type);
-                    setCarModel(next.model);
-                    setPlate(next.plate);
-                    if (carModelError && next.model.trim()) setCarModelError(undefined);
-                  }}
-                  modelError={carModelError}
-                />
-              </View>
-            ) : null}
-
             <View style={styles.saveRow}>
               <Button title="Save changes" onPress={() => void handleSave()} loading={saving} />
             </View>
@@ -260,19 +213,6 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 24, paddingBottom: 48 },
   muted: { fontSize: 14, color: '#8391A1' },
   helper: { fontSize: 12, color: '#8391A1', marginTop: -8, marginBottom: 16 },
-  carSection: {
-    backgroundColor: '#F7F8F9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  carSectionTitle: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
-  carSectionHint: {
-    fontSize: 12,
-    color: '#8391A1',
-    marginTop: 2,
-    marginBottom: 14,
-  },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',

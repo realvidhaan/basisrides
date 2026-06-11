@@ -18,8 +18,6 @@ import { webScreenFix } from '@/components/ui/FormScroll';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
-import { CarIllustration } from '@/components/CarIllustration';
-import { carColorLabel, carTypeLabel } from '@/lib/carOptions';
 
 type ProfileNavigationProp = StackNavigationProp<ProfileStackParamList, 'Profile'>;
 
@@ -107,34 +105,6 @@ export function ProfileScreen({ navigation }: Props) {
                   : 'No car'}
               </Text>
             </View>
-            {user.car_capacity > 0 ? (
-              <>
-                <View style={styles.factDivider} />
-                <View style={styles.vehicleRow}>
-                  <CarIllustration
-                    colorKey={user.car_color}
-                    type={user.car_type}
-                    size={84}
-                  />
-                  <View style={styles.vehicleInfo}>
-                    <Text style={styles.factLabel}>Your vehicle</Text>
-                    <Text style={styles.factValue} numberOfLines={1}>
-                      {user.car_model && user.car_model.trim()
-                        ? user.car_model
-                        : `${carColorLabel(user.car_color)} ${carTypeLabel(
-                            user.car_type,
-                          ).toLowerCase()}`}
-                    </Text>
-                    <Text style={styles.vehicleMeta}>
-                      {carColorLabel(user.car_color)} · {carTypeLabel(user.car_type)}
-                      {user.license_plate && user.license_plate.trim()
-                        ? ` · ${user.license_plate.toUpperCase()}`
-                        : ''}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            ) : null}
           </View>
 
           <TouchableOpacity
@@ -230,14 +200,6 @@ const styles = StyleSheet.create({
   factLabel: { fontSize: 12, color: '#8391A1', marginBottom: 4 },
   factValue: { fontSize: 15, fontWeight: '500', color: '#1E232C', lineHeight: 20 },
   factDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E8ECF4' },
-  vehicleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-  },
-  vehicleInfo: { flex: 1 },
-  vehicleMeta: { fontSize: 13, color: '#6A707C', marginTop: 2 },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -271,7 +271,6 @@ export function ScheduleScreen({ navigation }: Props) {
         {a.role === 'drive' ? (
           <>
             <Text style={styles.subtle}>Arrive by {formatTime(a.time)}</Text>
-            {a.driver ? <CarCard driver={a.driver} label="Your car" /> : null}
             <Text style={styles.sectionLabel}>Your riders ({a.riders.length})</Text>
             {a.riders.length === 0 ? (
               <Text style={styles.infoText}>No riders matched yet.</Text>
