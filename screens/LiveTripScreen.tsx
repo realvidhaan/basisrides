@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { LiveMap } from '@/components/map/LiveMap';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useTrip } from '@/hooks/useTrip';
 import { useLocationSharing } from '@/hooks/useLocationSharing';
+import { useAutoEndTrip } from '@/hooks/useAutoEndTrip';
 import { supabase } from '@/lib/supabase';
 import { SCHOOL } from '@/lib/places';
 import { tripLocChannel } from '@/lib/liveTrip';
@@ -126,6 +128,11 @@ export function LiveTripScreen({ navigation, route }: Props) {
     return null;
   }, [carUsers, driverId]);
 
+  const handleAutoEnd = useCallback(() => {
+    void setStatus('completed');
+  }, [setStatus]);
+  useAutoEndTrip(sharingActive, driverStart, handleAutoEnd);
+
   const riders = a?.riders ?? [];
   const status = trip?.status ?? null;
   const statusLabel =
@@ -161,36 +168,36 @@ export function LiveTripScreen({ navigation, route }: Props) {
       }
       if (status === 'on_my_way') {
         return (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Sharing your live location</Text>
-              <Text style={styles.cardText}>
-                Your riders can see your car move toward them in real time. Tap
-                End ride when everyone&apos;s dropped off.
-              </Text>
-              {riders.length > 0 ? (
-                <>
-                  <Text style={styles.sectionLabel}>Riders ({riders.length})</Text>
-                  {riders.map((r) => (
-                    <View key={r.userId} style={styles.memberRow}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{initials(r.name)}</Text>
-                      </View>
-                      <Text style={styles.memberName} numberOfLines={1}>
-                        {r.name}
-                      </Text>
-                      <Text style={styles.memberTime}>{formatTime(r.time)}</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Sharing your live location</Text>
+            <Text style={styles.cardText}>
+              Your riders can see your car move in real time. The ride ends
+              automatically when you arrive home or at school.
+            </Text>
+            {riders.length > 0 ? (
+              <>
+                <Text style={styles.sectionLabel}>Riders ({riders.length})</Text>
+                {riders.map((r) => (
+                  <View key={r.userId} style={styles.memberRow}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{initials(r.name)}</Text>
                     </View>
-                  ))}
-                </>
-              ) : null}
-            </View>
-            <Button
-              title="End ride"
-              variant="outline"
+                    <Text style={styles.memberName} numberOfLines={1}>
+                      {r.name}
+                    </Text>
+                    <Text style={styles.memberTime}>{formatTime(r.time)}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
+            <TouchableOpacity
+              style={styles.endEarlyBtn}
               onPress={() => void setStatus('completed')}
-            />
-          </>
+              activeOpacity={0.6}
+            >
+              <Text style={styles.endEarlyText}>End early</Text>
+            </TouchableOpacity>
+          </View>
         );
       }
       // No trip yet.
@@ -380,4 +387,11 @@ const styles = StyleSheet.create({
   avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  endEarlyBtn: {
+    alignSelf: 'center',
+    marginTop: 18,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  endEarlyText: { fontSize: 13, color: '#8391A1', textDecorationLine: 'underline' },
 });
