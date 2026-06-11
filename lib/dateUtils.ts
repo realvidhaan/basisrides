@@ -102,6 +102,11 @@ export function formatShortDay(date: Date): string {
   return DAYS_SHORT[date.getDay()];
 }
 
+/** e.g. "Jun 9" — month + day, no weekday or year. */
+export function formatMonthDay(date: Date): string {
+  return `${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
 /** e.g. "Week of Jun 9" (formats whatever date is passed, normally the week start). */
 export function formatWeekLabel(date: Date): string {
   return `Week of ${MONTHS[date.getMonth()]} ${date.getDate()}`;

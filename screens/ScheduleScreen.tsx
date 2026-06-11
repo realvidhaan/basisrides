@@ -9,8 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { DayWidget, ScheduleStackParamList } from '@/types';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type {
+  DayWidget,
+  MainTabParamList,
+  ScheduleStackParamList,
+} from '@/types';
 import type { CarMember } from '@/lib/pairing';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
@@ -18,11 +25,13 @@ import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
 import { schoolDayStatus } from '@/lib/schoolCalendar';
-import { formatDayLabel, formatTime } from '@/lib/dateUtils';
+import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUtils';
+import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
 
-type ScheduleNavigationProp = StackNavigationProp<
-  ScheduleStackParamList,
-  'Schedule'
+// Composite so this screen can jump to the Messages tab's Conversation screen.
+type ScheduleNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<ScheduleStackParamList, 'Schedule'>,
+  BottomTabNavigationProp<MainTabParamList>
 >;
 
 interface Props {
@@ -40,7 +49,15 @@ function shortTime(hhmm: string): string {
   return formatTime(hhmm).replace(/ (AM|PM)$/, '');
 }
 
-function MemberRow({ member, dark }: { member: CarMember; dark?: boolean }) {
+function MemberRow({
+  member,
+  dark,
+  onMessage,
+}: {
+  member: CarMember;
+  dark?: boolean;
+  onMessage?: () => void;
+}) {
   return (
     <View style={styles.memberRow}>
       <View style={[styles.avatar, dark ? styles.avatarDark : null]}>
@@ -50,12 +67,24 @@ function MemberRow({ member, dark }: { member: CarMember; dark?: boolean }) {
         {member.name}
       </Text>
       <Text style={styles.memberTime}>{formatTime(member.time)}</Text>
+      {onMessage ? (
+        <TouchableOpacity
+          onPress={onMessage}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel={`Message ${member.name}`}
+          style={styles.dmIcon}
+        >
+          <Ionicons name="chatbubble-outline" size={18} color="#8391A1" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
 
 export function ScheduleScreen({ navigation }: Props) {
   const [selected, setSelected] = useState<Date>(() => new Date());
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
   const {
     loading,
     error,
@@ -66,6 +95,47 @@ export function ScheduleScreen({ navigation }: Props) {
     takePass,
     dropPass,
   } = useCarpool();
+
+  function goToConversation(conversationId: string, title: string): void {
+    navigation.navigate('MessagesTab', {
+      screen: 'Conversation',
+      params: { conversationId, title },
+    });
+  }
+
+  async function openGroupChat(): Promise<void> {
+    if (opening) return;
+    const a = assignmentFor(selected);
+    if (!a) return;
+    setChatError(null);
+    setOpening(true);
+    try {
+      const ids = new Set<string>();
+      if (currentUserId) ids.add(currentUserId);
+      if (a.driver) ids.add(a.driver.userId);
+      for (const r of a.riders) ids.add(r.userId);
+      const id = await getOrCreateGroupChat(toISO(selected), Array.from(ids));
+      goToConversation(id, `Carpool · ${formatMonthDay(selected)}`);
+    } catch {
+      setChatError('Could not open the group chat. Please try again.');
+    } finally {
+      setOpening(false);
+    }
+  }
+
+  async function openDM(userId: string, name: string): Promise<void> {
+    if (opening || !currentUserId) return;
+    setChatError(null);
+    setOpening(true);
+    try {
+      const id = await getOrCreateDM(currentUserId, userId);
+      goToConversation(id, name);
+    } catch {
+      setChatError('Could not open this conversation. Please try again.');
+    } finally {
+      setOpening(false);
+    }
+  }
 
   function dayInfo(date: Date): DayWidget {
     const status = schoolDayStatus(date);
@@ -140,6 +210,8 @@ export function ScheduleScreen({ navigation }: Props) {
 
         {status.label ? <Text style={styles.note}>{status.label}</Text> : null}
 
+        {chatError ? <ErrorMessage message={chatError} /> : null}
+
         {a.role === 'drive' ? (
           <>
             <Text style={styles.subtle}>Arrive by {formatTime(a.time)}</Text>
@@ -147,7 +219,13 @@ export function ScheduleScreen({ navigation }: Props) {
             {a.riders.length === 0 ? (
               <Text style={styles.infoText}>No riders matched yet.</Text>
             ) : (
-              a.riders.map((r) => <MemberRow key={r.userId} member={r} />)
+              a.riders.map((r) => (
+                <MemberRow
+                  key={r.userId}
+                  member={r}
+                  onMessage={() => void openDM(r.userId, r.name)}
+                />
+              ))
             )}
           </>
         ) : a.role === 'ride' ? (
@@ -161,7 +239,11 @@ export function ScheduleScreen({ navigation }: Props) {
                 {a.riders
                   .filter((r) => r.userId !== currentUserId)
                   .map((r) => (
-                    <MemberRow key={r.userId} member={r} />
+                    <MemberRow
+                      key={r.userId}
+                      member={r}
+                      onMessage={() => void openDM(r.userId, r.name)}
+                    />
                   ))}
               </>
             ) : null}
@@ -172,6 +254,19 @@ export function ScheduleScreen({ navigation }: Props) {
             for this day.
           </Text>
         )}
+
+        {/* Group chat — available to everyone in a matched car (driver + riders) */}
+        {a.role === 'drive' || a.driver ? (
+          <TouchableOpacity
+            style={styles.groupChatBtn}
+            onPress={() => void openGroupChat()}
+            disabled={opening}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color="#DC143C" />
+            <Text style={styles.groupChatText}>Group chat</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {/* Hardship pass control */}
         {usedPass ? (
@@ -320,6 +415,17 @@ const styles = StyleSheet.create({
   avatarText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  dmIcon: { marginLeft: 12, padding: 2 },
+  groupChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E8ECF4',
+  },
+  groupChatText: { fontSize: 14, fontWeight: '700', color: '#DC143C' },
   hardshipRow: {
     flexDirection: 'row',
     alignItems: 'center',

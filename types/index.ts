@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -15,8 +17,15 @@ export type ScheduleStackParamList = {
   EditSchedule: undefined;
 };
 
+// Stack inside the Messages tab.
+export type MessagesStackParamList = {
+  MessagesList: undefined;
+  Conversation: { conversationId: string; title: string };
+};
+
 export type MainTabParamList = {
-  ScheduleTab: undefined;
+  ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;
+  MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
   ProfileTab: undefined;
 };
 
@@ -100,4 +109,36 @@ export interface DayWidget {
   kind: 'drive' | 'ride' | 'unmatched' | 'off' | 'blocked';
   time: string | null; // 'HH:MM' for drive/ride
   label: string | null; // e.g. "Winter Break", "Summer", "Early dismissal"
+}
+
+// ---- Messaging (Day 6) ----
+
+export interface Conversation {
+  id: string;
+  type: 'dm' | 'group';
+  ride_date: string | null;
+  title: string | null;
+  created_at: string;
+}
+
+export interface ConversationParticipant {
+  conversation_id: string;
+  user_id: string;
+  last_read_at: string | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
+// A conversation row decorated for the list screen.
+export interface ConversationPreview {
+  conversation: Conversation;
+  participants: { id: string; name: string }[];
+  lastMessage: Message | null;
+  unreadCount: number;
 }

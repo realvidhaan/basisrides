@@ -22,14 +22,18 @@ import { PasswordChangedScreen } from '@/screens/auth/PasswordChangedScreen';
 import { ScheduleScreen } from '@/screens/ScheduleScreen';
 import { EditScheduleScreen } from '@/screens/EditScheduleScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { MessagesListScreen } from '@/screens/messages/MessagesListScreen';
+import { ConversationScreen } from '@/screens/messages/ConversationScreen';
 import type {
   AuthStackParamList,
   ScheduleStackParamList,
+  MessagesStackParamList,
   MainTabParamList,
 } from '@/types';
 
 const AuthStack = createStackNavigator<AuthStackParamList>();
 const ScheduleStack = createStackNavigator<ScheduleStackParamList>();
+const MessagesStack = createStackNavigator<MessagesStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 function AuthNavigator() {
@@ -58,6 +62,15 @@ function ScheduleStackNavigator() {
   );
 }
 
+function MessagesStackNavigator() {
+  return (
+    <MessagesStack.Navigator screenOptions={{ headerShown: false }}>
+      <MessagesStack.Screen name="MessagesList" component={MessagesListScreen} />
+      <MessagesStack.Screen name="Conversation" component={ConversationScreen} />
+    </MessagesStack.Navigator>
+  );
+}
+
 function MainNavigator() {
   return (
     <MainTab.Navigator
@@ -66,14 +79,14 @@ function MainNavigator() {
         tabBarActiveTintColor: '#DC143C',
         tabBarInactiveTintColor: '#8391A1',
         tabBarIcon: ({ focused, color, size }) => {
-          const name =
-            route.name === 'ScheduleTab'
-              ? focused
-                ? 'calendar'
-                : 'calendar-outline'
-              : focused
-                ? 'person'
-                : 'person-outline';
+          let name: keyof typeof Ionicons.glyphMap;
+          if (route.name === 'ScheduleTab') {
+            name = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'MessagesTab') {
+            name = focused ? 'chatbubble' : 'chatbubble-outline';
+          } else {
+            name = focused ? 'person' : 'person-outline';
+          }
           return <Ionicons name={name} size={size} color={color} />;
         },
       })}
@@ -82,6 +95,11 @@ function MainNavigator() {
         name="ScheduleTab"
         component={ScheduleStackNavigator}
         options={{ title: 'Schedule' }}
+      />
+      <MainTab.Screen
+        name="MessagesTab"
+        component={MessagesStackNavigator}
+        options={{ title: 'Messages' }}
       />
       <MainTab.Screen
         name="ProfileTab"
