@@ -1,11 +1,13 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { LOC_EVENT } from '@/lib/liveTrip';
+import { carColor } from '@/lib/carOptions';
 import type { MapStop } from '@/types';
 
 export interface MapHtmlOptions {
   channel: string; // Supabase broadcast channel to subscribe to for live GPS
   stops: MapStop[]; // school + rider/driver homes to pin
   start: { lat: number; lng: number } | null; // initial car position
+  carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
 }
 
 /**
@@ -18,6 +20,7 @@ export interface MapHtmlOptions {
  * accidental template collisions. Everything inside <script> uses plain strings.
  */
 export function buildMapHtml(opts: MapHtmlOptions): string {
+  const col = carColor(opts.carColorKey || 'crimson');
   const config = {
     url: SUPABASE_URL,
     key: SUPABASE_ANON_KEY,
@@ -25,6 +28,8 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
     event: LOC_EVENT,
     stops: opts.stops,
     start: opts.start,
+    carBase: col.base,
+    carDark: col.dark,
   };
   const configJson = JSON.stringify(config).replace(/</g, '\\u003c');
 
@@ -74,12 +79,12 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
     }
 
     // The live car marker — a clean top-down car (nose points north at 0deg, so
-    // rotating by the GPS heading orients it along travel). Crimson to match the
-    // app's design system.
+    // rotating by the GPS heading orients it along travel). Painted in the
+    // driver's chosen color so it matches their car card.
     var carSvg =
       '<svg width="30" height="30" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">'
-      + '<rect x="10" y="5" width="24" height="34" rx="9" fill="#DC143C"/>'
-      + '<rect x="13" y="15" width="18" height="13" rx="5" fill="#B01030"/>'
+      + '<rect x="10" y="5" width="24" height="34" rx="9" fill="' + CONFIG.carBase + '"/>'
+      + '<rect x="13" y="15" width="18" height="13" rx="5" fill="' + CONFIG.carDark + '"/>'
       + '<path d="M12 14 C16 10 28 10 32 14 L30 17 C26 14.5 18 14.5 14 17 Z" fill="#EAF2FF"/>'
       + '<path d="M14 30 C18 32.5 26 32.5 30 30 L32 33 C28 36 16 36 12 33 Z" fill="#EAF2FF"/>'
       + '<rect x="12" y="6.5" width="4" height="3" rx="1.5" fill="#FFF3B0"/>'

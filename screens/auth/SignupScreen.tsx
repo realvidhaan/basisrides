@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
+import { CarPicker } from '@/components/ui/CarPicker';
+import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
 import { setRecovering } from '@/lib/authFlow';
@@ -37,6 +39,10 @@ export function SignupScreen({ navigation }: Props) {
     neighborhood: '',
     address: '',
     carCapacity: '0',
+    carColor: 'silver',
+    carType: 'sedan',
+    carModel: '',
+    licensePlate: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -80,6 +86,9 @@ export function SignupScreen({ navigation }: Props) {
     if (!form.carCapacity.trim() || isNaN(cap) || cap < 0 || cap > 6) {
       errors.carCapacity = 'Enter a number from 0 to 6.';
     }
+    if (!isNaN(cap) && cap > 0 && !form.carModel.trim()) {
+      errors.carModel = 'Tell parents your car so they can spot it at pickup.';
+    }
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address.';
     }
@@ -117,6 +126,7 @@ export function SignupScreen({ navigation }: Props) {
     // Geocode the home address (free, best-effort) so the live map can pin it.
     const coords = await geocodeAddress(form.address.trim());
 
+    const hasCar = Number(form.carCapacity) > 0;
     const { error: insertError } = await supabase.from('users').insert({
       id: signUpData.user.id,
       full_name: form.fullName.trim(),
@@ -127,6 +137,10 @@ export function SignupScreen({ navigation }: Props) {
       latitude: coords?.lat ?? null,
       longitude: coords?.lng ?? null,
       car_capacity: Number(form.carCapacity),
+      car_color: hasCar ? form.carColor : null,
+      car_type: hasCar ? form.carType : null,
+      car_model: hasCar ? form.carModel.trim() : null,
+      license_plate: hasCar && form.licensePlate.trim() ? form.licensePlate.trim() : null,
       email: form.email.trim().toLowerCase(),
     });
 
@@ -258,6 +272,30 @@ export function SignupScreen({ navigation }: Props) {
           onSubmitEditing={() => emailRef.current?.focus()}
         />
         <Text style={styles.helperText}>Enter 0 if you don't drive</Text>
+
+        {Number(form.carCapacity) > 0 ? (
+          <View style={styles.carSection}>
+            <Text style={styles.carSectionTitle}>Your vehicle</Text>
+            <Text style={styles.carSectionHint}>
+              Shown to riders so they can spot your car at pickup.
+            </Text>
+            <CarPicker
+              values={{
+                colorKey: form.carColor as CarColorKey,
+                type: form.carType as CarTypeKey,
+                model: form.carModel,
+                plate: form.licensePlate,
+              }}
+              onChange={(next) => {
+                updateField('carColor', next.colorKey);
+                updateField('carType', next.type);
+                updateField('carModel', next.model);
+                updateField('licensePlate', next.plate);
+              }}
+              modelError={fieldErrors.carModel}
+            />
+          </View>
+        ) : null}
 
         <Input
           ref={emailRef}
@@ -398,6 +436,19 @@ const styles = StyleSheet.create({
     color: '#6B6B6B',
     marginTop: -10,
     marginBottom: 16,
+  },
+  carSection: {
+    backgroundColor: '#F7F8F9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  carSectionTitle: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
+  carSectionHint: {
+    fontSize: 12,
+    color: '#6B6B6B',
+    marginTop: 2,
+    marginBottom: 14,
   },
   showHide: {
     fontSize: 13,

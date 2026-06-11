@@ -10,9 +10,9 @@
  *    pickup time is within 30 min of the group's earliest rider shares a car,
  *    picked up at the latest time in the group so every child is already out.
  *  - Among volunteer drivers, the one who has driven the FEWEST days so far
- *    this school year drives next (even-out rotation); ties break toward whoever
- *    has used more hardship passes, then by id. This balances driving over time.
- *  - A hardship pass removes its holder from the driver pool for that one date.
+ *    this school year drives next (even-out rotation); ties break by id.
+ *    This balances driving over time.
+ *  - Cover requests (swap/cover system) can relieve a driver for a specific date.
  *
  * Fairness needs cumulative drive history, so assignments are produced by a
  * season engine (createRotationEngine) that walks school days in order from the
@@ -30,6 +30,13 @@ import type { WeekdayKey } from '@/types';
 /** Riders within this many minutes of the earliest in a zone share a car. */
 const CLUSTER_WINDOW_MIN = 30;
 
+export interface CarInfo {
+  color: string | null;
+  type: string | null;
+  model: string | null;
+  plate: string | null;
+}
+
 export interface Participant {
   userId: string;
   name: string;
@@ -38,12 +45,14 @@ export interface Participant {
   zone: string;
   capacity: number;
   canDrive: boolean; // willing to drive this weekday
+  car: CarInfo; // this parent's vehicle (shown when they're the driver)
 }
 
 export interface CarMember {
   userId: string;
   name: string;
   time: string; // the member's own pickup time
+  car: CarInfo; // the member's vehicle details
 }
 
 export interface UserAssignment {
@@ -67,7 +76,7 @@ function byTimeThenId(a: Participant, b: Participant): number {
 }
 
 function member(p: Participant): CarMember {
-  return { userId: p.userId, name: p.name, time: p.time };
+  return { userId: p.userId, name: p.name, time: p.time, car: p.car };
 }
 
 /**
@@ -76,11 +85,9 @@ function member(p: Participant): CarMember {
  */
 function computeSingleDay(
   participants: Participant[],
-  hardship: Set<string>,
   skips: Set<string>,
   coverOff: Set<string>,
   coverForce: Set<string>,
-  hardshipCount: Map<string, number>,
   driveCount: Map<string, number>,
   date: Date,
   iso: string,
@@ -132,7 +139,6 @@ function computeSingleDay(
       const candidates = cluster.filter(
         (p) =>
           p.capacity >= 1 &&
-          !hardship.has(`${p.userId}|${iso}`) &&
           !coverOff.has(`${p.userId}|${iso}`) &&
           (p.canDrive || coverForce.has(`${p.userId}|${iso}`)),
       );
@@ -151,19 +157,14 @@ function computeSingleDay(
         continue;
       }
 
-      // Even-out rotation: fewest drives so far drives next; ties go to whoever
-      // has used more hardship passes (they've skipped more), then by id.
+      // Even-out rotation: cover acceptors first, then fewest drives, then id.
       const ordered = [...candidates].sort((a, b) => {
-        // Anyone who agreed to cover this date drives first.
         const fa = coverForce.has(`${a.userId}|${iso}`) ? 0 : 1;
         const fb = coverForce.has(`${b.userId}|${iso}`) ? 0 : 1;
         if (fa !== fb) return fa - fb;
         const da = driveCount.get(a.userId) ?? 0;
         const db = driveCount.get(b.userId) ?? 0;
         if (da !== db) return da - db;
-        const ha = hardshipCount.get(a.userId) ?? 0;
-        const hb = hardshipCount.get(b.userId) ?? 0;
-        if (ha !== hb) return hb - ha;
         return a.userId < b.userId ? -1 : 1;
       });
 
@@ -253,17 +254,10 @@ function atMidnight(date: Date): Date {
  */
 export function createRotationEngine(
   participants: Participant[],
-  hardship: Set<string>,
   skips: Set<string> = new Set(),
   coverOff: Set<string> = new Set(),
   coverForce: Set<string> = new Set(),
 ): RotationEngine {
-  const hardshipCount = new Map<string, number>();
-  for (const key of hardship) {
-    const uid = key.slice(0, key.indexOf('|'));
-    hardshipCount.set(uid, (hardshipCount.get(uid) ?? 0) + 1);
-  }
-
   const driveCount = new Map<string, number>();
   const cache = new Map<string, Map<string, UserAssignment>>();
 
@@ -282,11 +276,9 @@ export function createRotationEngine(
           iso,
           computeSingleDay(
             participants,
-            hardship,
             skips,
             coverOff,
             coverForce,
-            hardshipCount,
             driveCount,
             new Date(cursor),
             iso,

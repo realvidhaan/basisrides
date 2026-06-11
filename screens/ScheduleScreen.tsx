@@ -22,6 +22,8 @@ import type { CarMember } from '@/lib/pairing';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
+import { CarIllustration } from '@/components/CarIllustration';
+import { carColorLabel, carTypeLabel } from '@/lib/carOptions';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -49,6 +51,36 @@ function initials(name: string): string {
 
 function shortTime(hhmm: string): string {
   return formatTime(hhmm).replace(/ (AM|PM)$/, '');
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+// The driver's vehicle, so a waiting parent can spot the right car at pickup.
+function CarCard({ driver, label }: { driver: CarMember; label: string }) {
+  const { car } = driver;
+  return (
+    <View style={styles.carCard}>
+      <CarIllustration colorKey={car.color} type={car.type} size={96} />
+      <View style={styles.carInfo}>
+        <Text style={styles.carLabel}>{label}</Text>
+        <Text style={styles.carModel} numberOfLines={1}>
+          {car.model && car.model.trim()
+            ? car.model
+            : `${carColorLabel(car.color)} ${carTypeLabel(car.type).toLowerCase()}`}
+        </Text>
+        <Text style={styles.carMeta}>
+          {carColorLabel(car.color)} · {carTypeLabel(car.type)}
+        </Text>
+        {car.plate && car.plate.trim() ? (
+          <View style={styles.plateBadge}>
+            <Text style={styles.plateText}>{car.plate.toUpperCase()}</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
 }
 
 function MemberRow({
@@ -92,10 +124,6 @@ export function ScheduleScreen({ navigation }: Props) {
     error,
     currentUserId,
     assignmentFor,
-    hasPass,
-    passesLeftThisMonth,
-    takePass,
-    dropPass,
     hasSkip,
     takeSkip,
     dropSkip,
@@ -213,9 +241,6 @@ export function ScheduleScreen({ navigation }: Props) {
       );
     }
 
-    const left = passesLeftThisMonth(selected);
-    const usedPass = hasPass(selected);
-
     return (
       <View style={styles.groupCard}>
         <View style={styles.statusRow}>
@@ -246,6 +271,7 @@ export function ScheduleScreen({ navigation }: Props) {
         {a.role === 'drive' ? (
           <>
             <Text style={styles.subtle}>Arrive by {formatTime(a.time)}</Text>
+            {a.driver ? <CarCard driver={a.driver} label="Your car" /> : null}
             <Text style={styles.sectionLabel}>Your riders ({a.riders.length})</Text>
             {a.riders.length === 0 ? (
               <Text style={styles.infoText}>No riders matched yet.</Text>
@@ -264,6 +290,12 @@ export function ScheduleScreen({ navigation }: Props) {
             <Text style={styles.subtle}>Pickup at {formatTime(a.time)}</Text>
             <Text style={styles.sectionLabel}>Driver</Text>
             {a.driver ? <MemberRow member={a.driver} dark /> : null}
+            {a.driver ? (
+              <CarCard
+                driver={a.driver}
+                label={`${firstName(a.driver.name)}'s car`}
+              />
+            ) : null}
             {a.riders.filter((r) => r.userId !== currentUserId).length > 0 ? (
               <>
                 <Text style={styles.sectionLabel}>Riding with you</Text>
@@ -313,30 +345,7 @@ export function ScheduleScreen({ navigation }: Props) {
           </TouchableOpacity>
         ) : null}
 
-        {/* Hardship pass control */}
-        {usedPass ? (
-          <View style={styles.hardshipRow}>
-            <Text style={styles.hardshipNote}>
-              Hardship pass used — not driving this day. {left} of 2 left this
-              month.
-            </Text>
-            <TouchableOpacity onPress={() => dropPass(selected)}>
-              <Text style={styles.hardshipUndo}>Undo</Text>
-            </TouchableOpacity>
-          </View>
-        ) : a.role === 'drive' ? (
-          <TouchableOpacity
-            style={styles.hardshipBtn}
-            disabled={left <= 0}
-            onPress={() => takePass(selected)}
-          >
-            <Text style={[styles.hardshipBtnText, left <= 0 && styles.hardshipDisabled]}>
-              Can&apos;t drive this day? Use a hardship pass ({left} left)
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Ask a peer to cover your drive (the no-pass alternative) */}
+        {/* Ask a peer to cover your drive */}
         {a.role === 'drive' ? (
           <TouchableOpacity style={styles.coverBtn} onPress={() => void askForCover()}>
             <Text style={styles.coverBtnText}>Ask someone to cover this drive</Text>
@@ -480,6 +489,43 @@ const styles = StyleSheet.create({
   zoneBadgeText: { fontSize: 12, fontWeight: '600', color: '#6A707C' },
   subtle: { fontSize: 13, color: '#6A707C', marginBottom: 8 },
   note: { fontSize: 12, fontWeight: '600', color: '#FF9500', marginBottom: 8 },
+  carCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F7F8F9',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  carInfo: { flex: 1 },
+  carLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8391A1',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  carModel: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
+  carMeta: { fontSize: 13, color: '#6A707C', marginTop: 1 },
+  plateBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#D7DBE0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  plateText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E232C',
+    letterSpacing: 1.5,
+  },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -553,25 +599,6 @@ const styles = StyleSheet.create({
   coverBtnText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
   skipBtn: { marginTop: 14, alignItems: 'center' },
   skipText: { fontSize: 13, fontWeight: '600', color: '#8391A1' },
-  hardshipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF4',
-  },
-  hardshipNote: { flex: 1, fontSize: 13, color: '#6A707C' },
-  hardshipUndo: { fontSize: 14, fontWeight: '700', color: '#DC143C' },
-  hardshipBtn: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF4',
-  },
-  hardshipBtnText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
-  hardshipDisabled: { color: '#C9CDD4' },
   infoCard: {
     borderWidth: 1.5,
     borderColor: '#E8ECF4',

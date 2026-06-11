@@ -8,12 +8,12 @@ import { buildMapHtml, type MapHtmlOptions } from '@/lib/mapHtml';
  * subscribes to the live-location broadcast itself, so we only need to render
  * the HTML once (no RN<->webview bridge for updates).
  */
-export function LiveMap({ channel, stops, start }: MapHtmlOptions) {
+export function LiveMap({ channel, stops, start, carColorKey }: MapHtmlOptions) {
   const html = useMemo(
-    () => buildMapHtml({ channel, stops, start }),
+    () => buildMapHtml({ channel, stops, start, carColorKey }),
     // Rebuild only when the trip identity/markers actually change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [channel, JSON.stringify(stops), JSON.stringify(start)],
+    [channel, JSON.stringify(stops), JSON.stringify(start), carColorKey],
   );
 
   return (

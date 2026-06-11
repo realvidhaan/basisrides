@@ -278,7 +278,12 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
           {a && a.role !== 'unmatched' ? (
             <View style={[styles.mapCard, { height: MAP_HEIGHT }]}>
-              <LiveMap channel={channelName} stops={stops} start={driverStart} />
+              <LiveMap
+                channel={channelName}
+                stops={stops}
+                start={driverStart}
+                carColorKey={a.driver?.car.color ?? null}
+              />
             </View>
           ) : null}
 

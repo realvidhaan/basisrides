@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -18,16 +18,8 @@ import { webScreenFix } from '@/components/ui/FormScroll';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
-
-const HARDSHIP_LIMIT = 2;
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-// Unique realtime topic per mount (matches the app's channel pattern).
-let profileChannelSeq = 0;
+import { CarIllustration } from '@/components/CarIllustration';
+import { carColorLabel, carTypeLabel } from '@/lib/carOptions';
 
 type ProfileNavigationProp = StackNavigationProp<ProfileStackParamList, 'Profile'>;
 
@@ -45,56 +37,7 @@ function initials(name: string): string {
 export function ProfileScreen({ navigation }: Props) {
   const { user, loading } = useCurrentUser();
 
-  const [passesLeft, setPassesLeft] = useState<number | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-
-  const monthName = MONTH_NAMES[new Date().getMonth()];
-
-  // Hardship passes remaining this calendar month, live via realtime.
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-
-    async function fetchPasses(): Promise<void> {
-      try {
-        const now = new Date();
-        const first = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-01`;
-        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const nextFirst = `${next.getFullYear()}-${`${next.getMonth() + 1}`.padStart(2, '0')}-01`;
-        const { count } = await supabase
-          .from('hardship_passes')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user!.id)
-          .gte('pass_date', first)
-          .lt('pass_date', nextFirst);
-        if (active) setPassesLeft(Math.max(0, HARDSHIP_LIMIT - (count ?? 0)));
-      } catch {
-        if (active) setPassesLeft(null);
-      }
-    }
-
-    void fetchPasses();
-
-    profileChannelSeq += 1;
-    const channel = supabase
-      .channel(`profile-passes-${profileChannelSeq}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hardship_passes',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => void fetchPasses(),
-      )
-      .subscribe();
-
-    return () => {
-      active = false;
-      void supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   async function handleLogout(): Promise<void> {
     setLoggingOut(true);
@@ -164,6 +107,34 @@ export function ProfileScreen({ navigation }: Props) {
                   : 'No car'}
               </Text>
             </View>
+            {user.car_capacity > 0 ? (
+              <>
+                <View style={styles.factDivider} />
+                <View style={styles.vehicleRow}>
+                  <CarIllustration
+                    colorKey={user.car_color}
+                    type={user.car_type}
+                    size={84}
+                  />
+                  <View style={styles.vehicleInfo}>
+                    <Text style={styles.factLabel}>Your vehicle</Text>
+                    <Text style={styles.factValue} numberOfLines={1}>
+                      {user.car_model && user.car_model.trim()
+                        ? user.car_model
+                        : `${carColorLabel(user.car_color)} ${carTypeLabel(
+                            user.car_type,
+                          ).toLowerCase()}`}
+                    </Text>
+                    <Text style={styles.vehicleMeta}>
+                      {carColorLabel(user.car_color)} · {carTypeLabel(user.car_type)}
+                      {user.license_plate && user.license_plate.trim()
+                        ? ` · ${user.license_plate.toUpperCase()}`
+                        : ''}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
           </View>
 
           <TouchableOpacity
@@ -185,19 +156,6 @@ export function ProfileScreen({ navigation }: Props) {
             <Text style={styles.actionText}>Invite parents</Text>
             <Ionicons name="chevron-forward" size={18} color="#8391A1" />
           </TouchableOpacity>
-
-          <Text style={styles.sectionTitle}>Driving rotation</Text>
-          <View style={styles.card}>
-            <View style={styles.passRow}>
-              <View style={styles.passLabelWrap}>
-                <Text style={styles.rowLabel}>Hardship passes left</Text>
-                <Text style={styles.passHint}>{monthName} · resets each month</Text>
-              </View>
-              <Text style={styles.passValue}>
-                {passesLeft === null ? '—' : `${passesLeft}/${HARDSHIP_LIMIT}`}
-              </Text>
-            </View>
-          </View>
 
           <View style={styles.logoutRow}>
             <Button
@@ -272,6 +230,14 @@ const styles = StyleSheet.create({
   factLabel: { fontSize: 12, color: '#8391A1', marginBottom: 4 },
   factValue: { fontSize: 15, fontWeight: '500', color: '#1E232C', lineHeight: 20 },
   factDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E8ECF4' },
+  vehicleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+  },
+  vehicleInfo: { flex: 1 },
+  vehicleMeta: { fontSize: 13, color: '#6A707C', marginTop: 2 },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -284,29 +250,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   actionText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E232C',
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  card: {
-    borderWidth: 1.5,
-    borderColor: '#E8ECF4',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  passRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  rowLabel: { fontSize: 15, fontWeight: '500', color: '#1E232C' },
-  passLabelWrap: { flex: 1 },
-  passHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
-  passValue: { fontSize: 17, fontWeight: '700', color: '#DC143C' },
   logoutRow: { marginTop: 8 },
 });

@@ -88,6 +88,10 @@ export interface UserProfile {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  car_color: string | null;
+  car_type: string | null;
+  car_model: string | null;
+  license_plate: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -99,6 +103,10 @@ export interface SignupFormValues {
   neighborhood: string;
   address: string;
   carCapacity: string;
+  carColor: string;
+  carType: string;
+  carModel: string;
+  licensePlate: string;
   email: string;
   password: string;
   confirmPassword: string;

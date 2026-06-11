@@ -62,9 +62,8 @@ export function SwapsScreen({ navigation }: Props) {
           {error ? <ErrorMessage message={error} /> : null}
 
           <Text style={styles.intro}>
-            When a parent can&apos;t drive their assigned day, they ask for cover
-            here. If you have a car, you can step in — it&apos;s the friendly
-            alternative to a hardship pass.
+            When a parent can&apos;t drive their assigned day, they ask for
+            cover here. If you have a car, you can step in and take the drive.
           </Text>
 
           <Text style={styles.sectionTitle}>Open requests</Text>

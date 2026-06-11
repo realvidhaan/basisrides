@@ -82,8 +82,8 @@ export function EditScheduleScreen({ navigation }: Props) {
           Turn on the weekdays you need carpool and set your child&apos;s pickup
           time (3:15–6:00 PM). Then mark the days you can drive — the app shares
           driving fairly among everyone who volunteers, so you only drive a
-          couple of days a week. Use a hardship pass from the calendar if you
-          can&apos;t drive on a day you&apos;re scheduled to.
+          couple of days a week. Use &quot;Ask someone to cover&quot; on the calendar
+          if you can&apos;t drive on a day you&apos;re scheduled to.
         </Text>
         {!hasCar ? (
           <Text style={styles.note}>
