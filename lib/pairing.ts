@@ -77,6 +77,7 @@ function member(p: Participant): CarMember {
 function computeSingleDay(
   participants: Participant[],
   hardship: Set<string>,
+  skips: Set<string>,
   hardshipCount: Map<string, number>,
   driveCount: Map<string, number>,
   date: Date,
@@ -86,7 +87,11 @@ function computeSingleDay(
   const weekday = weekdayKeyFromDate(date);
   if (!weekday) return result;
 
-  const members = participants.filter((p) => p.weekday === weekday);
+  // A one-off skip means that parent's child isn't going at all that day, so
+  // they're excluded from clustering entirely (neither drives nor rides).
+  const members = participants.filter(
+    (p) => p.weekday === weekday && !skips.has(`${p.userId}|${iso}`),
+  );
 
   // Group by zone (same zone = close enough to share a ride).
   const byZone = new Map<string, Participant[]>();
@@ -239,6 +244,7 @@ function atMidnight(date: Date): Date {
 export function createRotationEngine(
   participants: Participant[],
   hardship: Set<string>,
+  skips: Set<string> = new Set(),
 ): RotationEngine {
   const hardshipCount = new Map<string, number>();
   for (const key of hardship) {
@@ -265,6 +271,7 @@ export function createRotationEngine(
           computeSingleDay(
             participants,
             hardship,
+            skips,
             hardshipCount,
             driveCount,
             new Date(cursor),

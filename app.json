@@ -22,6 +22,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "BasisRide shares your live location with your carpool riders only while you're driving a trip."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "5ffe6fcd-0b69-4339-9e8f-7689991fefb4"

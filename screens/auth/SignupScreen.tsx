@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { geocodeAddress } from '@/lib/geocode';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -33,11 +34,13 @@ export function SignupScreen({ navigation }: Props) {
     childName: '',
     grade: '6th',
     neighborhood: '',
+    address: '',
     carCapacity: '0',
     email: '',
     password: '',
     confirmPassword: '',
   });
+  const [inviteCode, setInviteCode] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,6 +48,7 @@ export function SignupScreen({ navigation }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const childNameRef = useRef<TextInput>(null);
+  const addressRef = useRef<TextInput>(null);
   const carCapacityRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -68,6 +72,9 @@ export function SignupScreen({ navigation }: Props) {
     if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
     if (!form.childName.trim()) errors.childName = "Child's name is required.";
     if (!form.neighborhood) errors.neighborhood = 'Please select your city.';
+    if (!form.address.trim() || form.address.trim().length < 6) {
+      errors.address = 'Enter your home address so drivers know where to go.';
+    }
     const cap = Number(form.carCapacity);
     if (!form.carCapacity.trim() || isNaN(cap) || cap < 0 || cap > 6) {
       errors.carCapacity = 'Enter a number from 0 to 6.';
@@ -102,12 +109,18 @@ export function SignupScreen({ navigation }: Props) {
       return;
     }
 
+    // Geocode the home address (free, best-effort) so the live map can pin it.
+    const coords = await geocodeAddress(form.address.trim());
+
     const { error: insertError } = await supabase.from('users').insert({
       id: signUpData.user.id,
       full_name: form.fullName.trim(),
       child_name: form.childName.trim(),
       grade: form.grade,
       neighborhood: form.neighborhood.trim(),
+      address: form.address.trim(),
+      latitude: coords?.lat ?? null,
+      longitude: coords?.lng ?? null,
       car_capacity: Number(form.carCapacity),
       email: form.email.trim().toLowerCase(),
     });
@@ -117,6 +130,16 @@ export function SignupScreen({ navigation }: Props) {
       setLoading(false);
       setGlobalError('Account setup failed. Please try again.');
       return;
+    }
+
+    // If they came in with an invite code, redeem it (best-effort).
+    const code = inviteCode.trim().toUpperCase();
+    if (code) {
+      try {
+        await supabase.rpc('redeem_invite', { p_code: code });
+      } catch {
+        // Non-fatal: a bad/used code shouldn't block account creation.
+      }
     }
 
     setLoading(false);
@@ -159,7 +182,7 @@ export function SignupScreen({ navigation }: Props) {
           placeholder="Alex Smith"
           error={fieldErrors.childName}
           returnKeyType="next"
-          onSubmitEditing={() => carCapacityRef.current?.focus()}
+          onSubmitEditing={() => addressRef.current?.focus()}
         />
 
         <View style={styles.pickerWrapper}>
@@ -202,6 +225,21 @@ export function SignupScreen({ navigation }: Props) {
             <Text style={styles.fieldError}>{fieldErrors.neighborhood}</Text>
           ) : null}
         </View>
+
+        <Input
+          ref={addressRef}
+          label="Home address"
+          value={form.address}
+          onChangeText={(t) => updateField('address', t)}
+          placeholder="123 Main St, Sunnyvale, CA"
+          error={fieldErrors.address}
+          returnKeyType="next"
+          onSubmitEditing={() => carCapacityRef.current?.focus()}
+        />
+        <Text style={styles.helperText}>
+          Used so drivers know where to pick up and drop off. Shared only with
+          parents in your carpool.
+        </Text>
 
         <Input
           ref={carCapacityRef}
@@ -264,6 +302,15 @@ export function SignupScreen({ navigation }: Props) {
               <Text style={styles.showHide}>{showConfirm ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
           }
+        />
+
+        <Input
+          label="Invite code (optional)"
+          value={inviteCode}
+          onChangeText={setInviteCode}
+          placeholder="From a parent who invited you"
+          autoCapitalize="characters"
+          autoCorrect={false}
         />
 
         <View style={styles.submitRow}>

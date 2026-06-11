@@ -21,19 +21,24 @@ import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { PasswordChangedScreen } from '@/screens/auth/PasswordChangedScreen';
 import { ScheduleScreen } from '@/screens/ScheduleScreen';
 import { EditScheduleScreen } from '@/screens/EditScheduleScreen';
+import { LiveTripScreen } from '@/screens/LiveTripScreen';
+import { NotificationsScreen } from '@/screens/NotificationsScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { InviteScreen } from '@/screens/profile/InviteScreen';
 import { MessagesListScreen } from '@/screens/messages/MessagesListScreen';
 import { ConversationScreen } from '@/screens/messages/ConversationScreen';
 import type {
   AuthStackParamList,
   ScheduleStackParamList,
   MessagesStackParamList,
+  ProfileStackParamList,
   MainTabParamList,
 } from '@/types';
 
 const AuthStack = createStackNavigator<AuthStackParamList>();
 const ScheduleStack = createStackNavigator<ScheduleStackParamList>();
 const MessagesStack = createStackNavigator<MessagesStackParamList>();
+const ProfileStack = createStackNavigator<ProfileStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 function AuthNavigator() {
@@ -58,7 +63,18 @@ function ScheduleStackNavigator() {
     <ScheduleStack.Navigator screenOptions={{ headerShown: false }}>
       <ScheduleStack.Screen name="Schedule" component={ScheduleScreen} />
       <ScheduleStack.Screen name="EditSchedule" component={EditScheduleScreen} />
+      <ScheduleStack.Screen name="LiveTrip" component={LiveTripScreen} />
+      <ScheduleStack.Screen name="Notifications" component={NotificationsScreen} />
     </ScheduleStack.Navigator>
+  );
+}
+
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="Invite" component={InviteScreen} />
+    </ProfileStack.Navigator>
   );
 }
 
@@ -103,7 +119,7 @@ function MainNavigator() {
       />
       <MainTab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{ title: 'Profile' }}
       />
     </MainTab.Navigator>

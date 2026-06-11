@@ -9,12 +9,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { ProfileStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { geocodeAddress } from '@/lib/geocode';
 import { cityZone } from '@/lib/zones';
+
+type ProfileNavigationProp = StackNavigationProp<ProfileStackParamList, 'Profile'>;
+
+interface Props {
+  navigation: ProfileNavigationProp;
+}
 
 const MIN_SEATS = 0;
 const MAX_SEATS = 6;
@@ -45,19 +56,52 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function ProfileScreen() {
-  const { user, loading } = useCurrentUser();
+export function ProfileScreen({ navigation }: Props) {
+  const { user, loading, refetch } = useCurrentUser();
 
   const [seats, setSeats] = useState<number>(0);
   const [passesLeft, setPassesLeft] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [address, setAddress] = useState('');
+  const [savingAddress, setSavingAddress] = useState(false);
 
   const seatsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (user) setSeats(user.car_capacity);
+    if (user) {
+      setSeats(user.car_capacity);
+      setAddress(user.address ?? '');
+    }
   }, [user]);
+
+  const addressDirty = !!user && address.trim() !== (user.address ?? '').trim();
+
+  async function saveAddress(): Promise<void> {
+    if (!user || !addressDirty || savingAddress) return;
+    setSavingAddress(true);
+    setError(null);
+    try {
+      const coords = await geocodeAddress(address.trim());
+      const { error: upErr } = await supabase
+        .from('users')
+        .update({
+          address: address.trim(),
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+        })
+        .eq('id', user.id);
+      if (upErr) {
+        setError(mapSupabaseError(upErr));
+      } else {
+        await refetch();
+      }
+    } catch {
+      setError('Could not save your address. Please try again.');
+    } finally {
+      setSavingAddress(false);
+    }
+  }
 
   // Hardship passes remaining this calendar month (max 2), kept live via
   // realtime so it updates the moment a pass is used or undone elsewhere.
@@ -229,6 +273,30 @@ export function ProfileScreen() {
             </View>
           </View>
 
+          <Text style={styles.sectionTitle}>Home address</Text>
+          <View style={styles.addressCard}>
+            <Input
+              label="Pickup / drop-off address"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="123 Main St, Sunnyvale, CA"
+            />
+            <Text style={styles.addressHint}>
+              {user.latitude !== null && user.longitude !== null
+                ? 'Pinned on the live map ✓'
+                : "We couldn't locate this address on the map — try adding city + state."}
+            </Text>
+            {addressDirty ? (
+              <View style={styles.addressSave}>
+                <Button
+                  title="Save address"
+                  onPress={() => void saveAddress()}
+                  loading={savingAddress}
+                />
+              </View>
+            ) : null}
+          </View>
+
           <Text style={styles.sectionTitle}>Driving rotation</Text>
           <View style={styles.card}>
             <View style={styles.stepperRow}>
@@ -243,6 +311,16 @@ export function ProfileScreen() {
               </Text>
             </View>
           </View>
+
+          <TouchableOpacity
+            style={styles.inviteRow}
+            onPress={() => navigation.navigate('Invite')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add-outline" size={20} color="#DC143C" />
+            <Text style={styles.inviteRowText}>Invite parents</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
+          </TouchableOpacity>
 
           <View style={styles.logoutRow}>
             <Button
@@ -399,6 +477,27 @@ const styles = StyleSheet.create({
     minWidth: 40,
     textAlign: 'center',
   },
+  addressCard: {
+    borderWidth: 1.5,
+    borderColor: '#E8ECF4',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 32,
+  },
+  addressHint: { fontSize: 12, color: '#8391A1', marginTop: -8 },
+  addressSave: { marginTop: 12 },
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: '#E8ECF4',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  inviteRowText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
   passLabelWrap: { flex: 1 },
   passHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
   passValue: {

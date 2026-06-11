@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -24,8 +26,17 @@ import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
+import { useNotifications } from '@/hooks/useNotifications';
 import { schoolDayStatus } from '@/lib/schoolCalendar';
-import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUtils';
+import {
+  formatDayLabel,
+  formatMonthDay,
+  formatShortDay,
+  formatTime,
+  getWeekDates,
+  getWeekStart,
+  toISO,
+} from '@/lib/dateUtils';
 import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
 
 // Composite so this screen can jump to the Messages tab's Conversation screen.
@@ -94,7 +105,11 @@ export function ScheduleScreen({ navigation }: Props) {
     passesLeftThisMonth,
     takePass,
     dropPass,
+    hasSkip,
+    takeSkip,
+    dropSkip,
   } = useCarpool();
+  const { unreadCount } = useNotifications();
 
   function goToConversation(conversationId: string, title: string): void {
     navigation.navigate('MessagesTab', {
@@ -158,6 +173,25 @@ export function ScheduleScreen({ navigation }: Props) {
           <Text style={styles.infoText}>
             {status.label ?? 'Weekend'} — no carpool this day.
           </Text>
+        </View>
+      );
+    }
+
+    if (hasSkip(selected)) {
+      return (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>You&apos;re skipping this day</Text>
+          <Text style={styles.infoText}>
+            Your child isn&apos;t carpooling on this day. Undo to rejoin the
+            rotation.
+          </Text>
+          <View style={styles.infoButton}>
+            <Button
+              title="Undo skip"
+              variant="outline"
+              onPress={() => void dropSkip(selected)}
+            />
+          </View>
         </View>
       );
     }
@@ -255,6 +289,20 @@ export function ScheduleScreen({ navigation }: Props) {
           </Text>
         )}
 
+        {/* Live trip + map — for anyone in a matched car */}
+        {a.role === 'drive' || a.role === 'ride' ? (
+          <TouchableOpacity
+            style={styles.tripBtn}
+            onPress={() => navigation.navigate('LiveTrip', { date: toISO(selected) })}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="navigate" size={16} color="#FFFFFF" />
+            <Text style={styles.tripBtnText}>
+              {a.role === 'drive' ? 'Start / open live trip' : 'Track your ride live'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* Group chat — available to everyone in a matched car (driver + riders) */}
         {a.role === 'drive' || a.driver ? (
           <TouchableOpacity
@@ -290,8 +338,30 @@ export function ScheduleScreen({ navigation }: Props) {
             </Text>
           </TouchableOpacity>
         ) : null}
+
+        {/* One-off "we're not going" skip (removes you from the day entirely) */}
+        <TouchableOpacity
+          style={styles.skipBtn}
+          onPress={() => void takeSkip(selected)}
+        >
+          <Text style={styles.skipText}>Not going this day? Skip carpool</Text>
+        </TouchableOpacity>
       </View>
     );
+  }
+
+  // Mon–Fri snapshot of the selected week for the agenda card.
+  const weekDays = getWeekDates(getWeekStart(selected));
+
+  function agendaLabel(date: Date): { text: string; style: StyleProp<TextStyle> } {
+    const status = schoolDayStatus(date);
+    if (status.blocked) return { text: status.label ?? 'No school', style: styles.agendaMuted };
+    if (hasSkip(date)) return { text: 'Skipping', style: styles.agendaMuted };
+    const a = assignmentFor(date);
+    if (!a) return { text: 'Off', style: styles.agendaMuted };
+    if (a.role === 'drive') return { text: `Driving · ${shortTime(a.time)}`, style: styles.agendaDrive };
+    if (a.role === 'ride') return { text: `Riding · ${shortTime(a.time)}`, style: styles.agendaRide };
+    return { text: 'No match', style: styles.agendaWarn };
   }
 
   return (
@@ -300,12 +370,29 @@ export function ScheduleScreen({ navigation }: Props) {
 
       <View style={styles.header}>
         <Text style={styles.wordmark}>BasisRide</Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('EditSchedule')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.editLink}>Edit</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Notifications"
+            style={styles.bell}
+          >
+            <Ionicons name="notifications-outline" size={22} color="#1E232C" />
+            {unreadCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditSchedule')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.editLink}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -316,6 +403,29 @@ export function ScheduleScreen({ navigation }: Props) {
         {error ? <ErrorMessage message={error} /> : null}
 
         <CalendarPicker selected={selected} onSelect={setSelected} dayInfo={dayInfo} />
+
+        {!loading ? (
+          <View style={styles.agendaCard}>
+            <Text style={styles.agendaTitle}>This week</Text>
+            {weekDays.map((d) => {
+              const info = agendaLabel(d);
+              const isSel = toISO(d) === toISO(selected);
+              return (
+                <TouchableOpacity
+                  key={toISO(d)}
+                  style={[styles.agendaRow, isSel && styles.agendaRowSel]}
+                  onPress={() => setSelected(d)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.agendaDay}>{formatShortDay(d)}</Text>
+                  <Text style={[styles.agendaStatus, info.style]} numberOfLines={1}>
+                    {info.text}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
 
         <Text style={styles.dayHeading}>{formatDayLabel(selected)}</Text>
 
@@ -426,6 +536,67 @@ const styles = StyleSheet.create({
     borderTopColor: '#E8ECF4',
   },
   groupChatText: { fontSize: 14, fontWeight: '700', color: '#DC143C' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  bell: { position: 'relative' },
+  bellBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#DC143C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  tripBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 13,
+    borderRadius: 10,
+    backgroundColor: '#DC143C',
+  },
+  tripBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  skipBtn: { marginTop: 14, alignItems: 'center' },
+  skipText: { fontSize: 13, fontWeight: '600', color: '#8391A1' },
+  agendaCard: {
+    borderWidth: 1.5,
+    borderColor: '#E8ECF4',
+    borderRadius: 12,
+    padding: 8,
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  agendaTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8391A1',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  agendaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  agendaRowSel: { backgroundColor: '#FFF1F1' },
+  agendaDay: { fontSize: 14, fontWeight: '700', color: '#1E232C', width: 44 },
+  agendaStatus: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '600' },
+  agendaDrive: { color: '#DC143C' },
+  agendaRide: { color: '#16A34A' },
+  agendaWarn: { color: '#FF9500' },
+  agendaMuted: { color: '#8391A1' },
   hardshipRow: {
     flexDirection: 'row',
     alignItems: 'center',

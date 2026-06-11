@@ -11,10 +11,11 @@ export type AuthStackParamList = {
 };
 
 // Main app navigation (after authentication).
-// Schedule tab is a nested stack; Profile tab is standalone.
 export type ScheduleStackParamList = {
   Schedule: undefined;
   EditSchedule: undefined;
+  LiveTrip: { date: string }; // ISO 'YYYY-MM-DD' of the carpool day
+  Notifications: undefined;
 };
 
 // Stack inside the Messages tab.
@@ -23,10 +24,16 @@ export type MessagesStackParamList = {
   Conversation: { conversationId: string; title: string };
 };
 
+// Stack inside the Profile tab.
+export type ProfileStackParamList = {
+  Profile: undefined;
+  Invite: undefined;
+};
+
 export type MainTabParamList = {
   ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;
   MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
-  ProfileTab: undefined;
+  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 export type Grade =
@@ -76,6 +83,9 @@ export interface UserProfile {
   neighborhood: string;
   car_capacity: number;
   email: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +95,7 @@ export interface SignupFormValues {
   childName: string;
   grade: Grade;
   neighborhood: string;
+  address: string;
   carCapacity: string;
   email: string;
   password: string;
@@ -141,4 +152,57 @@ export interface ConversationPreview {
   participants: { id: string; name: string }[];
   lastMessage: Message | null;
   unreadCount: number;
+}
+
+// ---- Live trips, notifications, invites (Day 7) ----
+
+export type TripStatus = 'on_my_way' | 'arrived' | 'completed' | 'cancelled';
+
+export interface Trip {
+  id: string;
+  driver_id: string;
+  ride_date: string;
+  rider_ids: string[];
+  status: TripStatus;
+  started_at: string;
+  updated_at: string;
+}
+
+export interface TripPickup {
+  trip_id: string;
+  rider_id: string;
+  picked_up_at: string;
+}
+
+// A point on the map (driver home, rider home, or school).
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+// A drop-off marker rendered on the live map.
+export interface MapStop {
+  id: string;
+  name: string;
+  point: GeoPoint;
+  kind: 'school' | 'driver' | 'rider';
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: string; // 'message' | 'trip' | 'pickup' | 'invite' | ...
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface Invite {
+  code: string;
+  inviter_id: string;
+  created_at: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
 }

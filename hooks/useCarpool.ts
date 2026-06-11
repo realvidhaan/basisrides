@@ -29,6 +29,11 @@ interface RawHardshipRow {
   pass_date: string;
 }
 
+interface RawSkipRow {
+  user_id: string;
+  skip_date: string;
+}
+
 // Unique realtime topic per hook instance (Day 2 fix pattern).
 let channelSeq = 0;
 
@@ -41,6 +46,9 @@ export interface UseCarpoolResult {
   passesLeftThisMonth: (date: Date) => number;
   takePass: (date: Date) => Promise<void>;
   dropPass: (date: Date) => Promise<void>;
+  hasSkip: (date: Date) => boolean;
+  takeSkip: (date: Date) => Promise<void>;
+  dropSkip: (date: Date) => Promise<void>;
 }
 
 /**
@@ -54,6 +62,8 @@ export function useCarpool(): UseCarpoolResult {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [hardship, setHardship] = useState<Set<string>>(new Set());
   const [myPassDates, setMyPassDates] = useState<string[]>([]);
+  const [skips, setSkips] = useState<Set<string>>(new Set());
+  const [mySkipDates, setMySkipDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +73,7 @@ export function useCarpool(): UseCarpoolResult {
     async (silent: boolean): Promise<void> => {
       if (!silent) setLoading(true);
       try {
-        const [partRes, hpRes] = await Promise.all([
+        const [partRes, hpRes, skipRes] = await Promise.all([
           supabase
             .from('availability')
             .select(
@@ -72,6 +82,7 @@ export function useCarpool(): UseCarpoolResult {
             )
             .eq('participating', true),
           supabase.from('hardship_passes').select('user_id, pass_date'),
+          supabase.from('schedule_skips').select('user_id, skip_date'),
         ]);
 
         if (partRes.error) {
@@ -80,6 +91,10 @@ export function useCarpool(): UseCarpoolResult {
         }
         if (hpRes.error) {
           setError(mapSupabaseError(hpRes.error));
+          return;
+        }
+        if (skipRes.error) {
+          setError(mapSupabaseError(skipRes.error));
           return;
         }
 
@@ -106,9 +121,19 @@ export function useCarpool(): UseCarpoolResult {
           if (hp.user_id === uid) mine.push(hp.pass_date);
         }
 
+        const skipRows = (skipRes.data ?? []) as unknown as RawSkipRow[];
+        const skipSet = new Set<string>();
+        const mineSkips: string[] = [];
+        for (const s of skipRows) {
+          skipSet.add(`${s.user_id}|${s.skip_date}`);
+          if (s.user_id === uid) mineSkips.push(s.skip_date);
+        }
+
         setParticipants(next);
         setHardship(set);
         setMyPassDates(mine);
+        setSkips(skipSet);
+        setMySkipDates(mineSkips);
         setError(null);
       } catch {
         setError('Something went wrong loading carpools. Please try again.');
@@ -135,6 +160,11 @@ export function useCarpool(): UseCarpoolResult {
         { event: '*', schema: 'public', table: 'hardship_passes' },
         () => void fetchAll(true),
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'schedule_skips' },
+        () => void fetchAll(true),
+      )
       .subscribe();
 
     return () => {
@@ -145,8 +175,8 @@ export function useCarpool(): UseCarpoolResult {
   // One engine per data snapshot; it memoizes per-date results internally and
   // carries cumulative drive history for the even-out rotation.
   const engine = useMemo(
-    () => createRotationEngine(participants, hardship),
-    [participants, hardship],
+    () => createRotationEngine(participants, hardship, skips),
+    [participants, hardship, skips],
   );
 
   const assignmentFor = useCallback(
@@ -222,6 +252,58 @@ export function useCarpool(): UseCarpoolResult {
     [user, fetchAll],
   );
 
+  const hasSkip = useCallback(
+    (date: Date): boolean => mySkipDates.includes(toISO(date)),
+    [mySkipDates],
+  );
+
+  const takeSkip = useCallback(
+    async (date: Date): Promise<void> => {
+      if (!user) {
+        setError('You must be signed in.');
+        return;
+      }
+      const iso = toISO(date);
+      setError(null);
+      try {
+        const { error: insErr } = await supabase
+          .from('schedule_skips')
+          .insert({ user_id: user.id, skip_date: iso });
+        if (insErr) {
+          setError(mapSupabaseError(insErr));
+          return;
+        }
+        await fetchAll(true);
+      } catch {
+        setError('Could not update this day. Please try again.');
+      }
+    },
+    [user, fetchAll],
+  );
+
+  const dropSkip = useCallback(
+    async (date: Date): Promise<void> => {
+      if (!user) return;
+      const iso = toISO(date);
+      setError(null);
+      try {
+        const { error: delErr } = await supabase
+          .from('schedule_skips')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('skip_date', iso);
+        if (delErr) {
+          setError(mapSupabaseError(delErr));
+          return;
+        }
+        await fetchAll(true);
+      } catch {
+        setError('Could not update this day. Please try again.');
+      }
+    },
+    [user, fetchAll],
+  );
+
   return {
     loading,
     error,
@@ -231,5 +313,8 @@ export function useCarpool(): UseCarpoolResult {
     passesLeftThisMonth,
     takePass,
     dropPass,
+    hasSkip,
+    takeSkip,
+    dropSkip,
   };
 }

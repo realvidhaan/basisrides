@@ -3,8 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
-const SUPABASE_URL = 'https://itfrksemudjaicksfucr.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_t3bdDWP4dOgcJWMDNit3Aw_UKBgeTps';
+// Exported so the embedded Leaflet map (which runs its own supabase-js inside a
+// webview/iframe and subscribes to the live-location broadcast) can reuse them.
+// The anon/publishable key is safe to expose by design.
+export const SUPABASE_URL = 'https://itfrksemudjaicksfucr.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_t3bdDWP4dOgcJWMDNit3Aw_UKBgeTps';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
