@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { setRecovering } from '@/lib/authFlow';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -29,6 +30,10 @@ export function LoginScreen({ navigation }: Props) {
   async function handleLogin(): Promise<void> {
     setError(null);
     setLoading(true);
+
+    // A deliberate login is never part of a password reset. Clear any stale
+    // recovery flag (e.g. from an abandoned reset) so the auth gate can open.
+    setRecovering(false);
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),

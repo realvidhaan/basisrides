@@ -19,6 +19,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
+import { setRecovering } from '@/lib/authFlow';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -97,6 +98,10 @@ export function SignupScreen({ navigation }: Props) {
     if (!validate()) return;
 
     setLoading(true);
+
+    // Creating an account is never part of a password reset. Clear any stale
+    // recovery flag so the auth gate opens once the session is created.
+    setRecovering(false);
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: form.email.trim(),

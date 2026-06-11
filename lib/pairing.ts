@@ -78,6 +78,8 @@ function computeSingleDay(
   participants: Participant[],
   hardship: Set<string>,
   skips: Set<string>,
+  coverOff: Set<string>,
+  coverForce: Set<string>,
   hardshipCount: Map<string, number>,
   driveCount: Map<string, number>,
   date: Date,
@@ -124,11 +126,15 @@ function computeSingleDay(
       // dismissed when the driver arrives (cluster is sorted ascending).
       const pickup = cluster[cluster.length - 1].time;
 
+      // A cover request relieves the requester (coverOff) and signs the
+      // accepter up to drive that date (coverForce) even if they hadn't
+      // volunteered that weekday.
       const candidates = cluster.filter(
         (p) =>
-          p.canDrive &&
           p.capacity >= 1 &&
-          !hardship.has(`${p.userId}|${iso}`),
+          !hardship.has(`${p.userId}|${iso}`) &&
+          !coverOff.has(`${p.userId}|${iso}`) &&
+          (p.canDrive || coverForce.has(`${p.userId}|${iso}`)),
       );
 
       // Nobody volunteered to drive — the whole cluster goes without a car.
@@ -148,6 +154,10 @@ function computeSingleDay(
       // Even-out rotation: fewest drives so far drives next; ties go to whoever
       // has used more hardship passes (they've skipped more), then by id.
       const ordered = [...candidates].sort((a, b) => {
+        // Anyone who agreed to cover this date drives first.
+        const fa = coverForce.has(`${a.userId}|${iso}`) ? 0 : 1;
+        const fb = coverForce.has(`${b.userId}|${iso}`) ? 0 : 1;
+        if (fa !== fb) return fa - fb;
         const da = driveCount.get(a.userId) ?? 0;
         const db = driveCount.get(b.userId) ?? 0;
         if (da !== db) return da - db;
@@ -245,6 +255,8 @@ export function createRotationEngine(
   participants: Participant[],
   hardship: Set<string>,
   skips: Set<string> = new Set(),
+  coverOff: Set<string> = new Set(),
+  coverForce: Set<string> = new Set(),
 ): RotationEngine {
   const hardshipCount = new Map<string, number>();
   for (const key of hardship) {
@@ -272,6 +284,8 @@ export function createRotationEngine(
             participants,
             hardship,
             skips,
+            coverOff,
+            coverForce,
             hardshipCount,
             driveCount,
             new Date(cursor),

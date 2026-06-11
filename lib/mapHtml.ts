@@ -36,12 +36,12 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; background: #F7F8F9; }
-    .pin { font-size: 22px; line-height: 22px; text-align: center; }
-    .car-wrap { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-    .car-badge {
-      width: 34px; height: 34px; border-radius: 17px; background: #DC143C;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.35); display: flex; align-items: center;
-      justify-content: center; font-size: 18px; transition: transform 0.2s linear;
+    .pin { font-size: 20px; line-height: 20px; text-align: center; }
+    .car-wrap { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+    .car-svg {
+      width: 30px; height: 30px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+      transition: transform 0.25s linear;
     }
     .leaflet-control-attribution { font-size: 9px; }
   </style>
@@ -73,11 +73,22 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
       bounds.push([s.point.lat, s.point.lng]);
     }
 
-    // The live car marker.
+    // The live car marker — a clean top-down car (nose points north at 0deg, so
+    // rotating by the GPS heading orients it along travel). Crimson to match the
+    // app's design system.
+    var carSvg =
+      '<svg width="30" height="30" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">'
+      + '<rect x="10" y="5" width="24" height="34" rx="9" fill="#DC143C"/>'
+      + '<rect x="13" y="15" width="18" height="13" rx="5" fill="#B01030"/>'
+      + '<path d="M12 14 C16 10 28 10 32 14 L30 17 C26 14.5 18 14.5 14 17 Z" fill="#EAF2FF"/>'
+      + '<path d="M14 30 C18 32.5 26 32.5 30 30 L32 33 C28 36 16 36 12 33 Z" fill="#EAF2FF"/>'
+      + '<rect x="12" y="6.5" width="4" height="3" rx="1.5" fill="#FFF3B0"/>'
+      + '<rect x="28" y="6.5" width="4" height="3" rx="1.5" fill="#FFF3B0"/>'
+      + '</svg>';
     var carEl = L.divIcon({
       className: '',
-      html: '<div class="car-wrap"><div class="car-badge" id="carBadge">\u{1F697}</div></div>',
-      iconSize: [40, 40], iconAnchor: [20, 20]
+      html: '<div class="car-wrap"><div class="car-svg" id="carBadge">' + carSvg + '</div></div>',
+      iconSize: [30, 30], iconAnchor: [15, 15]
     });
     var startPos = CONFIG.start || (CONFIG.stops.length ? CONFIG.stops[0].point : { lat: 37.3197, lng: -121.912 });
     var car = L.marker([startPos.lat, startPos.lng], { icon: carEl, zIndexOffset: 1000 }).addTo(map);

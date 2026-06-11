@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,41 +13,27 @@ import { Ionicons } from '@expo/vector-icons';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { ProfileStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
-import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { geocodeAddress } from '@/lib/geocode';
 import { cityZone } from '@/lib/zones';
+
+const HARDSHIP_LIMIT = 2;
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// Unique realtime topic per mount (matches the app's channel pattern).
+let profileChannelSeq = 0;
 
 type ProfileNavigationProp = StackNavigationProp<ProfileStackParamList, 'Profile'>;
 
 interface Props {
   navigation: ProfileNavigationProp;
 }
-
-const MIN_SEATS = 0;
-const MAX_SEATS = 6;
-const HARDSHIP_LIMIT = 2;
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-// Unique realtime topic per mount (matches the Day 2 channel pattern).
-let profileChannelSeq = 0;
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -57,55 +43,14 @@ function initials(name: string): string {
 }
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, loading, refetch } = useCurrentUser();
+  const { user, loading } = useCurrentUser();
 
-  const [seats, setSeats] = useState<number>(0);
   const [passesLeft, setPassesLeft] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [address, setAddress] = useState('');
-  const [savingAddress, setSavingAddress] = useState(false);
 
-  const seatsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      setSeats(user.car_capacity);
-      setAddress(user.address ?? '');
-    }
-  }, [user]);
-
-  const addressDirty = !!user && address.trim() !== (user.address ?? '').trim();
-
-  async function saveAddress(): Promise<void> {
-    if (!user || !addressDirty || savingAddress) return;
-    setSavingAddress(true);
-    setError(null);
-    try {
-      const coords = await geocodeAddress(address.trim());
-      const { error: upErr } = await supabase
-        .from('users')
-        .update({
-          address: address.trim(),
-          latitude: coords?.lat ?? null,
-          longitude: coords?.lng ?? null,
-        })
-        .eq('id', user.id);
-      if (upErr) {
-        setError(mapSupabaseError(upErr));
-      } else {
-        await refetch();
-      }
-    } catch {
-      setError('Could not save your address. Please try again.');
-    } finally {
-      setSavingAddress(false);
-    }
-  }
-
-  // Hardship passes remaining this calendar month (max 2), kept live via
-  // realtime so it updates the moment a pass is used or undone elsewhere.
   const monthName = MONTH_NAMES[new Date().getMonth()];
+
+  // Hardship passes remaining this calendar month, live via realtime.
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -151,41 +96,12 @@ export function ProfileScreen({ navigation }: Props) {
     };
   }, [user]);
 
-  useEffect(() => {
-    return () => {
-      if (seatsTimer.current) clearTimeout(seatsTimer.current);
-    };
-  }, []);
-
-  function changeSeats(delta: number): void {
-    if (!user) return;
-    const next = Math.min(MAX_SEATS, Math.max(MIN_SEATS, seats + delta));
-    if (next === seats) return;
-    setSeats(next);
-    setError(null);
-    if (seatsTimer.current) clearTimeout(seatsTimer.current);
-    seatsTimer.current = setTimeout(() => {
-      void (async () => {
-        try {
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({ car_capacity: next })
-            .eq('id', user.id);
-          if (updateError) setError(mapSupabaseError(updateError));
-        } catch {
-          setError('Could not update your car capacity. Please try again.');
-        }
-      })();
-    }, 500);
-  }
-
   async function handleLogout(): Promise<void> {
     setLoggingOut(true);
     try {
       await supabase.auth.signOut();
     } catch {
       setLoggingOut(false);
-      setError('Could not log out. Please try again.');
     }
     // On success App.tsx onAuthStateChange unmounts this screen.
   }
@@ -212,8 +128,6 @@ export function ProfileScreen({ navigation }: Props) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {error ? <ErrorMessage message={error} /> : null}
-
           <View style={styles.userCard}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials(user.full_name)}</Text>
@@ -233,94 +147,57 @@ export function ProfileScreen({ navigation }: Props) {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Your car</Text>
-          <View style={styles.card}>
-            <View style={styles.stepperRow}>
-              <Text style={styles.rowLabel}>Seats (including driver)</Text>
-              <View style={styles.stepper}>
-                <TouchableOpacity
-                  style={styles.stepperButton}
-                  onPress={() => changeSeats(-1)}
-                  disabled={seats <= MIN_SEATS}
-                  accessibilityLabel="Decrease seats"
-                >
-                  <Text
-                    style={[
-                      styles.stepperSymbol,
-                      seats <= MIN_SEATS && styles.stepperDisabled,
-                    ]}
-                  >
-                    –
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.stepperValue}>{seats}</Text>
-                <TouchableOpacity
-                  style={styles.stepperButton}
-                  onPress={() => changeSeats(1)}
-                  disabled={seats >= MAX_SEATS}
-                  accessibilityLabel="Increase seats"
-                >
-                  <Text
-                    style={[
-                      styles.stepperSymbol,
-                      seats >= MAX_SEATS && styles.stepperDisabled,
-                    ]}
-                  >
-                    +
-                  </Text>
-                </TouchableOpacity>
-              </View>
+          {/* Quick read-only facts */}
+          <View style={styles.factsCard}>
+            <View style={styles.factRow}>
+              <Text style={styles.factLabel}>Home address</Text>
+              <Text style={styles.factValue} numberOfLines={2}>
+                {user.address ?? 'Not set'}
+              </Text>
+            </View>
+            <View style={styles.factDivider} />
+            <View style={styles.factRow}>
+              <Text style={styles.factLabel}>Car seats</Text>
+              <Text style={styles.factValue}>
+                {user.car_capacity > 0
+                  ? `${user.car_capacity} (incl. driver)`
+                  : 'No car'}
+              </Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Home address</Text>
-          <View style={styles.addressCard}>
-            <Input
-              label="Pickup / drop-off address"
-              value={address}
-              onChangeText={setAddress}
-              placeholder="123 Main St, Sunnyvale, CA"
-            />
-            <Text style={styles.addressHint}>
-              {user.latitude !== null && user.longitude !== null
-                ? 'Pinned on the live map ✓'
-                : "We couldn't locate this address on the map — try adding city + state."}
-            </Text>
-            {addressDirty ? (
-              <View style={styles.addressSave}>
-                <Button
-                  title="Save address"
-                  onPress={() => void saveAddress()}
-                  loading={savingAddress}
-                />
-              </View>
-            ) : null}
-          </View>
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('EditProfile')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create-outline" size={20} color="#DC143C" />
+            <Text style={styles.actionText}>Edit information</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('Invite')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add-outline" size={20} color="#DC143C" />
+            <Text style={styles.actionText}>Invite parents</Text>
+            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
+          </TouchableOpacity>
 
           <Text style={styles.sectionTitle}>Driving rotation</Text>
           <View style={styles.card}>
-            <View style={styles.stepperRow}>
+            <View style={styles.passRow}>
               <View style={styles.passLabelWrap}>
                 <Text style={styles.rowLabel}>Hardship passes left</Text>
-                <Text style={styles.passHint}>
-                  {monthName} · resets each month
-                </Text>
+                <Text style={styles.passHint}>{monthName} · resets each month</Text>
               </View>
               <Text style={styles.passValue}>
                 {passesLeft === null ? '—' : `${passesLeft}/${HARDSHIP_LIMIT}`}
               </Text>
             </View>
           </View>
-
-          <TouchableOpacity
-            style={styles.inviteRow}
-            onPress={() => navigation.navigate('Invite')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="person-add-outline" size={20} color="#DC143C" />
-            <Text style={styles.inviteRowText}>Invite parents</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
-          </TouchableOpacity>
 
           <View style={styles.logoutRow}>
             <Button
@@ -337,10 +214,7 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: {
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -348,31 +222,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E8ECF4',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1E232C',
-  },
+  title: { fontSize: 24, fontWeight: '700', color: '#1E232C' },
   loadingArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 24, paddingBottom: 40 },
   userCard: {
     alignItems: 'center',
     paddingVertical: 24,
     borderWidth: 1.5,
     borderColor: '#E8ECF4',
     borderRadius: 12,
-    marginBottom: 32,
+    marginBottom: 20,
   },
   avatar: {
     width: 64,
@@ -383,110 +248,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E232C',
-  },
-  email: {
-    fontSize: 13,
-    color: '#8391A1',
-    marginTop: 2,
-  },
-  detail: {
-    fontSize: 14,
-    color: '#6A707C',
-    marginTop: 8,
-  },
-  zoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  detailMuted: {
-    fontSize: 14,
-    color: '#8391A1',
-  },
+  avatarText: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+  name: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
+  email: { fontSize: 13, color: '#8391A1', marginTop: 2 },
+  detail: { fontSize: 14, color: '#6A707C', marginTop: 8 },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  detailMuted: { fontSize: 14, color: '#8391A1' },
   zoneBadge: {
     backgroundColor: '#FFF1F1',
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  zoneBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#DC143C',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E232C',
-    marginBottom: 12,
-  },
-  card: {
+  zoneBadgeText: { fontSize: 12, fontWeight: '600', color: '#DC143C' },
+  factsCard: {
     borderWidth: 1.5,
     borderColor: '#E8ECF4',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 32,
+    marginBottom: 16,
   },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  rowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#1E232C',
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stepperButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#E8ECF4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperSymbol: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#DC143C',
-    lineHeight: 22,
-  },
-  stepperDisabled: {
-    color: '#C9CDD4',
-  },
-  stepperValue: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1E232C',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  addressCard: {
-    borderWidth: 1.5,
-    borderColor: '#E8ECF4',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 32,
-  },
-  addressHint: { fontSize: 12, color: '#8391A1', marginTop: -8 },
-  addressSave: { marginTop: 12 },
-  inviteRow: {
+  factRow: { paddingVertical: 14 },
+  factLabel: { fontSize: 12, color: '#8391A1', marginBottom: 4 },
+  factValue: { fontSize: 15, fontWeight: '500', color: '#1E232C', lineHeight: 20 },
+  factDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E8ECF4' },
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -495,17 +281,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
+    marginBottom: 12,
+  },
+  actionText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E232C',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  card: {
+    borderWidth: 1.5,
+    borderColor: '#E8ECF4',
+    borderRadius: 12,
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
-  inviteRowText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
+  passRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  rowLabel: { fontSize: 15, fontWeight: '500', color: '#1E232C' },
   passLabelWrap: { flex: 1 },
   passHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
-  passValue: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#DC143C',
-  },
-  logoutRow: {
-    marginTop: 8,
-  },
+  passValue: { fontSize: 17, fontWeight: '700', color: '#DC143C' },
+  logoutRow: { marginTop: 8 },
 });

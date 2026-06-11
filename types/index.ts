@@ -16,6 +16,7 @@ export type ScheduleStackParamList = {
   EditSchedule: undefined;
   LiveTrip: { date: string }; // ISO 'YYYY-MM-DD' of the carpool day
   Notifications: undefined;
+  Swaps: undefined;
 };
 
 // Stack inside the Messages tab.
@@ -27,6 +28,7 @@ export type MessagesStackParamList = {
 // Stack inside the Profile tab.
 export type ProfileStackParamList = {
   Profile: undefined;
+  EditProfile: undefined;
   Invite: undefined;
 };
 

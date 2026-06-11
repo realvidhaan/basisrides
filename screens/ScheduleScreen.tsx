@@ -6,8 +6,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  type StyleProp,
-  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -27,16 +25,9 @@ import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSwaps } from '@/hooks/useSwaps';
 import { schoolDayStatus } from '@/lib/schoolCalendar';
-import {
-  formatDayLabel,
-  formatMonthDay,
-  formatShortDay,
-  formatTime,
-  getWeekDates,
-  getWeekStart,
-  toISO,
-} from '@/lib/dateUtils';
+import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUtils';
 import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
 
 // Composite so this screen can jump to the Messages tab's Conversation screen.
@@ -110,6 +101,12 @@ export function ScheduleScreen({ navigation }: Props) {
     dropSkip,
   } = useCarpool();
   const { unreadCount } = useNotifications();
+  const { openCount, requestCover } = useSwaps();
+
+  async function askForCover(): Promise<void> {
+    const ok = await requestCover(toISO(selected), '');
+    if (ok) navigation.navigate('Swaps');
+  }
 
   function goToConversation(conversationId: string, title: string): void {
     navigation.navigate('MessagesTab', {
@@ -298,7 +295,7 @@ export function ScheduleScreen({ navigation }: Props) {
           >
             <Ionicons name="navigate" size={16} color="#FFFFFF" />
             <Text style={styles.tripBtnText}>
-              {a.role === 'drive' ? 'Start / open live trip' : 'Track your ride live'}
+              {a.role === 'drive' ? 'Start ride' : 'Track ride'}
             </Text>
           </TouchableOpacity>
         ) : null}
@@ -339,6 +336,13 @@ export function ScheduleScreen({ navigation }: Props) {
           </TouchableOpacity>
         ) : null}
 
+        {/* Ask a peer to cover your drive (the no-pass alternative) */}
+        {a.role === 'drive' ? (
+          <TouchableOpacity style={styles.coverBtn} onPress={() => void askForCover()}>
+            <Text style={styles.coverBtnText}>Ask someone to cover this drive</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* One-off "we're not going" skip (removes you from the day entirely) */}
         <TouchableOpacity
           style={styles.skipBtn}
@@ -350,20 +354,6 @@ export function ScheduleScreen({ navigation }: Props) {
     );
   }
 
-  // Mon–Fri snapshot of the selected week for the agenda card.
-  const weekDays = getWeekDates(getWeekStart(selected));
-
-  function agendaLabel(date: Date): { text: string; style: StyleProp<TextStyle> } {
-    const status = schoolDayStatus(date);
-    if (status.blocked) return { text: status.label ?? 'No school', style: styles.agendaMuted };
-    if (hasSkip(date)) return { text: 'Skipping', style: styles.agendaMuted };
-    const a = assignmentFor(date);
-    if (!a) return { text: 'Off', style: styles.agendaMuted };
-    if (a.role === 'drive') return { text: `Driving · ${shortTime(a.time)}`, style: styles.agendaDrive };
-    if (a.role === 'ride') return { text: `Riding · ${shortTime(a.time)}`, style: styles.agendaRide };
-    return { text: 'No match', style: styles.agendaWarn };
-  }
-
   return (
     <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
       <StatusBar style="dark" />
@@ -371,6 +361,21 @@ export function ScheduleScreen({ navigation }: Props) {
       <View style={styles.header}>
         <Text style={styles.wordmark}>BasisRide</Text>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Swaps')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Cover requests"
+            style={styles.bell}
+          >
+            <Ionicons name="swap-horizontal" size={22} color="#1E232C" />
+            {openCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {openCount > 9 ? '9+' : openCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -403,29 +408,6 @@ export function ScheduleScreen({ navigation }: Props) {
         {error ? <ErrorMessage message={error} /> : null}
 
         <CalendarPicker selected={selected} onSelect={setSelected} dayInfo={dayInfo} />
-
-        {!loading ? (
-          <View style={styles.agendaCard}>
-            <Text style={styles.agendaTitle}>This week</Text>
-            {weekDays.map((d) => {
-              const info = agendaLabel(d);
-              const isSel = toISO(d) === toISO(selected);
-              return (
-                <TouchableOpacity
-                  key={toISO(d)}
-                  style={[styles.agendaRow, isSel && styles.agendaRowSel]}
-                  onPress={() => setSelected(d)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.agendaDay}>{formatShortDay(d)}</Text>
-                  <Text style={[styles.agendaStatus, info.style]} numberOfLines={1}>
-                    {info.text}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
 
         <Text style={styles.dayHeading}>{formatDayLabel(selected)}</Text>
 
@@ -562,41 +544,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC143C',
   },
   tripBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  coverBtn: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E8ECF4',
+  },
+  coverBtnText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
   skipBtn: { marginTop: 14, alignItems: 'center' },
   skipText: { fontSize: 13, fontWeight: '600', color: '#8391A1' },
-  agendaCard: {
-    borderWidth: 1.5,
-    borderColor: '#E8ECF4',
-    borderRadius: 12,
-    padding: 8,
-    marginTop: 16,
-    marginHorizontal: 8,
-  },
-  agendaTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#8391A1',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 4,
-  },
-  agendaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  agendaRowSel: { backgroundColor: '#FFF1F1' },
-  agendaDay: { fontSize: 14, fontWeight: '700', color: '#1E232C', width: 44 },
-  agendaStatus: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '600' },
-  agendaDrive: { color: '#DC143C' },
-  agendaRide: { color: '#16A34A' },
-  agendaWarn: { color: '#FF9500' },
-  agendaMuted: { color: '#8391A1' },
   hardshipRow: {
     flexDirection: 'row',
     alignItems: 'center',

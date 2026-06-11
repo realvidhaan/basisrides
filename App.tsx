@@ -12,6 +12,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
 import { getRecovering, subscribeRecovering } from '@/lib/authFlow';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { SignupScreen } from '@/screens/auth/SignupScreen';
@@ -23,7 +24,9 @@ import { ScheduleScreen } from '@/screens/ScheduleScreen';
 import { EditScheduleScreen } from '@/screens/EditScheduleScreen';
 import { LiveTripScreen } from '@/screens/LiveTripScreen';
 import { NotificationsScreen } from '@/screens/NotificationsScreen';
+import { SwapsScreen } from '@/screens/SwapsScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
 import { InviteScreen } from '@/screens/profile/InviteScreen';
 import { MessagesListScreen } from '@/screens/messages/MessagesListScreen';
 import { ConversationScreen } from '@/screens/messages/ConversationScreen';
@@ -65,6 +68,7 @@ function ScheduleStackNavigator() {
       <ScheduleStack.Screen name="EditSchedule" component={EditScheduleScreen} />
       <ScheduleStack.Screen name="LiveTrip" component={LiveTripScreen} />
       <ScheduleStack.Screen name="Notifications" component={NotificationsScreen} />
+      <ScheduleStack.Screen name="Swaps" component={SwapsScreen} />
     </ScheduleStack.Navigator>
   );
 }
@@ -73,6 +77,7 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
       <ProfileStack.Screen name="Invite" component={InviteScreen} />
     </ProfileStack.Navigator>
   );
@@ -160,9 +165,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <NavigationContainer>
-          {showMain ? <MainNavigator /> : <AuthNavigator />}
-        </NavigationContainer>
+        <ErrorBoundary>
+          <NavigationContainer>
+            {showMain ? <MainNavigator /> : <AuthNavigator />}
+          </NavigationContainer>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -40,6 +40,8 @@ function iconFor(type: string): string {
       return '✅';
     case 'invite':
       return '🎉';
+    case 'swap':
+      return '🤝';
     default:
       return '🔔';
   }
@@ -85,6 +87,10 @@ export function NotificationsScreen({ navigation }: Props) {
     if (n.type === 'trip' || n.type === 'pickup') {
       const date = asString(data.ride_date);
       if (date) navigation.navigate('LiveTrip', { date });
+      return;
+    }
+    if (n.type === 'swap') {
+      navigation.navigate('Swaps');
     }
   }
 

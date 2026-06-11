@@ -34,6 +34,13 @@ interface RawSkipRow {
   skip_date: string;
 }
 
+interface RawSwapRow {
+  requester_id: string;
+  accepted_by: string | null;
+  day: string;
+  status: string;
+}
+
 // Unique realtime topic per hook instance (Day 2 fix pattern).
 let channelSeq = 0;
 
@@ -64,6 +71,8 @@ export function useCarpool(): UseCarpoolResult {
   const [myPassDates, setMyPassDates] = useState<string[]>([]);
   const [skips, setSkips] = useState<Set<string>>(new Set());
   const [mySkipDates, setMySkipDates] = useState<string[]>([]);
+  const [coverOff, setCoverOff] = useState<Set<string>>(new Set());
+  const [coverForce, setCoverForce] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +82,7 @@ export function useCarpool(): UseCarpoolResult {
     async (silent: boolean): Promise<void> => {
       if (!silent) setLoading(true);
       try {
-        const [partRes, hpRes, skipRes] = await Promise.all([
+        const [partRes, hpRes, skipRes, swapRes] = await Promise.all([
           supabase
             .from('availability')
             .select(
@@ -83,6 +92,10 @@ export function useCarpool(): UseCarpoolResult {
             .eq('participating', true),
           supabase.from('hardship_passes').select('user_id, pass_date'),
           supabase.from('schedule_skips').select('user_id, skip_date'),
+          supabase
+            .from('swaps')
+            .select('requester_id, accepted_by, day, status')
+            .eq('status', 'filled'),
         ]);
 
         if (partRes.error) {
@@ -95,6 +108,10 @@ export function useCarpool(): UseCarpoolResult {
         }
         if (skipRes.error) {
           setError(mapSupabaseError(skipRes.error));
+          return;
+        }
+        if (swapRes.error) {
+          setError(mapSupabaseError(swapRes.error));
           return;
         }
 
@@ -129,11 +146,23 @@ export function useCarpool(): UseCarpoolResult {
           if (s.user_id === uid) mineSkips.push(s.skip_date);
         }
 
+        // Filled cover requests: the requester is relieved of driving that day,
+        // the accepter is signed up to drive it.
+        const swapRows = (swapRes.data ?? []) as unknown as RawSwapRow[];
+        const offSet = new Set<string>();
+        const forceSet = new Set<string>();
+        for (const sw of swapRows) {
+          offSet.add(`${sw.requester_id}|${sw.day}`);
+          if (sw.accepted_by) forceSet.add(`${sw.accepted_by}|${sw.day}`);
+        }
+
         setParticipants(next);
         setHardship(set);
         setMyPassDates(mine);
         setSkips(skipSet);
         setMySkipDates(mineSkips);
+        setCoverOff(offSet);
+        setCoverForce(forceSet);
         setError(null);
       } catch {
         setError('Something went wrong loading carpools. Please try again.');
@@ -165,6 +194,11 @@ export function useCarpool(): UseCarpoolResult {
         { event: '*', schema: 'public', table: 'schedule_skips' },
         () => void fetchAll(true),
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'swaps' },
+        () => void fetchAll(true),
+      )
       .subscribe();
 
     return () => {
@@ -175,8 +209,8 @@ export function useCarpool(): UseCarpoolResult {
   // One engine per data snapshot; it memoizes per-date results internally and
   // carries cumulative drive history for the even-out rotation.
   const engine = useMemo(
-    () => createRotationEngine(participants, hardship, skips),
-    [participants, hardship, skips],
+    () => createRotationEngine(participants, hardship, skips, coverOff, coverForce),
+    [participants, hardship, skips, coverOff, coverForce],
   );
 
   const assignmentFor = useCallback(

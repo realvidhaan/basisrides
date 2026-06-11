@@ -1,0 +1,72 @@
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+interface Props {
+  children: React.ReactNode;
+}
+
+interface State {
+  error: Error | null;
+}
+
+/**
+ * Catches render-time crashes anywhere below it and shows a readable fallback
+ * instead of a blank white screen, so a single bad screen can never silently
+ * kill the whole app. "Try again" clears the error and re-renders.
+ */
+export class ErrorBoundary extends React.Component<Props, State> {
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
+  }
+
+  handleReset = (): void => {
+    this.setState({ error: null });
+  };
+
+  render(): React.ReactNode {
+    if (this.state.error) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.emoji}>🚧</Text>
+          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.message}>
+            The app hit an unexpected error. You can try again — your account and
+            schedule are safe.
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={this.handleReset}>
+            <Text style={styles.buttonText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emoji: { fontSize: 44, marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: '#1E232C', marginBottom: 8 },
+  message: {
+    fontSize: 14,
+    color: '#6A707C',
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  button: {
+    backgroundColor: '#DC143C',
+    borderRadius: 10,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+  },
+  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+});

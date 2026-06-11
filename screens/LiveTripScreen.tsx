@@ -1,22 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type {
-  MapStop,
-  ScheduleStackParamList,
-  TripStatus,
-} from '@/types';
+import type { MapStop, ScheduleStackParamList } from '@/types';
 import { BackButton } from '@/components/ui/BackButton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
@@ -52,12 +47,11 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-const STATUS_LABEL: Record<TripStatus, string> = {
-  on_my_way: 'On the way 🚗',
-  arrived: 'Arrived at school',
-  completed: 'Carpool complete',
-  cancelled: 'Trip cancelled',
-};
+// Map gets the lion's share of the screen; clamp so it stays reasonable.
+const MAP_HEIGHT = Math.min(
+  560,
+  Math.max(380, Math.round(Dimensions.get('window').height * 0.52)),
+);
 
 export function LiveTripScreen({ navigation, route }: Props) {
   const iso = route.params.date;
@@ -68,18 +62,14 @@ export function LiveTripScreen({ navigation, route }: Props) {
   const isDriver = a?.role === 'drive';
   const driverId = isDriver ? currentUserId : (a?.driver?.userId ?? null);
 
-  const { trip, pickups, loading, error, startTrip, setStatus, togglePickup } =
-    useTrip(driverId, iso);
+  const { trip, loading, error, startTrip, setStatus } = useTrip(driverId, iso);
 
-  // Driver shares GPS while the trip is active (after start, before complete).
-  const sharingActive =
-    isDriver &&
-    !!trip &&
-    (trip.status === 'on_my_way' || trip.status === 'arrived');
+  // The driver shares GPS only while the ride is active (started, not ended).
+  const sharingActive = isDriver && trip?.status === 'on_my_way';
   const channelName = driverId ? tripLocChannel(driverId, iso) : 'noop';
   const { error: shareError } = useLocationSharing(sharingActive, channelName);
 
-  // Fetch the car's members so we can pin homes on the map and list pickups.
+  // Fetch the car's members so we can pin homes on the map + list riders.
   const [carUsers, setCarUsers] = useState<CarUserRow[]>([]);
   const memberIds = useMemo(() => {
     if (!a) return [];
@@ -137,8 +127,15 @@ export function LiveTripScreen({ navigation, route }: Props) {
   }, [carUsers, driverId]);
 
   const riders = a?.riders ?? [];
+  const status = trip?.status ?? null;
+  const statusLabel =
+    status === 'completed'
+      ? 'Ride complete'
+      : status === 'on_my_way'
+        ? 'On the way 🚗'
+        : 'Ride not started';
 
-  function renderBody() {
+  function renderControls() {
     if (!a || a.role === 'unmatched') {
       return (
         <View style={styles.card}>
@@ -151,50 +148,100 @@ export function LiveTripScreen({ navigation, route }: Props) {
       );
     }
 
-    return (
-      <>
-        <View style={styles.mapCard}>
-          <LiveMap channel={channelName} stops={stops} start={driverStart} />
+    if (isDriver) {
+      if (status === 'completed') {
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Ride complete ✅</Text>
+            <Text style={styles.cardText}>
+              Your riders have been notified that everyone&apos;s dropped off.
+            </Text>
+          </View>
+        );
+      }
+      if (status === 'on_my_way') {
+        return (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Sharing your live location</Text>
+              <Text style={styles.cardText}>
+                Your riders can see your car move toward them in real time. Tap
+                End ride when everyone&apos;s dropped off.
+              </Text>
+              {riders.length > 0 ? (
+                <>
+                  <Text style={styles.sectionLabel}>Riders ({riders.length})</Text>
+                  {riders.map((r) => (
+                    <View key={r.userId} style={styles.memberRow}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{initials(r.name)}</Text>
+                      </View>
+                      <Text style={styles.memberName} numberOfLines={1}>
+                        {r.name}
+                      </Text>
+                      <Text style={styles.memberTime}>{formatTime(r.time)}</Text>
+                    </View>
+                  ))}
+                </>
+              ) : null}
+            </View>
+            <Button
+              title="End ride"
+              variant="outline"
+              onPress={() => void setStatus('completed')}
+            />
+          </>
+        );
+      }
+      // No trip yet.
+      return (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Ready to drive?</Text>
+          <Text style={styles.cardText}>
+            Tap Start ride and the app shares your live location with your riders
+            until you end the ride — no need to keep your phone out.
+          </Text>
+          <View style={styles.startBtn}>
+            <Button
+              title="Start ride"
+              onPress={() => void startTrip(riders.map((r) => r.userId))}
+            />
+          </View>
         </View>
+      );
+    }
 
-        {/* Status banner */}
-        <View style={styles.statusBanner}>
-          <View
-            style={[
-              styles.statusDot,
-              trip?.status === 'arrived'
-                ? styles.dotGreen
-                : trip?.status === 'on_my_way'
-                  ? styles.dotCrimson
-                  : styles.dotGrey,
-            ]}
-          />
-          <Text style={styles.statusText}>
-            {trip ? STATUS_LABEL[trip.status] : 'Trip not started yet'}
+    // Rider view.
+    const driverName = a.driver?.name ?? 'your driver';
+    if (status === 'completed') {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Dropped off ✅</Text>
+          <Text style={styles.cardText}>
+            {driverName} has finished the carpool. See you next time!
           </Text>
         </View>
-
-        {shareError ? <ErrorMessage message={shareError} /> : null}
-
-        {isDriver ? (
-          <DriverControls
-            hasTrip={!!trip}
-            status={trip?.status ?? null}
-            riders={riders}
-            pickups={pickups}
-            onStart={() => void startTrip(riders.map((r) => r.userId))}
-            onStatus={(s) => void setStatus(s)}
-            onTogglePickup={(id) => void togglePickup(id)}
-          />
-        ) : (
-          <RiderView
-            hasTrip={!!trip}
-            pickedUp={currentUserId ? pickups.has(currentUserId) : false}
-            driverName={a.driver?.name ?? 'your driver'}
-            pickupTime={a.time}
-          />
-        )}
-      </>
+      );
+    }
+    if (status === 'on_my_way') {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Tracking {driverName}</Text>
+          <Text style={styles.cardText}>
+            Watch {driverName}&apos;s car move in real time on the map above.
+            Pickup at {formatTime(a.time)}.
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Waiting for {driverName}</Text>
+        <Text style={styles.cardText}>
+          {driverName} hasn&apos;t started the ride yet. The car will appear here
+          live once they&apos;re on the way. Pickup at {formatTime(a.time)}.
+        </Text>
+      </View>
     );
   }
 
@@ -221,149 +268,33 @@ export function LiveTripScreen({ navigation, route }: Props) {
           showsVerticalScrollIndicator={false}
         >
           {error ? <ErrorMessage message={error} /> : null}
-          {renderBody()}
+
+          {a && a.role !== 'unmatched' ? (
+            <View style={[styles.mapCard, { height: MAP_HEIGHT }]}>
+              <LiveMap channel={channelName} stops={stops} start={driverStart} />
+            </View>
+          ) : null}
+
+          <View style={styles.statusBanner}>
+            <View
+              style={[
+                styles.statusDot,
+                status === 'completed'
+                  ? styles.dotGreen
+                  : status === 'on_my_way'
+                    ? styles.dotCrimson
+                    : styles.dotGrey,
+              ]}
+            />
+            <Text style={styles.statusText}>{statusLabel}</Text>
+          </View>
+
+          {shareError ? <ErrorMessage message={shareError} /> : null}
+
+          {renderControls()}
         </ScrollView>
       )}
     </SafeAreaView>
-  );
-}
-
-function DriverControls({
-  hasTrip,
-  status,
-  riders,
-  pickups,
-  onStart,
-  onStatus,
-  onTogglePickup,
-}: {
-  hasTrip: boolean;
-  status: TripStatus | null;
-  riders: { userId: string; name: string; time: string }[];
-  pickups: Set<string>;
-  onStart: () => void;
-  onStatus: (s: TripStatus) => void;
-  onTogglePickup: (id: string) => void;
-}) {
-  if (!hasTrip) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Ready to drive?</Text>
-        <Text style={styles.cardText}>
-          Start the trip to share your live location with your riders and check
-          kids off as you pick them up.
-        </Text>
-        <View style={styles.startBtn}>
-          <Button title="Start trip & share location" onPress={onStart} />
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <>
-      <Text style={styles.sectionLabel}>Trip status</Text>
-      <View style={styles.statusRow}>
-        {(
-          [
-            ['on_my_way', 'On my way'],
-            ['arrived', 'Arrived'],
-            ['completed', 'Complete'],
-          ] as [TripStatus, string][]
-        ).map(([value, label]) => {
-          const selected = status === value;
-          return (
-            <TouchableOpacity
-              key={value}
-              style={[styles.statusPill, selected && styles.statusPillActive]}
-              onPress={() => onStatus(value)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.statusPillText,
-                  selected && styles.statusPillTextActive,
-                ]}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <Text style={styles.sectionLabel}>Pickups ({pickups.size}/{riders.length})</Text>
-      <View style={styles.card}>
-        {riders.length === 0 ? (
-          <Text style={styles.cardText}>No riders in your car today.</Text>
-        ) : (
-          riders.map((r) => {
-            const done = pickups.has(r.userId);
-            return (
-              <TouchableOpacity
-                key={r.userId}
-                style={styles.pickupRow}
-                onPress={() => onTogglePickup(r.userId)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, done && styles.checkboxOn]}>
-                  {done ? (
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                  ) : null}
-                </View>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(r.name)}</Text>
-                </View>
-                <Text
-                  style={[styles.pickupName, done && styles.pickupNameDone]}
-                  numberOfLines={1}
-                >
-                  {r.name}
-                </Text>
-                <Text style={styles.pickupTime}>{formatTime(r.time)}</Text>
-              </TouchableOpacity>
-            );
-          })
-        )}
-      </View>
-    </>
-  );
-}
-
-function RiderView({
-  hasTrip,
-  pickedUp,
-  driverName,
-  pickupTime,
-}: {
-  hasTrip: boolean;
-  pickedUp: boolean;
-  driverName: string;
-  pickupTime: string;
-}) {
-  if (!hasTrip) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Waiting for {driverName}</Text>
-        <Text style={styles.cardText}>
-          Your driver hasn&apos;t started the trip yet. You&apos;ll see the car
-          move here live once they&apos;re on the way. Pickup at{' '}
-          {formatTime(pickupTime)}.
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>
-        {pickedUp ? 'Picked up ✅' : `Tracking ${driverName}`}
-      </Text>
-      <Text style={styles.cardText}>
-        {pickedUp
-          ? 'Your child is in the car. Follow the map to school.'
-          : `Watch ${driverName}'s car move toward you in real time. Pickup at ${formatTime(pickupTime)}.`}
-      </Text>
-    </View>
   );
 }
 
@@ -387,7 +318,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   mapCard: {
-    height: 320,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1.5,
@@ -428,38 +358,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#8391A1',
+    marginTop: 14,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  statusRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  statusPill: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E8ECF4',
-    alignItems: 'center',
-  },
-  statusPillActive: { backgroundColor: '#DC143C', borderColor: '#DC143C' },
-  statusPillText: { fontSize: 14, fontWeight: '700', color: '#6A707C' },
-  statusPillTextActive: { color: '#FFFFFF' },
-  pickupRow: {
+  memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
     gap: 12,
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#C9CDD4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxOn: { backgroundColor: '#16A34A', borderColor: '#16A34A' },
   avatar: {
     width: 34,
     height: 34,
@@ -469,7 +378,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
-  pickupName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
-  pickupNameDone: { color: '#8391A1', textDecorationLine: 'line-through' },
-  pickupTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
+  memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
 });
