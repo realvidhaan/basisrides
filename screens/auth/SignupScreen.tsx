@@ -49,7 +49,6 @@ export function SignupScreen({ navigation }: Props) {
     carCapacity: '0',
     carColor: 'silver',
     carType: 'sedan',
-    carModel: '',
     licensePlate: '',
     email: '',
     password: '',
@@ -100,9 +99,6 @@ export function SignupScreen({ navigation }: Props) {
     if (!form.carCapacity.trim() || isNaN(cap) || cap < 0 || cap > 6) {
       errors.carCapacity = 'Enter a number from 0 to 6.';
     }
-    if (!isNaN(cap) && cap > 0 && !form.carModel.trim()) {
-      errors.carModel = 'Tell parents your car so they can spot it at pickup.';
-    }
     if (!isNaN(cap) && cap > 0 && !form.licensePlate.trim()) {
       errors.licensePlate = 'Add your plate so riders can confirm the right car.';
     }
@@ -129,6 +125,30 @@ export function SignupScreen({ navigation }: Props) {
     // recovery flag so the auth gate opens once the session is created.
     setRecovering(false);
 
+    const email = form.email.trim().toLowerCase();
+
+    // Pre-check: block signup if this email already belongs to an account.
+    // Supabase's signUp obfuscates "user already registered" (anti-enumeration),
+    // so it can silently no-op instead of erroring. Ask the DB directly via the
+    // email_exists RPC (reads auth.users) and surface a clear inline + banner
+    // error. Fail open on a transient RPC error — signUp still guards the unique
+    // constraint, so we don't wrongly lock out a real new parent.
+    const { data: emailTaken, error: emailCheckError } = await supabase.rpc(
+      'email_exists',
+      { p_email: email },
+    );
+    if (!emailCheckError && emailTaken) {
+      setLoading(false);
+      setFieldErrors((prev) => ({
+        ...prev,
+        email: 'An account with this email already exists. Log in instead.',
+      }));
+      setGlobalError(
+        'That email is already registered. Try logging in or resetting your password.',
+      );
+      return;
+    }
+
     // Resolve the address to real coordinates: trust a picked suggestion's exact
     // coords, otherwise geocode the freeform text. If neither yields a location
     // the address isn't a real, findable place — block signup and tell the parent
@@ -149,7 +169,6 @@ export function SignupScreen({ navigation }: Props) {
     // (handle_new_user) creates the public.users row from it. This is what lets
     // signup work even when there's no session yet (email confirmation on).
     const hasCar = Number(form.carCapacity) > 0;
-    const email = form.email.trim().toLowerCase();
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password: form.password,
@@ -166,7 +185,6 @@ export function SignupScreen({ navigation }: Props) {
           car_capacity: String(Number(form.carCapacity)),
           car_color: hasCar ? form.carColor : '',
           car_type: hasCar ? form.carType : '',
-          car_model: hasCar ? form.carModel.trim() : '',
           license_plate: hasCar ? form.licensePlate.trim() : '',
           invite_code: inviteCode.trim().toUpperCase(),
         },
@@ -370,16 +388,13 @@ export function SignupScreen({ navigation }: Props) {
               values={{
                 colorKey: form.carColor as CarColorKey,
                 type: form.carType as CarTypeKey,
-                model: form.carModel,
                 plate: form.licensePlate,
               }}
               onChange={(next) => {
                 updateField('carColor', next.colorKey);
                 updateField('carType', next.type);
-                updateField('carModel', next.model);
                 updateField('licensePlate', next.plate);
               }}
-              modelError={fieldErrors.carModel}
               plateError={fieldErrors.licensePlate}
             />
           </View>

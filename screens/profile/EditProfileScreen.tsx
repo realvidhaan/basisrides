@@ -75,8 +75,11 @@ export function EditProfileScreen({ navigation }: Props) {
     setSaving(true);
     setError(null);
     try {
-      // Prefer the exact coords from a picked suggestion; otherwise re-geocode
-      // only when the address text actually changed.
+      // Resolve coordinates the same way signup does: trust a picked
+      // suggestion's exact coords, otherwise geocode the freeform text — but only
+      // when the address actually changed (an untouched address keeps its saved
+      // coords). If a changed address can't be resolved to a real location, block
+      // the update so we never overwrite a valid pickup point with a null one.
       let lat = user.latitude;
       let lng = user.longitude;
       if (addressCoords) {
@@ -84,8 +87,14 @@ export function EditProfileScreen({ navigation }: Props) {
         lng = addressCoords.lng;
       } else if (address.trim() !== (user.address ?? '').trim()) {
         const coords = await geocodeAddress(address.trim());
-        lat = coords?.lat ?? null;
-        lng = coords?.lng ?? null;
+        if (!coords) {
+          setError(
+            "We couldn't find that address. Pick one from the dropdown suggestions as you type.",
+          );
+          return;
+        }
+        lat = coords.lat;
+        lng = coords.lng;
       }
       const { error: upErr } = await supabase
         .from('users')

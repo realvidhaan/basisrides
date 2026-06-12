@@ -105,7 +105,6 @@ export interface SignupFormValues {
   carCapacity: string;
   carColor: string;
   carType: string;
-  carModel: string;
   licensePlate: string;
   email: string;
   password: string;

@@ -1,0 +1,52 @@
+/* BasisRides — Typography tokens
+   Primary: Urbanist (Google Fonts, Variable)
+   Secondary: Poppins (Google Fonts)
+   Source: Figma METADATA + codebase styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ── Font families ── */
+  --font-primary:   'Urbanist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-secondary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ── Font sizes ── */
+  --text-2xl:  2rem;       /* 32px — wordmark / hero */
+  --text-xl:   1.875rem;   /* 30px — screen headings */
+  --text-lg:   1.25rem;    /* 20px — section titles */
+  --text-md:   1rem;       /* 16px — body large / subtitles */
+  --text-base: 0.9375rem;  /* 15px — body / button labels */
+  --text-sm:   0.875rem;   /* 14px — secondary body / links */
+  --text-xs:   0.8125rem;  /* 13px — input labels */
+  --text-xxs:  0.75rem;    /* 12px — captions / helper text */
+
+  /* ── Font weights ── */
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+
+  /* ── Line heights ── */
+  --leading-tight:    1.2;
+  --leading-snug:     1.3;
+  --leading-normal:   1.4;
+  --leading-relaxed:  1.5;
+  --leading-loose:    1.6;
+
+  /* ── Letter spacing ── */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.01em;
+  --tracking-wider:   0.02em;
+
+  /* ── Semantic aliases ── */
+  --font-heading:        var(--font-primary);
+  --font-body:           var(--font-primary);
+  --font-label:          var(--font-primary);
+  --font-link:           var(--font-secondary);
+
+  --text-heading-size:   var(--text-xl);
+  --text-body-size:      var(--text-base);
+  --text-label-size:     var(--text-xs);
+  --text-caption-size:   var(--text-xxs);
+}

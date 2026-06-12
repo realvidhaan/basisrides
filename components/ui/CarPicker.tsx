@@ -13,23 +13,21 @@ import {
 export interface CarPickerValues {
   colorKey: CarColorKey;
   type: CarTypeKey;
-  model: string;
   plate: string;
 }
 
 interface Props {
   values: CarPickerValues;
   onChange: (next: CarPickerValues) => void;
-  modelError?: string;
   plateError?: string;
 }
 
 /**
- * Vehicle editor shared by signup and Edit information. Shows a live preview of
- * the car that updates as the parent picks a color and body type, plus text
- * fields for the make/model and license plate. Fully controlled.
+ * Vehicle editor used at signup. Shows a live preview of the car that updates as
+ * the parent picks a color and body type, plus the license plate field. Fully
+ * controlled.
  */
-export function CarPicker({ values, onChange, modelError, plateError }: Props) {
+export function CarPicker({ values, onChange, plateError }: Props) {
   function set<K extends keyof CarPickerValues>(
     key: K,
     value: CarPickerValues[K],
@@ -89,15 +87,6 @@ export function CarPicker({ values, onChange, modelError, plateError }: Props) {
           );
         })}
       </View>
-
-      <Input
-        label="Make & model"
-        value={values.model}
-        onChangeText={(t) => set('model', t)}
-        placeholder="Honda Odyssey"
-        error={modelError}
-        autoCapitalize="words"
-      />
 
       <Input
         label="License plate"

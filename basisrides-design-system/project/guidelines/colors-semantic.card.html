@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Semantic Colors" subtitle="Status and feedback colors" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-primary); background: #fff; }
+  .swatches { display: flex; gap: 0; height: 200px; }
+  .swatch { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px 12px; }
+  .swatch span { font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .label { color: #fff; }
+  .label-dark { color: #1E232C; }
+</style>
+</head>
+<body>
+<div class="swatches">
+  <div class="swatch" style="background:#DC143C"><span class="label">Error<br>#DC143C</span></div>
+  <div class="swatch" style="background:#16A34A"><span class="label">Success<br>#16A34A</span></div>
+  <div class="swatch" style="background:#18C07A"><span class="label">Positive<br>#18C07A</span></div>
+  <div class="swatch" style="background:#FF9500"><span class="label">Warning<br>#FF9500</span></div>
+  <div class="swatch" style="background:#F0FDF4"><span class="label-dark">Success Tint<br>#F0FDF4</span></div>
+  <div class="swatch" style="background:#FFF1F1"><span class="label-dark">Error Tint<br>#FFF1F1</span></div>
+</div>
+</body>
+</html>

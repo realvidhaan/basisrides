@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Brand Colors" subtitle="Primary crimson and ink" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-primary); background: #fff; }
+  .swatches { display: flex; gap: 0; height: 200px; }
+  .swatch { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px 12px; }
+  .swatch span { font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .label { color: #fff; }
+  .label-dark { color: #1E232C; }
+</style>
+</head>
+<body>
+<div class="swatches">
+  <div class="swatch" style="background:#DC143C"><span class="label">Brand Red<br>#DC143C</span></div>
+  <div class="swatch" style="background:#B01030"><span class="label">Red Dark<br>#B01030</span></div>
+  <div class="swatch" style="background:#FFF1F1"><span class="label-dark">Red Light<br>#FFF1F1</span></div>
+  <div class="swatch" style="background:#1E232C"><span class="label">Ink<br>#1E232C</span></div>
+  <div class="swatch" style="background:#FFFFFF; border: 1px solid #DADADA"><span class="label-dark">White<br>#FFFFFF</span></div>
+</div>
+</body>
+</html>

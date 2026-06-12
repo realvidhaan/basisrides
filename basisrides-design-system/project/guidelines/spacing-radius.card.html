@@ -1,0 +1,30 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Radius & Borders" subtitle="Border radius tokens and inset shadow borders" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-primary); background: #fff; }
+  .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .chip { width: 56px; height: 56px; background: #F7F8F9; box-shadow: inset 0 0 0 1.5px #DADADA; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .label { font-size: 10px; color: #8391A1; margin-top: 6px; font-family: monospace; text-align: center; }
+  .val { font-size: 11px; font-weight: 600; color: #1E232C; }
+  .item { display: flex; flex-direction: column; align-items: center; }
+  .divider { width: 1px; height: 56px; background: #E8ECF4; margin: 0 8px; }
+  .shadow-demo { height: 44px; padding: 0 16px; display: flex; align-items: center; background: #F7F8F9; font-size: 13px; color: #8391A1; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="item"><div class="chip" style="border-radius:6px;"></div><span class="label">--radius-sm<br>6px</span></div>
+  <div class="item"><div class="chip" style="border-radius:8px;"></div><span class="label">--radius-md<br>8px</span></div>
+  <div class="item"><div class="chip" style="border-radius:10px;"></div><span class="label">--radius-lg<br>10px</span></div>
+  <div class="item"><div class="chip" style="border-radius:12px;"></div><span class="label">--radius-xl<br>12px</span></div>
+  <div class="item"><div class="chip" style="border-radius:9999px;width:80px;"></div><span class="label">--radius-full<br>pill</span></div>
+  <div class="divider"></div>
+  <div class="item"><div class="shadow-demo" style="border-radius:10px;box-shadow:inset 0 0 0 1.5px #DADADA;">Placeholder text</div><span class="label">--shadow-input<br>default</span></div>
+  <div class="item"><div class="shadow-demo" style="border-radius:10px;box-shadow:inset 0 0 0 1.5px #DC143C;color:#1E232C;">Focused</div><span class="label">--shadow-input-focus<br>active</span></div>
+</div>
+</body>
+</html>

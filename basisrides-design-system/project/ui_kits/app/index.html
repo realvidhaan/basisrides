@@ -1,0 +1,312 @@
+<!-- @dsCard group="Mobile App" viewport="390x844" name="Auth Flow" subtitle="Welcome → Login → Signup → Home" -->
+<!-- @startingPoint section="Mobile App" subtitle="Interactive BasisRides auth flow — Welcome, Login, Signup, Home" viewport="390x844" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BasisRides — Mobile App</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #111; display: flex; align-items: center; justify-content: center; }
+  #root { width: 390px; height: 844px; position: relative; overflow: hidden; background: #fff; border-radius: 44px; box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08); }
+  @media (max-width: 420px) {
+    html, body { background: #fff; align-items: flex-start; }
+    #root { width: 100%; height: 100vh; border-radius: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+/* ─── Shared primitives ─── */
+const C = {
+  red: '#DC143C', redDark: '#B01030', redLight: '#FFF1F1',
+  ink: '#1E232C', muted: '#8391A1', secondary: '#6A707C',
+  surface: '#F7F8F9', border: '#E0E0E0', borderSubtle: '#E8ECF4',
+  white: '#FFFFFF', success: '#16A34A',
+};
+const F = { primary: "'Urbanist', sans-serif", secondary: "'Poppins', sans-serif" };
+
+function StatusBar() {
+  return (
+    <div style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
+      <span style={{ fontSize: 15, fontWeight: 600, fontFamily: F.primary }}>9:41</span>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="3" width="3" height="9" rx="1" fill={C.ink}/><rect x="4.5" y="2" width="3" height="10" rx="1" fill={C.ink}/><rect x="9" y="0" width="3" height="12" rx="1" fill={C.ink}/><rect x="13.5" y="0" width="3" height="12" rx="1" fill={C.ink} opacity="0.3"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9L15 3.4C13.2 1.5 10.7 0.3 8 0.3C5.3 0.3 2.8 1.5 1 3.4L2.4 4.9C3.8 3.4 5.8 2.5 8 2.5Z" fill={C.ink}/><path d="M8 5.5C9.4 5.5 10.7 6.1 11.6 7L13 5.5C11.7 4.2 9.9 3.4 8 3.4C6.1 3.4 4.3 4.2 3 5.5L4.4 7C5.3 6.1 6.6 5.5 8 5.5Z" fill={C.ink}/><circle cx="8" cy="10" r="1.5" fill={C.ink}/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke={C.ink} strokeOpacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill={C.ink}/><path d="M23 4.5V7.5C23.8 7.2 24.5 6.4 24.5 6C24.5 5.6 23.8 4.8 23 4.5Z" fill={C.ink} fillOpacity="0.4"/></svg>
+      </div>
+    </div>
+  );
+}
+
+function BackButton({ onPress }) {
+  return (
+    <button onClick={onPress} style={{
+      width: 41, height: 41, borderRadius: 12, background: C.white,
+      boxShadow: `inset 0 0 0 1px ${C.borderSubtle}`, border: 'none',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+        <path d="M8.5 1L1.5 8L8.5 15" stroke={C.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  );
+}
+
+function Btn({ label, variant = 'primary', size = 'lg', disabled = false, loading = false, onClick }) {
+  const [hov, setHov] = React.useState(false);
+  const heights = { lg: 56, md: 52, sm: 40 };
+  const base = {
+    width: '100%', height: heights[size], borderRadius: 10, border: 'none',
+    fontSize: 15, fontWeight: 700, fontFamily: F.primary, cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1, transition: 'all 150ms ease', letterSpacing: '0.01em',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+  const styles = {
+    primary: { background: hov && !disabled ? C.redDark : C.red, color: C.white },
+    outline: { background: hov && !disabled ? C.surface : C.white, color: C.ink, boxShadow: `inset 0 0 0 1.5px ${C.ink}` },
+  };
+  return (
+    <button style={{ ...base, ...styles[variant] }} disabled={disabled}
+      onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      {loading ? '···' : label}
+    </button>
+  );
+}
+
+function TextInput({ label, placeholder, type = 'text', value, onChange, error, helper, autoFocus }) {
+  const [focused, setFocused] = React.useState(false);
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {label && <div style={{ fontSize: 13, fontWeight: 500, color: C.ink, marginBottom: 6, fontFamily: F.primary }}>{label}</div>}
+      <div style={{
+        height: 52, borderRadius: 10, display: 'flex', alignItems: 'center',
+        padding: '0 16px', background: C.white,
+        boxShadow: error ? `inset 0 0 0 1.5px ${C.red}` : focused ? `inset 0 0 0 1.5px ${C.red}` : `inset 0 0 0 1.5px ${C.border}`,
+        transition: 'box-shadow 150ms ease',
+      }}>
+        <input type={type} placeholder={placeholder} value={value} autoFocus={autoFocus}
+          onChange={e => onChange && onChange(e.target.value)}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, fontWeight: 500, fontFamily: F.primary, color: C.ink, background: 'transparent' }} />
+      </div>
+      {error && <div style={{ fontSize: 12, color: C.red, marginTop: 4, fontWeight: 500, fontFamily: F.primary }}>{error}</div>}
+      {!error && helper && <div style={{ fontSize: 12, color: C.secondary, marginTop: 4, fontFamily: F.primary }}>{helper}</div>}
+    </div>
+  );
+}
+
+function SelectInput({ label, value, onChange, options }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: C.ink, marginBottom: 6, fontFamily: F.primary }}>{label}</div>
+      <div style={{ height: 52, borderRadius: 10, background: C.white, boxShadow: `inset 0 0 0 1.5px ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: 12 }}>
+        <select value={value} onChange={e => onChange(e.target.value)}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, fontFamily: F.primary, color: C.ink, background: 'transparent', height: '100%', cursor: 'pointer' }}>
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+/* ─── SCREENS ─── */
+
+function WelcomeScreen({ onLogin, onRegister }) {
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: C.white }}>
+      <StatusBar />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 27px', gap: 0 }}>
+        <img src="../../assets/logo.png" alt="BASIS RIDES" style={{ width: 280, objectFit: 'contain', marginBottom: 56 }} />
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Btn label="Login" variant="primary" size="lg" onClick={onLogin} />
+          <Btn label="Register" variant="outline" size="lg" onClick={onRegister} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoginScreen({ onBack, onLogin, onRegister, onForgot }) {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  function handleLogin() {
+    if (!email || !password) { setError('Please enter your email and password.'); return; }
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin(); }, 1000);
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: C.white }}>
+      <StatusBar />
+      <div style={{ padding: '4px 20px 0' }}><BackButton onPress={onBack} /></div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '24px 24px 32px' }}>
+        <div style={{ fontFamily: F.primary, fontSize: 30, fontWeight: 700, color: C.ink, lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 32 }}>
+          Welcome back to BasisRides. Glad to see you again!
+        </div>
+        {error && (
+          <div style={{ background: C.redLight, borderRadius: 8, padding: 12, marginBottom: 16, display: 'flex', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14, color: C.red, fontWeight: 500, fontFamily: F.primary }}>{error}</span>
+          </div>
+        )}
+        <TextInput label="Email" placeholder="Enter your email" type="email" value={email} onChange={v => { setEmail(v); setError(null); }} />
+        <TextInput label="Password" placeholder="Enter your password" type="password" value={password} onChange={v => { setPassword(v); setError(null); }} />
+        <div style={{ textAlign: 'right', marginBottom: 24, marginTop: -8 }}>
+          <button onClick={onForgot} style={{ background: 'none', border: 'none', fontSize: 14, fontWeight: 700, color: C.secondary, cursor: 'pointer', fontFamily: F.primary }}>Forgot Password?</button>
+        </div>
+        <Btn label="Login" variant="primary" size="lg" loading={loading} disabled={!email || !password} onClick={handleLogin} />
+      </div>
+      <div style={{ padding: '0 24px 32px', textAlign: 'center' }}>
+        <button onClick={onRegister} style={{ background: 'none', border: 'none', fontSize: 15, fontWeight: 700, fontFamily: F.secondary, color: C.ink, cursor: 'pointer', letterSpacing: '0.01em' }}>
+          Don't have an account? <span style={{ color: C.red }}>Register Now</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ForgotScreen({ onBack }) {
+  const [email, setEmail] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: C.white }}>
+      <StatusBar />
+      <div style={{ padding: '4px 20px 0' }}><BackButton onPress={onBack} /></div>
+      <div style={{ flex: 1, padding: '24px 24px 32px' }}>
+        <div style={{ fontFamily: F.primary, fontSize: 30, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em', marginBottom: 8 }}>Forgot Password?</div>
+        <div style={{ fontSize: 16, fontWeight: 500, color: C.muted, fontFamily: F.primary, lineHeight: 1.5, marginBottom: 28 }}>
+          Don't worry! Please enter the email address linked with your account.
+        </div>
+        {sent
+          ? <div style={{ background: '#F0FDF4', borderRadius: 8, padding: 16, color: C.success, fontFamily: F.primary, fontSize: 15, fontWeight: 600 }}>✓ Reset code sent! Check your inbox.</div>
+          : <>
+              <TextInput label="" placeholder="Enter your email" type="email" value={email} onChange={setEmail} />
+              <div style={{ height: 16 }} />
+              <Btn label="Send Code" variant="primary" size="lg" disabled={!email} onClick={() => setSent(true)} />
+            </>
+        }
+      </div>
+      <div style={{ padding: '0 24px 32px', textAlign: 'center' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: 15, fontWeight: 700, fontFamily: F.secondary, color: C.ink, cursor: 'pointer', letterSpacing: '0.01em' }}>
+          Remember Password? <span style={{ color: C.red }}>Login</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const GRADES = ['5th','6th','7th','8th','9th','10th','11th','12th'];
+
+function SignupScreen({ onBack, onSuccess }) {
+  const [form, setForm] = React.useState({ fullName:'', childName:'', grade:'9th', neighborhood:'', carCapacity:'', email:'', password:'', confirmPassword:'' });
+  const [errors, setErrors] = React.useState({});
+  const [loading, setLoading] = React.useState(false);
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })); setErrors(e => { const n = {...e}; delete n[k]; return n; }); }
+
+  function validate() {
+    const e = {};
+    if (!form.fullName.trim()) e.fullName = 'Full name is required.';
+    if (!form.childName.trim()) e.childName = "Child's name is required.";
+    if (!form.neighborhood.trim()) e.neighborhood = 'Neighborhood is required.';
+    const cap = Number(form.carCapacity);
+    if (!form.carCapacity || isNaN(cap) || cap < 0 || cap > 6) e.carCapacity = 'Enter a number from 0 to 6.';
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email.';
+    if (form.password.length < 8) e.password = 'Min. 8 characters.';
+    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function handleSubmit() {
+    if (!validate()) return;
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onSuccess(); }, 1200);
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: C.white }}>
+      <StatusBar />
+      <div style={{ display: 'flex', alignItems: 'center', padding: '8px 16px 8px', borderBottom: `1px solid ${C.border}`, gap: 12 }}>
+        <BackButton onPress={onBack} />
+        <span style={{ fontSize: 20, fontWeight: 700, color: C.ink, fontFamily: F.primary }}>Create your account</span>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px 40px' }}>
+        <TextInput label="Full name" placeholder="Jane Smith" value={form.fullName} onChange={v => set('fullName',v)} error={errors.fullName} />
+        <TextInput label="Child's name" placeholder="Alex Smith" value={form.childName} onChange={v => set('childName',v)} error={errors.childName} />
+        <SelectInput label="Grade" value={form.grade} onChange={v => set('grade',v)} options={GRADES} />
+        <TextInput label="Neighborhood" placeholder="Cupertino, Santa Clara…" value={form.neighborhood} onChange={v => set('neighborhood',v)} error={errors.neighborhood} />
+        <TextInput label="Car capacity" placeholder="4" type="number" value={form.carCapacity} onChange={v => set('carCapacity',v)} error={errors.carCapacity} helper="Enter 0 if you don't drive" />
+        <TextInput label="Email" placeholder="you@example.com" type="email" value={form.email} onChange={v => set('email',v)} error={errors.email} />
+        <TextInput label="Password" placeholder="Min. 8 characters" type="password" value={form.password} onChange={v => set('password',v)} error={errors.password} />
+        <TextInput label="Confirm password" placeholder="Re-enter password" type="password" value={form.confirmPassword} onChange={v => set('confirmPassword',v)} error={errors.confirmPassword} />
+        <div style={{ height: 8 }} />
+        <Btn label="Create account" variant="primary" size="lg" loading={loading} onClick={handleSubmit} />
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ onLogout }) {
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: C.white }}>
+      <StatusBar />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', gap: 0 }}>
+        <div style={{ fontSize: 36, fontWeight: 700, color: C.red, letterSpacing: -0.5, marginBottom: 8, fontFamily: F.primary }}>BasisRide</div>
+        <div style={{ fontSize: 15, color: C.secondary, marginBottom: 48, fontFamily: F.primary }}>Carpool for BISV families</div>
+        <div style={{ background: C.surface, borderRadius: 16, padding: '24px 20px', width: '100%', marginBottom: 40 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, fontFamily: F.primary, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Upcoming Rides</div>
+          <div style={{ fontSize: 15, color: C.secondary, fontFamily: F.primary, fontStyle: 'italic' }}>Ride scheduling coming soon ✦</div>
+        </div>
+        <div style={{ width: '100%' }}>
+          <Btn label="Log out" variant="outline" size="md" onClick={onLogout} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Router ─── */
+function App() {
+  const [screen, setScreen] = React.useState('welcome');
+
+  const nav = {
+    welcome: <WelcomeScreen onLogin={() => setScreen('login')} onRegister={() => setScreen('signup')} />,
+    login:   <LoginScreen onBack={() => setScreen('welcome')} onLogin={() => setScreen('home')} onRegister={() => setScreen('signup')} onForgot={() => setScreen('forgot')} />,
+    forgot:  <ForgotScreen onBack={() => setScreen('login')} />,
+    signup:  <SignupScreen onBack={() => setScreen('welcome')} onSuccess={() => setScreen('home')} />,
+    home:    <HomeScreen onLogout={() => setScreen('welcome')} />,
+  };
+
+  return (
+    <div style={{ height: '100%', fontFamily: F.primary, position: 'relative' }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        transition: 'opacity 200ms ease',
+        key: screen,
+      }}>
+        {nav[screen]}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
