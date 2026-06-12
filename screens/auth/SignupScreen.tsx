@@ -22,6 +22,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
+import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
 
 // On web, send the email-confirmation link back to the running app so clicking
@@ -49,6 +50,7 @@ export function SignupScreen({ navigation }: Props) {
     carCapacity: '0',
     carColor: 'silver',
     carType: 'sedan',
+    carState: '',
     licensePlate: '',
     email: '',
     password: '',
@@ -99,8 +101,17 @@ export function SignupScreen({ navigation }: Props) {
     if (!form.carCapacity.trim() || isNaN(cap) || cap < 0 || cap > 6) {
       errors.carCapacity = 'Enter a number from 0 to 6.';
     }
-    if (!isNaN(cap) && cap > 0 && !form.licensePlate.trim()) {
-      errors.licensePlate = 'Add your plate so riders can confirm the right car.';
+    // Drivers (capacity > 0) must give a plate state and a structurally valid
+    // plate for it. We don't require state for non-drivers (no car shown).
+    if (!isNaN(cap) && cap > 0) {
+      if (!form.carState) {
+        errors.carState = 'Select the state your plate is from.';
+      } else {
+        const plateCheck = validatePlate(form.carState, form.licensePlate.trim());
+        if (!plateCheck.ok) {
+          errors.licensePlate = plateCheck.message ?? 'Enter a valid license plate.';
+        }
+      }
     }
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address.';
@@ -112,6 +123,13 @@ export function SignupScreen({ navigation }: Props) {
       errors.confirmPassword = 'Passwords do not match.';
     }
     setFieldErrors(errors);
+    // Mirror the address flow: surface a top banner when the plate/state is the
+    // blocking problem, so the failure isn't only buried inline next to the field.
+    if (errors.carState || errors.licensePlate) {
+      setGlobalError(
+        "That license plate doesn't match a valid format for the selected state. Fix the highlighted field and try again.",
+      );
+    }
     return Object.keys(errors).length === 0;
   }
 
@@ -388,13 +406,16 @@ export function SignupScreen({ navigation }: Props) {
               values={{
                 colorKey: form.carColor as CarColorKey,
                 type: form.carType as CarTypeKey,
+                state: form.carState,
                 plate: form.licensePlate,
               }}
               onChange={(next) => {
                 updateField('carColor', next.colorKey);
                 updateField('carType', next.type);
+                updateField('carState', next.state);
                 updateField('licensePlate', next.plate);
               }}
+              stateError={fieldErrors.carState}
               plateError={fieldErrors.licensePlate}
             />
           </View>
