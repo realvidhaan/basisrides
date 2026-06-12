@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,13 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { setRecovering } from '@/lib/authFlow';
+
+// On web, point the resent confirmation link back at the running app so clicking
+// it logs the parent in. Native deep-linking falls back to the project Site URL.
+const emailRedirectTo =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : undefined;
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -63,7 +70,11 @@ export function LoginScreen({ navigation }: Props) {
     setResending(true);
     setResent(false);
     try {
-      await supabase.auth.resend({ type: 'signup', email: email.trim() });
+      await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo },
+      });
       setResent(true);
     } catch {
       // Non-fatal.

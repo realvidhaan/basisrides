@@ -129,9 +129,21 @@ export function SignupScreen({ navigation }: Props) {
     // recovery flag so the auth gate opens once the session is created.
     setRecovering(false);
 
-    // Geocode the address only if they didn't pick a suggestion (which already
-    // came with exact coordinates). Best-effort — the map just won't pin it.
+    // Resolve the address to real coordinates: trust a picked suggestion's exact
+    // coords, otherwise geocode the freeform text. If neither yields a location
+    // the address isn't a real, findable place — block signup and tell the parent
+    // to choose one of the dropdown suggestions (so drivers get a valid pickup).
     const coords = addressCoords ?? (await geocodeAddress(form.address.trim()));
+    if (!coords) {
+      setLoading(false);
+      setFieldErrors((prev) => ({
+        ...prev,
+        address:
+          "We couldn't find that address. Pick one from the dropdown suggestions as you type.",
+      }));
+      setGlobalError('Please choose a valid home address from the dropdown suggestions.');
+      return;
+    }
 
     // All profile fields ride along as auth metadata; a DB trigger
     // (handle_new_user) creates the public.users row from it. This is what lets
@@ -149,8 +161,8 @@ export function SignupScreen({ navigation }: Props) {
           grade: form.grade,
           neighborhood: form.neighborhood.trim(),
           address: form.address.trim(),
-          latitude: coords ? String(coords.lat) : '',
-          longitude: coords ? String(coords.lng) : '',
+          latitude: String(coords.lat),
+          longitude: String(coords.lng),
           car_capacity: String(Number(form.carCapacity)),
           car_color: hasCar ? form.carColor : '',
           car_type: hasCar ? form.carType : '',

@@ -68,13 +68,22 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
       return L.divIcon({ className: '', html: '<div class="pin">' + emoji + '</div>', iconSize: [26, 26], iconAnchor: [13, 13] });
     }
 
+    // Stop names carry user-controlled text (a parent's full name + child name),
+    // and Leaflet's bindPopup renders its string argument as HTML. Escape it so a
+    // crafted name can't inject markup/script into other members' map popups.
+    function escapeHtml(t) {
+      return String(t).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
     var bounds = [];
     for (var i = 0; i < CONFIG.stops.length; i++) {
       var s = CONFIG.stops[i];
       var emoji = s.kind === 'school' ? '\u{1F3EB}' : (s.kind === 'driver' ? '\u{1F3E0}' : '\u{1F3E1}');
       L.marker([s.point.lat, s.point.lng], { icon: emojiIcon(emoji) })
         .addTo(map)
-        .bindPopup(s.name);
+        .bindPopup(escapeHtml(s.name));
       bounds.push([s.point.lat, s.point.lng]);
     }
 

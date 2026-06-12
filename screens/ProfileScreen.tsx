@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { ProfileStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -33,9 +34,18 @@ function initials(name: string): string {
 }
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, loading } = useCurrentUser();
+  const { user, loading, refetch } = useCurrentUser();
 
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // ProfileScreen stays mounted beneath EditProfile in the stack, so its
+  // useCurrentUser snapshot goes stale after an edit. Re-pull on every focus
+  // (including the pop back from EditProfile) so saved changes show immediately.
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch]),
+  );
 
   async function handleLogout(): Promise<void> {
     setLoggingOut(true);
@@ -55,7 +65,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={styles.title}>Profile</Text>
       </View>
 
-      {loading ? (
+      {loading && !user ? (
         <View style={styles.loadingArea}>
           <ActivityIndicator color="#DC143C" size="large" />
         </View>

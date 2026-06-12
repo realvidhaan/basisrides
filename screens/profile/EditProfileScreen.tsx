@@ -224,7 +224,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 48 },
   muted: { fontSize: 14, color: '#8391A1' },
-  helper: { fontSize: 12, color: '#8391A1', marginTop: -8, marginBottom: 16 },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',
