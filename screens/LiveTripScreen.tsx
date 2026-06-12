@@ -16,6 +16,7 @@ import type { MapStop, ScheduleStackParamList } from '@/types';
 import { BackButton } from '@/components/ui/BackButton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
+import { DriverVehicleCard } from '@/components/ui/DriverVehicleCard';
 import { LiveMap } from '@/components/map/LiveMap';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useTrip } from '@/hooks/useTrip';
@@ -300,6 +301,13 @@ export function LiveTripScreen({ navigation, route }: Props) {
             />
             <Text style={styles.statusText}>{statusLabel}</Text>
           </View>
+
+          {/* Riders waiting at the curb get the driver's car + plate, big and
+              scannable. Drivers know their own car, so it's hidden for them, and
+              there's nothing to spot once the ride is complete. */}
+          {!isDriver && a?.driver && status !== 'completed' ? (
+            <DriverVehicleCard driverName={a.driver.name} car={a.driver.car} />
+          ) : null}
 
           {shareError ? <ErrorMessage message={shareError} /> : null}
 
