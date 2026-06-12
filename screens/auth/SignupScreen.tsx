@@ -11,17 +11,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Picker } from '@react-native-picker/picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { AuthStackParamList, Grade, SignupFormValues } from '@/types';
+import type { AuthStackParamList, Grade, GeoPoint, SignupFormValues } from '@/types';
 import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { CarPicker } from '@/components/ui/CarPicker';
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
 import { setRecovering } from '@/lib/authFlow';
+
+// On web, send the email-confirmation link back to the running app so clicking
+// it logs the parent in. Native deep-linking falls back to the project Site URL.
+const emailRedirectTo =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : undefined;
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -48,14 +56,20 @@ export function SignupScreen({ navigation }: Props) {
     confirmPassword: '',
   });
   const [inviteCode, setInviteCode] = useState('');
+  // Exact coordinates when the parent picks a suggested address; null if they
+  // typed a freeform address (we'll geocode it on submit instead).
+  const [addressCoords, setAddressCoords] = useState<GeoPoint | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // Set once signup succeeds but the email needs confirming (no session yet).
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const childNameRef = useRef<TextInput>(null);
-  const addressRef = useRef<TextInput>(null);
   const carCapacityRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -115,57 +129,111 @@ export function SignupScreen({ navigation }: Props) {
     // recovery flag so the auth gate opens once the session is created.
     setRecovering(false);
 
+    // Geocode the address only if they didn't pick a suggestion (which already
+    // came with exact coordinates). Best-effort — the map just won't pin it.
+    const coords = addressCoords ?? (await geocodeAddress(form.address.trim()));
+
+    // All profile fields ride along as auth metadata; a DB trigger
+    // (handle_new_user) creates the public.users row from it. This is what lets
+    // signup work even when there's no session yet (email confirmation on).
+    const hasCar = Number(form.carCapacity) > 0;
+    const email = form.email.trim().toLowerCase();
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: form.email.trim(),
+      email,
       password: form.password,
+      options: {
+        emailRedirectTo,
+        data: {
+          full_name: form.fullName.trim(),
+          child_name: form.childName.trim(),
+          grade: form.grade,
+          neighborhood: form.neighborhood.trim(),
+          address: form.address.trim(),
+          latitude: coords ? String(coords.lat) : '',
+          longitude: coords ? String(coords.lng) : '',
+          car_capacity: String(Number(form.carCapacity)),
+          car_color: hasCar ? form.carColor : '',
+          car_type: hasCar ? form.carType : '',
+          car_model: hasCar ? form.carModel.trim() : '',
+          license_plate: hasCar ? form.licensePlate.trim() : '',
+          invite_code: inviteCode.trim().toUpperCase(),
+        },
+      },
     });
 
+    setLoading(false);
+
     if (signUpError || !signUpData.user) {
-      setLoading(false);
       setGlobalError(mapSupabaseError(signUpError));
       return;
     }
 
-    // Geocode the home address (free, best-effort) so the live map can pin it.
-    const coords = await geocodeAddress(form.address.trim());
-
-    const hasCar = Number(form.carCapacity) > 0;
-    const { error: insertError } = await supabase.from('users').insert({
-      id: signUpData.user.id,
-      full_name: form.fullName.trim(),
-      child_name: form.childName.trim(),
-      grade: form.grade,
-      neighborhood: form.neighborhood.trim(),
-      address: form.address.trim(),
-      latitude: coords?.lat ?? null,
-      longitude: coords?.lng ?? null,
-      car_capacity: Number(form.carCapacity),
-      car_color: hasCar ? form.carColor : null,
-      car_type: hasCar ? form.carType : null,
-      car_model: hasCar ? form.carModel.trim() : null,
-      license_plate: hasCar ? form.licensePlate.trim() : null,
-      email: form.email.trim().toLowerCase(),
-    });
-
-    if (insertError) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      setGlobalError('Account setup failed. Please try again.');
-      return;
+    // No session means email confirmation is required — show the check-inbox
+    // screen. If a session exists (confirmation disabled), App.tsx's auth gate
+    // navigates straight into the app.
+    if (!signUpData.session) {
+      setPendingEmail(email);
     }
+  }
 
-    // If they came in with an invite code, redeem it (best-effort).
-    const code = inviteCode.trim().toUpperCase();
-    if (code) {
-      try {
-        await supabase.rpc('redeem_invite', { p_code: code });
-      } catch {
-        // Non-fatal: a bad/used code shouldn't block account creation.
-      }
+  async function handleResend(): Promise<void> {
+    if (!pendingEmail || resending) return;
+    setResending(true);
+    setResent(false);
+    try {
+      await supabase.auth.resend({
+        type: 'signup',
+        email: pendingEmail,
+        options: { emailRedirectTo },
+      });
+      setResent(true);
+    } catch {
+      // Non-fatal; the original email may still arrive.
+    } finally {
+      setResending(false);
     }
+  }
 
-    setLoading(false);
-    // App.tsx onAuthStateChange drives navigation to HomeScreen
+  if (pendingEmail) {
+    return (
+      <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
+        <StatusBar style="dark" />
+        <View style={styles.header}>
+          <Text style={styles.title}>Confirm your email</Text>
+        </View>
+        <View style={styles.confirmBody}>
+          <Text style={styles.confirmEmoji}>📬</Text>
+          <Text style={styles.confirmTitle}>Check your inbox</Text>
+          <Text style={styles.confirmText}>
+            We sent a confirmation link to{'\n'}
+            <Text style={styles.confirmEmail}>{pendingEmail}</Text>.{'\n\n'}
+            Click it to verify your account, then come back and log in. This keeps
+            BasisRide limited to real parents.
+          </Text>
+
+          {resent ? (
+            <Text style={styles.resentText}>Confirmation email sent again ✓</Text>
+          ) : null}
+
+          <View style={styles.confirmActions}>
+            <Button
+              title="Resend email"
+              variant="outline"
+              onPress={() => void handleResend()}
+              loading={resending}
+            />
+            <View style={styles.confirmGap} />
+            <Button
+              title="Back to login"
+              onPress={() => {
+                setPendingEmail(null);
+                navigation.navigate('Login');
+              }}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -204,7 +272,6 @@ export function SignupScreen({ navigation }: Props) {
           placeholder="Alex Smith"
           error={fieldErrors.childName}
           returnKeyType="next"
-          onSubmitEditing={() => addressRef.current?.focus()}
         />
 
         <View style={styles.pickerWrapper}>
@@ -248,20 +315,22 @@ export function SignupScreen({ navigation }: Props) {
           ) : null}
         </View>
 
-        <Input
-          ref={addressRef}
+        <AddressAutocomplete
           label="Home address"
           value={form.address}
-          onChangeText={(t) => updateField('address', t)}
-          placeholder="123 Main St, Sunnyvale, CA"
+          onChangeText={(t) => {
+            updateField('address', t);
+            // Typing invalidates a previously picked suggestion's coordinates.
+            setAddressCoords(null);
+          }}
+          onSelect={(s) => {
+            updateField('address', s.label);
+            setAddressCoords({ lat: s.lat, lng: s.lng });
+          }}
+          placeholder="Start typing your address…"
           error={fieldErrors.address}
-          returnKeyType="next"
-          onSubmitEditing={() => carCapacityRef.current?.focus()}
+          helperText="Used so drivers know where to pick up and drop off. Shared only with parents in your carpool."
         />
-        <Text style={styles.helperText}>
-          Used so drivers know where to pick up and drop off. Shared only with
-          parents in your carpool.
-        </Text>
 
         <Input
           ref={carCapacityRef}
@@ -466,4 +535,32 @@ const styles = StyleSheet.create({
   submitRow: {
     marginTop: 8,
   },
+  confirmBody: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    alignItems: 'center',
+  },
+  confirmEmoji: { fontSize: 56, marginBottom: 16 },
+  confirmTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E232C',
+    marginBottom: 12,
+  },
+  confirmText: {
+    fontSize: 15,
+    color: '#6A707C',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  confirmEmail: { fontWeight: '700', color: '#1E232C' },
+  resentText: {
+    fontSize: 14,
+    color: '#16A34A',
+    fontWeight: '600',
+    marginTop: 20,
+  },
+  confirmActions: { alignSelf: 'stretch', marginTop: 32 },
+  confirmGap: { height: 12 },
 });

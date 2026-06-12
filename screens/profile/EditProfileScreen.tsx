@@ -15,9 +15,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { geocodeAddress } from '@/lib/geocode';
+import type { GeoPoint } from '@/types';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'EditProfile'>;
 
@@ -34,6 +36,8 @@ export function EditProfileScreen({ navigation }: Props) {
   const [fullName, setFullName] = useState('');
   const [childName, setChildName] = useState('');
   const [address, setAddress] = useState('');
+  // Exact coords when a suggestion is picked; null means geocode on save.
+  const [addressCoords, setAddressCoords] = useState<GeoPoint | null>(null);
   const [seats, setSeats] = useState(0);
   const [seeded, setSeeded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,10 +75,14 @@ export function EditProfileScreen({ navigation }: Props) {
     setSaving(true);
     setError(null);
     try {
-      // Re-geocode only when the address actually changed.
+      // Prefer the exact coords from a picked suggestion; otherwise re-geocode
+      // only when the address text actually changed.
       let lat = user.latitude;
       let lng = user.longitude;
-      if (address.trim() !== (user.address ?? '').trim()) {
+      if (addressCoords) {
+        lat = addressCoords.lat;
+        lng = addressCoords.lng;
+      } else if (address.trim() !== (user.address ?? '').trim()) {
         const coords = await geocodeAddress(address.trim());
         lat = coords?.lat ?? null;
         lng = coords?.lng ?? null;
@@ -136,16 +144,20 @@ export function EditProfileScreen({ navigation }: Props) {
               onChangeText={setChildName}
               placeholder="Alex Smith"
             />
-            <Input
+            <AddressAutocomplete
               label="Home address"
               value={address}
-              onChangeText={setAddress}
-              placeholder="123 Main St, Sunnyvale, CA"
+              onChangeText={(t) => {
+                setAddress(t);
+                setAddressCoords(null);
+              }}
+              onSelect={(s) => {
+                setAddress(s.label);
+                setAddressCoords({ lat: s.lat, lng: s.lng });
+              }}
+              placeholder="Start typing your address…"
+              helperText="Used so drivers know where to pick up and drop off. Shared only with parents in your carpool."
             />
-            <Text style={styles.helper}>
-              Used so drivers know where to pick up and drop off. Shared only with
-              parents in your carpool.
-            </Text>
 
             <Text style={styles.fieldLabel}>Car seats (including driver)</Text>
             <View style={styles.stepperRow}>

@@ -29,6 +29,9 @@ AppState.addEventListener('change', (state) => {
 export function mapSupabaseError(error: { message: string } | null): string {
   if (!error) return '';
   const msg = error.message.toLowerCase();
+  if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+    return 'Please confirm your email first — check your inbox for the link.';
+  }
   if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
     return 'Incorrect email or password. Try again.';
   }

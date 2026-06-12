@@ -24,11 +24,18 @@ export function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // True when the failure was specifically an unconfirmed email, so we can offer
+  // to resend the confirmation link.
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
 
   async function handleLogin(): Promise<void> {
     setError(null);
+    setNeedsConfirm(false);
+    setResent(false);
     setLoading(true);
 
     // A deliberate login is never part of a password reset. Clear any stale
@@ -44,8 +51,25 @@ export function LoginScreen({ navigation }: Props) {
 
     if (authError) {
       setError(mapSupabaseError(authError));
+      if (authError.message.toLowerCase().includes('not confirmed')) {
+        setNeedsConfirm(true);
+      }
     }
     // On success, App.tsx onAuthStateChange drives navigation to HomeScreen.
+  }
+
+  async function handleResend(): Promise<void> {
+    if (resending || !email.trim()) return;
+    setResending(true);
+    setResent(false);
+    try {
+      await supabase.auth.resend({ type: 'signup', email: email.trim() });
+      setResent(true);
+    } catch {
+      // Non-fatal.
+    } finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -68,6 +92,22 @@ export function LoginScreen({ navigation }: Props) {
         </Text>
 
         <ErrorMessage message={error} />
+
+        {needsConfirm ? (
+          <TouchableOpacity
+            style={styles.resendRow}
+            onPress={() => void handleResend()}
+            disabled={resending}
+          >
+            <Text style={styles.resendText}>
+              {resending
+                ? 'Sending…'
+                : resent
+                  ? 'Confirmation email sent ✓'
+                  : 'Resend confirmation email'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         <Input
           label="Email"
@@ -163,6 +203,16 @@ const styles = StyleSheet.create({
     color: '#DC143C',
     fontWeight: '500',
     paddingLeft: 8,
+  },
+  resendRow: {
+    marginTop: -8,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  resendText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC143C',
   },
   forgotRow: {
     alignSelf: 'flex-end',
