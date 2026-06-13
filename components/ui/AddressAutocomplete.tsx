@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import { searchAddresses, type AddressSuggestion } from '@/lib/geocode';
+import { impact } from '@/lib/haptics';
 
 interface Props {
   label?: string;
@@ -76,6 +77,8 @@ export function AddressAutocomplete({
 
   function pick(s: AddressSuggestion): void {
     justPicked.current = true;
+    // The picked suggestion carries verified coordinates — confirm with a tap.
+    impact();
     onSelect(s);
     setSuggestions([]);
     setOpen(false);

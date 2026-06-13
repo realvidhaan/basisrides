@@ -11,6 +11,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { setRecovering } from '@/lib/authFlow';
+import { impact } from '@/lib/haptics';
 
 // On web, point the resent confirmation link back at the running app so clicking
 // it logs the parent in. Native deep-linking falls back to the project Site URL.
@@ -61,6 +62,9 @@ export function LoginScreen({ navigation }: Props) {
       if (authError.message.toLowerCase().includes('not confirmed')) {
         setNeedsConfirm(true);
       }
+    } else {
+      // Confirm the successful sign-in with a tap before the gate navigates away.
+      impact();
     }
     // On success, App.tsx onAuthStateChange drives navigation to HomeScreen.
   }

@@ -24,6 +24,7 @@ import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
+import { impact } from '@/lib/haptics';
 
 // On web, send the email-confirmation link back to the running app so clicking
 // it logs the parent in. Native deep-linking falls back to the project Site URL.
@@ -217,6 +218,9 @@ export function SignupScreen({ navigation }: Props) {
       setGlobalError(mapSupabaseError(signUpError));
       return;
     }
+
+    // Registration succeeded — confirm it with a tap.
+    impact();
 
     // No session means email confirmation is required — show the check-inbox
     // screen. If a session exists (confirmation disabled), App.tsx's auth gate

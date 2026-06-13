@@ -19,6 +19,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { geocodeAddress } from '@/lib/geocode';
+import { impact } from '@/lib/haptics';
 import type { GeoPoint } from '@/types';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'EditProfile'>;
@@ -111,6 +112,8 @@ export function EditProfileScreen({ navigation }: Props) {
         setError(mapSupabaseError(upErr));
         return;
       }
+      // Saved successfully — confirm with a tap before leaving the screen.
+      impact();
       await refetch();
       navigation.goBack();
     } catch {

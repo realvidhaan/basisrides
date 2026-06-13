@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
+import { authStorage } from '@/lib/storage';
 
 // Exported so the embedded Leaflet map (which runs its own supabase-js inside a
 // webview/iframe and subscribes to the live-location broadcast) can reuse them.
@@ -11,7 +11,9 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_t3bdDWP4dOgcJWMDNit3Aw_UKBgeTps
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    // Native: encrypted device keychain via expo-secure-store. Web: AsyncStorage
+    // (localStorage). See lib/storage for the platform split.
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
