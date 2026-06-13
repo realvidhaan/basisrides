@@ -127,7 +127,9 @@ export function SignupScreen({ navigation }: Props) {
     // blocking problem, so the failure isn't only buried inline next to the field.
     if (errors.carState || errors.licensePlate) {
       setGlobalError(
-        "That license plate doesn't match a valid format for the selected state. Fix the highlighted field and try again.",
+        errors.carState
+          ? 'Select the state your license plate is from, then re-check the plate. Fix the highlighted field and try again.'
+          : "That license plate doesn't match a valid format for the selected state. Fix the highlighted field and try again.",
       );
     }
     return Object.keys(errors).length === 0;
