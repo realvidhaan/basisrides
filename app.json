@@ -54,7 +54,7 @@
       "url": "https://u.expo.dev/5ffe6fcd-0b69-4339-9e8f-7689991fefb4"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "owner": "vidhaanjs-team"
   }
