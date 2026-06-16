@@ -27,11 +27,13 @@ import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
 
 // On web, send the email-confirmation link back to the running app so clicking
-// it logs the parent in. Native deep-linking falls back to the project Site URL.
+// it logs the parent in. On native, deep-link back into the app via its custom
+// scheme so any email link reopens BasisRide instead of a web page. (The primary
+// confirmation path is the in-app 8-digit OTP code; this is a link fallback.)
 const emailRedirectTo =
   Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
-    : undefined;
+    : 'basisrides://';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -66,10 +68,6 @@ export function SignupScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  // Set once signup succeeds but the email needs confirming (no session yet).
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
 
   const childNameRef = useRef<TextInput>(null);
   const carCapacityRef = useRef<TextInput>(null);
@@ -222,72 +220,13 @@ export function SignupScreen({ navigation }: Props) {
     // Registration succeeded — confirm it with a tap.
     impact();
 
-    // No session means email confirmation is required — show the check-inbox
-    // screen. If a session exists (confirmation disabled), App.tsx's auth gate
-    // navigates straight into the app.
+    // No session means email confirmation is required. Send the parent to the
+    // OTP screen to enter the 8-digit code from their email; verifyOtp (type
+    // 'signup') establishes the session there. If a session already exists
+    // (confirmation disabled), App.tsx's auth gate navigates into the app.
     if (!signUpData.session) {
-      setPendingEmail(email);
+      navigation.navigate('OTPVerification', { email, flow: 'signup' });
     }
-  }
-
-  async function handleResend(): Promise<void> {
-    if (!pendingEmail || resending) return;
-    setResending(true);
-    setResent(false);
-    try {
-      await supabase.auth.resend({
-        type: 'signup',
-        email: pendingEmail,
-        options: { emailRedirectTo },
-      });
-      setResent(true);
-    } catch {
-      // Non-fatal; the original email may still arrive.
-    } finally {
-      setResending(false);
-    }
-  }
-
-  if (pendingEmail) {
-    return (
-      <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
-        <StatusBar style="dark" />
-        <View style={styles.header}>
-          <Text style={styles.title}>Confirm your email</Text>
-        </View>
-        <View style={styles.confirmBody}>
-          <Text style={styles.confirmEmoji}>📬</Text>
-          <Text style={styles.confirmTitle}>Check your inbox</Text>
-          <Text style={styles.confirmText}>
-            We sent a confirmation link to{'\n'}
-            <Text style={styles.confirmEmail}>{pendingEmail}</Text>.{'\n\n'}
-            Click it to verify your account, then come back and log in. This keeps
-            BasisRide limited to real parents.
-          </Text>
-
-          {resent ? (
-            <Text style={styles.resentText}>Confirmation email sent again ✓</Text>
-          ) : null}
-
-          <View style={styles.confirmActions}>
-            <Button
-              title="Resend email"
-              variant="outline"
-              onPress={() => void handleResend()}
-              loading={resending}
-            />
-            <View style={styles.confirmGap} />
-            <Button
-              title="Back to login"
-              onPress={() => {
-                setPendingEmail(null);
-                navigation.navigate('Login');
-              }}
-            />
-          </View>
-        </View>
-      </SafeAreaView>
-    );
   }
 
   return (
