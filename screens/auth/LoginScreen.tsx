@@ -14,11 +14,12 @@ import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
 
 // On web, point the resent confirmation link back at the running app so clicking
-// it logs the parent in. Native deep-linking falls back to the project Site URL.
+// it logs the parent in. On native, deep-link back into the app via its custom
+// scheme so the link reopens BasisRide instead of a web page.
 const emailRedirectTo =
   Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
-    : undefined;
+    : 'basisrides://';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
