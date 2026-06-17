@@ -97,9 +97,16 @@ function MemberRow({
       <View style={[styles.avatar, dark ? styles.avatarDark : null]}>
         <Text style={styles.avatarText}>{initials(member.name)}</Text>
       </View>
-      <Text style={styles.memberName} numberOfLines={1}>
-        {member.name}
-      </Text>
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName} numberOfLines={1}>
+          {member.name}
+        </Text>
+        {member.address ? (
+          <Text style={styles.memberAddress} numberOfLines={1}>
+            {member.address}
+          </Text>
+        ) : null}
+      </View>
       <Text style={styles.memberTime}>{formatTime(member.time)}</Text>
       {onMessage ? (
         <TouchableOpacity
@@ -550,7 +557,9 @@ const styles = StyleSheet.create({
   },
   avatarDark: { backgroundColor: '#1E232C' },
   avatarText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
+  memberInfo: { flex: 1 },
+  memberName: { fontSize: 15, fontWeight: '500', color: '#1E232C' },
+  memberAddress: { fontSize: 13, fontWeight: '500', color: '#8391A1', marginTop: 1 },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
   dmIcon: { marginLeft: 12, padding: 2 },
   groupChatBtn: {

@@ -46,6 +46,7 @@ export interface Participant {
   capacity: number;
   canDrive: boolean; // willing to drive this weekday
   car: CarInfo; // this parent's vehicle (shown when they're the driver)
+  address: string | null; // home pickup address
 }
 
 export interface CarMember {
@@ -53,6 +54,7 @@ export interface CarMember {
   name: string;
   time: string; // the member's own pickup time
   car: CarInfo; // the member's vehicle details
+  address: string | null; // home pickup address
 }
 
 export interface UserAssignment {
@@ -76,7 +78,7 @@ function byTimeThenId(a: Participant, b: Participant): number {
 }
 
 function member(p: Participant): CarMember {
-  return { userId: p.userId, name: p.name, time: p.time, car: p.car };
+  return { userId: p.userId, name: p.name, time: p.time, car: p.car, address: p.address };
 }
 
 /**

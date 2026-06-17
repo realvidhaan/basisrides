@@ -23,6 +23,7 @@ interface RawParticipantRow {
     car_type: string | null;
     car_model: string | null;
     license_plate: string | null;
+    address: string | null;
   } | null;
 }
 
@@ -78,7 +79,7 @@ export function useCarpool(): UseCarpoolResult {
             .select(
               'user_id, day_of_week, dismissal_time, can_drive,' +
                 ' user:users!availability_user_id_fkey(full_name,neighborhood,car_capacity,' +
-                'car_color,car_type,car_model,license_plate)',
+                'car_color,car_type,car_model,license_plate,address)',
             )
             .eq('participating', true),
           supabase.from('schedule_skips').select('user_id, skip_date'),
@@ -119,6 +120,7 @@ export function useCarpool(): UseCarpoolResult {
               model: row.user.car_model,
               plate: row.user.license_plate,
             },
+            address: row.user.address,
           });
         }
 
