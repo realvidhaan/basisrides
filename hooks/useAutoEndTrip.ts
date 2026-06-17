@@ -1,26 +1,24 @@
 import { useEffect, useRef } from 'react';
 import * as Location from 'expo-location';
 import type { GeoPoint } from '@/types';
-import { SCHOOL } from '@/lib/places';
 import { haversineMeters } from '@/lib/geo';
 
 /**
- * Auto-ends a live trip once the driver returns home (or reaches school for an
- * AM run). Logic:
- *   1. Arm: do nothing until the driver has moved >250 m from their home coords
- *      (prevents a false trigger the moment the ride starts while they're still
- *      in the driveway).
- *   2. Trigger: call `onEnd` once when the driver is ≤120 m from home OR
- *      ≤100 m from school.
+ * Auto-ends a live after-school trip once the driver gets home from drop-offs.
+ * Logic:
+ *   1. Arm: do nothing until the driver has moved >250 m from their home coords.
+ *      The trip starts at BISV (far from home), so this arms immediately and
+ *      can't false-trigger in the driveway before they leave.
+ *   2. Trigger: call `onEnd` once when the driver is back within ≤120 m of home.
  *
- * The hook is purely passive — `onEnd` is called at most once per `active`
- * session. If location permission is unavailable the hook silently no-ops and
- * the driver can still tap "End early."
+ * The school is deliberately NOT an end condition — for after-school carpool it
+ * is the START point. The hook is purely passive: `onEnd` is called at most once
+ * per `active` session. If location permission is unavailable it silently no-ops
+ * and the driver can still tap "End early."
  */
 
 const ARM_DISTANCE_M = 250;
 const HOME_TRIGGER_M = 120;
-const SCHOOL_TRIGGER_M = 100;
 
 export function useAutoEndTrip(
   active: boolean,
@@ -59,7 +57,6 @@ export function useAutoEndTrip(
               lng: loc.coords.longitude,
             };
             const distHome = haversineMeters(pos, home);
-            const distSchool = haversineMeters(pos, SCHOOL.point);
 
             if (!armedRef.current && distHome > ARM_DISTANCE_M) {
               armedRef.current = true;
@@ -67,7 +64,7 @@ export function useAutoEndTrip(
 
             if (!armedRef.current) return;
 
-            if (distHome <= HOME_TRIGGER_M || distSchool <= SCHOOL_TRIGGER_M) {
+            if (distHome <= HOME_TRIGGER_M) {
               triggeredRef.current = true;
               onEndRef.current();
             }

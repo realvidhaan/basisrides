@@ -56,6 +56,10 @@ const MAP_HEIGHT = Math.min(
   Math.max(380, Math.round(Dimensions.get('window').height * 0.52)),
 );
 
+// After-school carpool: the pickup point is always BISV. Module-level so the
+// auto-start watcher gets a stable array identity and isn't re-created.
+const SCHOOL_PICKUP: GeoPoint[] = [SCHOOL.point];
+
 export function LiveTripScreen({ navigation, route }: Props) {
   const iso = route.params.date;
   const date = parseISO(iso);
@@ -129,13 +133,12 @@ export function LiveTripScreen({ navigation, route }: Props) {
     return null;
   }, [carUsers, driverId]);
 
-  // Pickup points = the riders' home coordinates. Reaching any one means the
-  // driver has arrived to collect a rider, so the trip should go live.
+  // Rider home coordinates — the drop-off destinations the map keeps in frame.
   const riderIdSet = useMemo(
     () => new Set((a?.riders ?? []).map((r) => r.userId)),
     [a],
   );
-  const pickupPoints = useMemo<GeoPoint[]>(
+  const riderHomes = useMemo<GeoPoint[]>(
     () =>
       carUsers
         .filter(
@@ -146,16 +149,16 @@ export function LiveTripScreen({ navigation, route }: Props) {
     [carUsers, riderIdSet],
   );
 
-  // Auto-start replaces the old "Start ride" button: while the driver is en
-  // route with no trip yet, watch for arrival at a pickup point and start.
+  // Auto-start replaces the old "Start ride" button: the trip goes live the
+  // moment the driver arrives at BISV to collect their riders.
   const tripActive = trip?.status === 'on_my_way';
   const tripEnded = trip?.status === 'completed' || trip?.status === 'cancelled';
   const handleAutoStart = useCallback(() => {
     void startTrip((a?.riders ?? []).map((r) => r.userId));
   }, [startTrip, a]);
   useAutoStartTrip(
-    isDriver && !tripActive && !tripEnded && pickupPoints.length > 0,
-    pickupPoints,
+    isDriver && !tripActive && !tripEnded,
+    SCHOOL_PICKUP,
     handleAutoStart,
   );
 
@@ -203,7 +206,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
             <Text style={styles.cardTitle}>Sharing your live location</Text>
             <Text style={styles.cardText}>
               Your riders can see your car move in real time. The ride ends
-              automatically when you arrive home or at school.
+              automatically once you&apos;ve dropped everyone off and arrive home.
             </Text>
             {riders.length > 0 ? (
               <>
@@ -236,9 +239,9 @@ export function LiveTripScreen({ navigation, route }: Props) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>En route to pickup</Text>
           <Text style={styles.cardText}>
-            Live location sharing starts automatically the moment you reach your
-            first rider, and ends on its own when you arrive at {SCHOOL.name}.
-            Nothing to tap.
+            Live location sharing starts automatically when you arrive at{' '}
+            {SCHOOL.name} to pick up, and ends on its own once you&apos;ve
+            dropped your riders home. Nothing to tap.
           </Text>
         </View>
       );
@@ -308,7 +311,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 channel={channelName}
                 stops={stops}
                 start={driverStart}
-                destination={SCHOOL.point}
+                destinations={riderHomes}
                 carColorKey={a.driver?.car.color ?? null}
               />
             </View>

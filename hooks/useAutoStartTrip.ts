@@ -9,7 +9,8 @@ import { haversineMeters } from '@/lib/geo';
  *
  * While `enabled` (driver, no trip started yet), a single foreground location
  * watcher runs; the moment the driver comes within PICKUP_TRIGGER_M of any
- * pickup point (a rider's home), `onStart` fires exactly once. Mirrors
+ * pickup point (for an after-school run, the school), `onStart` fires exactly
+ * once. Mirrors
  * useAutoEndTrip: single-fire (guarded by a ref), and the subscription is fully
  * removed when `enabled` goes false (the trip started) or on unmount — so there
  * is never a duplicate or leaked location watcher.

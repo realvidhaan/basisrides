@@ -8,7 +8,7 @@ export interface MapHtmlOptions {
   stops: MapStop[]; // school + rider/driver homes to pin
   start: { lat: number; lng: number } | null; // initial car position
   carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
-  destination?: { lat: number; lng: number } | null; // keep car + this point framed live
+  destinations?: { lat: number; lng: number }[]; // keep car + these drop-off points framed live
 }
 
 /**
@@ -29,7 +29,7 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
     event: LOC_EVENT,
     stops: opts.stops,
     start: opts.start,
-    destination: opts.destination ?? null,
+    destinations: opts.destinations ?? [],
     carBase: col.base,
     carDark: col.dark,
   };
@@ -145,13 +145,14 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
         var p = msg.payload || {};
         if (typeof p.lat === 'number' && typeof p.lng === 'number') {
           moveCar(p.lat, p.lng, p.heading);
-          // Keep the car AND the destination in frame as the trip progresses;
-          // fall back to following just the car if no destination is set.
-          if (CONFIG.destination) {
-            map.fitBounds(
-              [[p.lat, p.lng], [CONFIG.destination.lat, CONFIG.destination.lng]],
-              { padding: [55, 55], maxZoom: 16, animate: true }
-            );
+          // Keep the car AND the drop-off destinations (riders' homes) in frame
+          // as the trip progresses; follow just the car if none are set.
+          if (CONFIG.destinations && CONFIG.destinations.length) {
+            var fb = [[p.lat, p.lng]];
+            for (var di = 0; di < CONFIG.destinations.length; di++) {
+              fb.push([CONFIG.destinations[di].lat, CONFIG.destinations[di].lng]);
+            }
+            map.fitBounds(fb, { padding: [55, 55], maxZoom: 16, animate: true });
           } else {
             map.panTo([p.lat, p.lng], { animate: true, duration: 1 });
           }
