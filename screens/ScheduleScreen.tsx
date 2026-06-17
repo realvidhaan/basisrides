@@ -326,7 +326,7 @@ export function ScheduleScreen({ navigation }: Props) {
           >
             <Ionicons name="navigate" size={16} color="#FFFFFF" />
             <Text style={styles.tripBtnText}>
-              {a.role === 'drive' ? 'Start ride' : 'Track ride'}
+              {a.role === 'drive' ? 'Open live trip' : 'Track ride'}
             </Text>
           </TouchableOpacity>
         ) : null}
