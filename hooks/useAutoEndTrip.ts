@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as Location from 'expo-location';
 import type { GeoPoint } from '@/types';
 import { SCHOOL } from '@/lib/places';
+import { haversineMeters } from '@/lib/geo';
 
 /**
  * Auto-ends a live trip once the driver returns home (or reaches school for an
@@ -20,24 +21,6 @@ import { SCHOOL } from '@/lib/places';
 const ARM_DISTANCE_M = 250;
 const HOME_TRIGGER_M = 120;
 const SCHOOL_TRIGGER_M = 100;
-
-function haversineMeters(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-): number {
-  const R = 6_371_000;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const sa = Math.sin(dLat / 2);
-  const sb = Math.sin(dLng / 2);
-  const c =
-    sa * sa +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      sb *
-      sb;
-  return R * 2 * Math.atan2(Math.sqrt(c), Math.sqrt(1 - c));
-}
 
 export function useAutoEndTrip(
   active: boolean,

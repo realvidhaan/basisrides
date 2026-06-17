@@ -12,15 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { MapStop, ScheduleStackParamList } from '@/types';
+import type { GeoPoint, MapStop, ScheduleStackParamList } from '@/types';
 import { BackButton } from '@/components/ui/BackButton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { Button } from '@/components/ui/Button';
 import { DriverVehicleCard } from '@/components/ui/DriverVehicleCard';
 import { LiveMap } from '@/components/map/LiveMap';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useTrip } from '@/hooks/useTrip';
 import { useLocationSharing } from '@/hooks/useLocationSharing';
+import { useAutoStartTrip } from '@/hooks/useAutoStartTrip';
 import { useAutoEndTrip } from '@/hooks/useAutoEndTrip';
 import { supabase } from '@/lib/supabase';
 import { SCHOOL } from '@/lib/places';
@@ -129,6 +129,36 @@ export function LiveTripScreen({ navigation, route }: Props) {
     return null;
   }, [carUsers, driverId]);
 
+  // Pickup points = the riders' home coordinates. Reaching any one means the
+  // driver has arrived to collect a rider, so the trip should go live.
+  const riderIdSet = useMemo(
+    () => new Set((a?.riders ?? []).map((r) => r.userId)),
+    [a],
+  );
+  const pickupPoints = useMemo<GeoPoint[]>(
+    () =>
+      carUsers
+        .filter(
+          (u) =>
+            riderIdSet.has(u.id) && u.latitude !== null && u.longitude !== null,
+        )
+        .map((u) => ({ lat: u.latitude as number, lng: u.longitude as number })),
+    [carUsers, riderIdSet],
+  );
+
+  // Auto-start replaces the old "Start ride" button: while the driver is en
+  // route with no trip yet, watch for arrival at a pickup point and start.
+  const tripActive = trip?.status === 'on_my_way';
+  const tripEnded = trip?.status === 'completed' || trip?.status === 'cancelled';
+  const handleAutoStart = useCallback(() => {
+    void startTrip((a?.riders ?? []).map((r) => r.userId));
+  }, [startTrip, a]);
+  useAutoStartTrip(
+    isDriver && !tripActive && !tripEnded && pickupPoints.length > 0,
+    pickupPoints,
+    handleAutoStart,
+  );
+
   const handleAutoEnd = useCallback(() => {
     void setStatus('completed');
   }, [setStatus]);
@@ -138,10 +168,10 @@ export function LiveTripScreen({ navigation, route }: Props) {
   const status = trip?.status ?? null;
   const statusLabel =
     status === 'completed'
-      ? 'Ride complete'
+      ? 'Arrived — ride complete'
       : status === 'on_my_way'
-        ? 'On the way 🚗'
-        : 'Ride not started';
+        ? 'En route to destination'
+        : 'En route to pickup';
 
   function renderControls() {
     if (!a || a.role === 'unmatched') {
@@ -201,20 +231,15 @@ export function LiveTripScreen({ navigation, route }: Props) {
           </View>
         );
       }
-      // No trip yet.
+      // No trip yet → en route to the first pickup. Tracking arms automatically.
       return (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ready to drive?</Text>
+          <Text style={styles.cardTitle}>En route to pickup</Text>
           <Text style={styles.cardText}>
-            Tap Start ride and the app shares your live location with your riders
-            until you end the ride — no need to keep your phone out.
+            Live location sharing starts automatically the moment you reach your
+            first rider, and ends on its own when you arrive at {SCHOOL.name}.
+            Nothing to tap.
           </Text>
-          <View style={styles.startBtn}>
-            <Button
-              title="Start ride"
-              onPress={() => void startTrip(riders.map((r) => r.userId))}
-            />
-          </View>
         </View>
       );
     }
@@ -283,6 +308,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 channel={channelName}
                 stops={stops}
                 start={driverStart}
+                destination={SCHOOL.point}
                 carColorKey={a.driver?.car.color ?? null}
               />
             </View>
@@ -373,7 +399,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardText: { fontSize: 14, color: '#6A707C', lineHeight: 20 },
-  startBtn: { marginTop: 16 },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
