@@ -381,6 +381,7 @@ export function ScheduleScreen({ navigation }: Props) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityLabel="Cover requests"
             style={styles.bell}
+            activeOpacity={0.6}
           >
             <Ionicons name="swap-horizontal" size={22} color="#1E232C" />
             {openCount > 0 ? (
@@ -396,6 +397,7 @@ export function ScheduleScreen({ navigation }: Props) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityLabel="Notifications"
             style={styles.bell}
+            activeOpacity={0.6}
           >
             <Ionicons name="notifications-outline" size={22} color="#1E232C" />
             {unreadCount > 0 ? (
@@ -409,8 +411,9 @@ export function ScheduleScreen({ navigation }: Props) {
           <TouchableOpacity
             onPress={() => navigation.navigate('EditSchedule')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.6}
           >
-            <Text style={styles.editLink}>Edit</Text>
+            <Text style={styles.editLink}>Edit Schedule</Text>
           </TouchableOpacity>
         </View>
       </View>

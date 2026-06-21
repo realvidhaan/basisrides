@@ -78,27 +78,13 @@ export function EditScheduleScreen({ navigation }: Props) {
       >
         {error ? <ErrorMessage message={error} /> : null}
 
-        <Text style={styles.intro}>
-          Turn on the weekdays you need carpool and set your child&apos;s pickup
-          time (3:15–6:00 PM). Then mark the days you can drive — the app shares
-          driving fairly among everyone who volunteers, so you only drive a
-          couple of days a week. Use &quot;Ask someone to cover&quot; on the calendar
-          if you can&apos;t drive on a day you&apos;re scheduled to.
-        </Text>
         {!hasCar ? (
-          <Text style={styles.note}>
-            You have no car seats set, so you&apos;ll only ever be a rider. Add
-            seats in Profile to share driving.
+          <Text style={styles.note}>Add car seats in Profile to share driving.</Text>
+        ) : canDriveCount < 2 ? (
+          <Text style={[styles.note, styles.noteWarn]}>
+            Pick at least 2 days you can drive.
           </Text>
-        ) : (
-          <Text
-            style={[styles.note, canDriveCount < 2 ? styles.noteWarn : null]}
-          >
-            {canDriveCount < 2
-              ? `Please pick at least 2 days you can drive (you've picked ${canDriveCount}). The more days everyone offers, the fewer times each parent drives.`
-              : `You can drive on ${canDriveCount} days — the rotation will pick roughly 2 of them for you each week.`}
-          </Text>
-        )}
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingArea}>
@@ -181,7 +167,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: '#1E232C' },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  intro: { fontSize: 14, color: '#6A707C', lineHeight: 20, marginBottom: 10 },
   note: {
     fontSize: 13,
     color: '#1E232C',

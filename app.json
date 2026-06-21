@@ -13,9 +13,6 @@
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
-      },
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "BasisRide uses your location during an active carpool trip so riders can see the driver's car move in real time and pickups happen at the right spot. Your location is shared only with parents in your carpool, and only while a trip is in progress."
       }
     },
     "android": {
@@ -40,7 +37,18 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "BasisRide shares your live location with your carpool riders only while you're driving a trip."
+          "locationWhenInUsePermission": "BasisRide uses your location during an active carpool trip so riders can see the driver's car move in real time and pickups happen at the right spot. Your location is shared only with parents in your carpool, and only while a trip is in progress.",
+          "locationAlwaysAndWhenInUsePermission": "BasisRide shares your live location with your carpool riders only while you're driving a trip.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#DC143C",
+          "defaultChannel": "default"
         }
       ],
       "expo-secure-store"

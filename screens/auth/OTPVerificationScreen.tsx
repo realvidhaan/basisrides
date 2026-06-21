@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase } from '@/lib/supabase';
+import { sendAuthEmail } from '@/lib/authEmail';
 import { setRecovering } from '@/lib/authFlow';
 
 type OTPNavigationProp = StackNavigationProp<AuthStackParamList, 'OTPVerification'>;
@@ -108,10 +109,12 @@ export function OTPVerificationScreen({ navigation, route }: Props) {
       setRecovering(true);
     }
 
+    // Signup confirmation is delivered as a magiclink code (see lib/authEmail),
+    // so it verifies with type 'email'; password reset verifies with 'recovery'.
     const { error: verifyError } = await supabase.auth.verifyOtp({
       email,
       token: code,
-      type: flow === 'reset' ? 'recovery' : 'signup',
+      type: flow === 'reset' ? 'recovery' : 'email',
     });
 
     setLoading(false);
@@ -136,14 +139,14 @@ export function OTPVerificationScreen({ navigation, route }: Props) {
     setResendNote(null);
     setResending(true);
 
-    const { error: resendError } =
-      flow === 'reset'
-        ? await supabase.auth.resetPasswordForEmail(email)
-        : await supabase.auth.resend({ type: 'signup', email });
+    const { ok } = await sendAuthEmail(
+      flow === 'reset' ? 'recovery' : 'signup',
+      email,
+    );
 
     setResending(false);
 
-    if (resendError) {
+    if (!ok) {
       setError('Could not resend the code. Please try again.');
       return;
     }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -20,8 +20,7 @@ import { LiveMap } from '@/components/map/LiveMap';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useTrip } from '@/hooks/useTrip';
 import { useLocationSharing } from '@/hooks/useLocationSharing';
-import { useAutoStartTrip } from '@/hooks/useAutoStartTrip';
-import { useAutoEndTrip } from '@/hooks/useAutoEndTrip';
+import { useTripGeofencing } from '@/hooks/useTripGeofencing';
 import { supabase } from '@/lib/supabase';
 import { SCHOOL } from '@/lib/places';
 import { tripLocChannel } from '@/lib/liveTrip';
@@ -56,10 +55,6 @@ const MAP_HEIGHT = Math.min(
   Math.max(380, Math.round(Dimensions.get('window').height * 0.52)),
 );
 
-// After-school carpool: the pickup point is always BISV. Module-level so the
-// auto-start watcher gets a stable array identity and isn't re-created.
-const SCHOOL_PICKUP: GeoPoint[] = [SCHOOL.point];
-
 export function LiveTripScreen({ navigation, route }: Props) {
   const iso = route.params.date;
   const date = parseISO(iso);
@@ -69,7 +64,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
   const isDriver = a?.role === 'drive';
   const driverId = isDriver ? currentUserId : (a?.driver?.userId ?? null);
 
-  const { trip, loading, error, startTrip, setStatus } = useTrip(driverId, iso);
+  const { trip, loading, error, setStatus } = useTrip(driverId, iso);
 
   // The driver shares GPS only while the ride is active (started, not ended).
   const sharingActive = isDriver && trip?.status === 'on_my_way';
@@ -149,23 +144,24 @@ export function LiveTripScreen({ navigation, route }: Props) {
     [carUsers, riderIdSet],
   );
 
-  // Auto-start replaces the old "Start ride" button: the trip goes live the
-  // moment the driver arrives at BISV to collect their riders.
+  // Geofencing replaces the old "Start ride" button and runs even when the app
+  // is backgrounded or killed: the trip goes live when the driver reaches BISV
+  // to collect riders, and auto-ends once they're home after the drop-offs.
   const tripActive = trip?.status === 'on_my_way';
   const tripEnded = trip?.status === 'completed' || trip?.status === 'cancelled';
-  const handleAutoStart = useCallback(() => {
-    void startTrip((a?.riders ?? []).map((r) => r.userId));
-  }, [startTrip, a]);
-  useAutoStartTrip(
-    isDriver && !tripActive && !tripEnded,
-    SCHOOL_PICKUP,
-    handleAutoStart,
+  const riderIds = useMemo(
+    () => (a?.riders ?? []).map((r) => r.userId),
+    [a],
   );
-
-  const handleAutoEnd = useCallback(() => {
-    void setStatus('completed');
-  }, [setStatus]);
-  useAutoEndTrip(sharingActive, driverStart, handleAutoEnd);
+  useTripGeofencing({
+    enabled: isDriver && !tripEnded,
+    driverId: isDriver ? currentUserId : null,
+    iso,
+    riderIds,
+    pickup: SCHOOL.point,
+    home: driverStart,
+    tripActive,
+  });
 
   const riders = a?.riders ?? [];
   const status = trip?.status ?? null;
@@ -228,6 +224,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
               style={styles.endEarlyBtn}
               onPress={() => void setStatus('completed')}
               activeOpacity={0.6}
+              hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
             >
               <Text style={styles.endEarlyText}>End early</Text>
             </TouchableOpacity>
@@ -238,11 +235,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
       return (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>En route to pickup</Text>
-          <Text style={styles.cardText}>
-            Live location sharing starts automatically when you arrive at{' '}
-            {SCHOOL.name} to pick up, and ends on its own once you&apos;ve
-            dropped your riders home. Nothing to tap.
-          </Text>
+          <Text style={styles.cardText}>Tracking starts automatically at pickup.</Text>
         </View>
       );
     }

@@ -21,6 +21,7 @@ import { CarPicker } from '@/components/ui/CarPicker';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { sendAuthEmail } from '@/lib/authEmail';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
@@ -220,11 +221,12 @@ export function SignupScreen({ navigation }: Props) {
     // Registration succeeded — confirm it with a tap.
     impact();
 
-    // No session means email confirmation is required. Send the parent to the
-    // OTP screen to enter the 8-digit code from their email; verifyOtp (type
-    // 'signup') establishes the session there. If a session already exists
-    // (confirmation disabled), App.tsx's auth gate navigates into the app.
+    // No session means email confirmation is required. Deliver the 8-digit code
+    // via Resend (Supabase's own SMTP is bypassed), then send the parent to the
+    // OTP screen; verifyOtp establishes the session there. If a session already
+    // exists (confirmation disabled), App.tsx's auth gate navigates into the app.
     if (!signUpData.session) {
+      await sendAuthEmail('signup', email);
       navigation.navigate('OTPVerification', { email, flow: 'signup' });
     }
   }

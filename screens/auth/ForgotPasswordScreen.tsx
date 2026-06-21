@@ -10,6 +10,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { sendAuthEmail } from '@/lib/authEmail';
 
 type ForgotPasswordNavigationProp = StackNavigationProp<
   AuthStackParamList,
@@ -52,14 +53,12 @@ export function ForgotPasswordScreen({ navigation }: Props) {
       return;
     }
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      trimmed,
-    );
+    const { ok, error: sendError } = await sendAuthEmail('recovery', trimmed);
 
     setLoading(false);
 
-    if (resetError) {
-      setError(mapSupabaseError(resetError));
+    if (!ok) {
+      setError(sendError ?? 'Could not send the code. Please try again.');
       return;
     }
 

@@ -12,6 +12,10 @@ import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
 import { getRecovering, subscribeRecovering } from '@/lib/authFlow';
+import { navigationRef } from '@/lib/navigation';
+import { usePushRegistration } from '@/hooks/usePushRegistration';
+import '@/lib/locationTask'; // registers the background location task at launch
+import '@/lib/geofenceTask'; // registers the trip geofencing task at launch
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
@@ -156,17 +160,20 @@ export default function App() {
     };
   }, []);
 
-  if (initializing) return null;
-
   // During a password-recovery flow a session exists, but we must stay in the
   // auth stack so the user can finish resetting their password.
   const showMain = session !== null && !recovering;
+
+  // Register push + tap-to-navigate only once the user is in the main app.
+  usePushRegistration(showMain ? (session?.user.id ?? null) : null);
+
+  if (initializing) return null;
 
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <ErrorBoundary>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             {showMain ? <MainNavigator /> : <AuthNavigator />}
           </NavigationContainer>
         </ErrorBoundary>

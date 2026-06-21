@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { supabase } from '@/lib/supabase';
-import { LOC_EVENT, type LocPayload } from '@/lib/liveTrip';
+import { LOCATION_TASK, setActiveTripChannel } from '@/lib/locationTask';
 
 interface UseLocationSharingResult {
   sharing: boolean;
@@ -9,10 +8,13 @@ interface UseLocationSharingResult {
 }
 
 /**
- * While `active`, asks for location permission and broadcasts the device's GPS
- * fixes on `channelName` so riders' maps can track the car live. Works on web
- * (browser geolocation) and native (expo-location). Fully cleaned up when
- * `active` goes false or the screen unmounts — nothing is persisted.
+ * While `active`, asks for location permission and streams the device's GPS
+ * fixes to the background task (`lib/locationTask.ts`), which broadcasts them on
+ * `channelName` so riders' maps track the car live. Unlike a foreground-only
+ * watcher, `startLocationUpdatesAsync` keeps running when the driver locks the
+ * phone mid-trip (blue indicator on iOS, foreground-service notification on
+ * Android). Fully torn down when `active` goes false or the screen unmounts —
+ * nothing is persisted.
  */
 export function useLocationSharing(
   active: boolean,
@@ -22,18 +24,12 @@ export function useLocationSharing(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || !channelName || channelName === 'noop') {
       setSharing(false);
       return;
     }
 
     let cancelled = false;
-    let subscription: Location.LocationSubscription | null = null;
-    let subscribed = false;
-    const channel = supabase.channel(channelName);
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') subscribed = true;
-    });
 
     void (async () => {
       try {
@@ -46,22 +42,31 @@ export function useLocationSharing(
           }
           return;
         }
-        subscription = await Location.watchPositionAsync(
-          {
+        // Ask for "Always" so sharing keeps running when the phone is locked or
+        // the app is backgrounded mid-trip. If the driver keeps "While Using",
+        // sharing still works in the foreground — so we don't block on it.
+        await Location.requestBackgroundPermissionsAsync().catch(() => undefined);
+
+        await setActiveTripChannel(channelName);
+
+        const alreadyRunning = await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK,
+        ).catch(() => false);
+        if (!alreadyRunning) {
+          await Location.startLocationUpdatesAsync(LOCATION_TASK, {
             accuracy: Location.Accuracy.High,
             timeInterval: 4000,
             distanceInterval: 15,
-          },
-          (loc) => {
-            if (cancelled || !subscribed) return;
-            const payload: LocPayload = {
-              lat: loc.coords.latitude,
-              lng: loc.coords.longitude,
-              heading: loc.coords.heading ?? null,
-            };
-            void channel.send({ type: 'broadcast', event: LOC_EVENT, payload });
-          },
-        );
+            showsBackgroundLocationIndicator: true,
+            activityType: Location.ActivityType.AutomotiveNavigation,
+            pausesUpdatesAutomatically: false,
+            foregroundService: {
+              notificationTitle: 'BasisRide live trip',
+              notificationBody: 'Sharing your live location with your carpool.',
+            },
+          });
+        }
+
         if (!cancelled) {
           setSharing(true);
           setError(null);
@@ -74,8 +79,15 @@ export function useLocationSharing(
     return () => {
       cancelled = true;
       setSharing(false);
-      if (subscription) subscription.remove();
-      void supabase.removeChannel(channel);
+      void (async () => {
+        const started = await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK,
+        ).catch(() => false);
+        if (started) {
+          await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
+        }
+        await setActiveTripChannel(null);
+      })();
     };
   }, [active, channelName]);
 
