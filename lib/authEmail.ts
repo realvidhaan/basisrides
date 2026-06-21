@@ -11,10 +11,11 @@ import { supabase } from '@/lib/supabase';
 export async function sendAuthEmail(
   type: 'signup' | 'recovery',
   email: string,
+  opts?: { password?: string; data?: Record<string, unknown> },
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke('auth-email', {
-      body: { type, email: email.trim() },
+      body: { type, email: email.trim(), password: opts?.password, data: opts?.data },
     });
     if (error) return { ok: false, error: error.message };
     if (data && (data as { ok?: boolean }).ok === false) {

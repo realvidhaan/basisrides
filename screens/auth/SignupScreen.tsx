@@ -20,21 +20,12 @@ import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { CarPicker } from '@/components/ui/CarPicker';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
-import { supabase, mapSupabaseError } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { sendAuthEmail } from '@/lib/authEmail';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
-
-// On web, send the email-confirmation link back to the running app so clicking
-// it logs the parent in. On native, deep-link back into the app via its custom
-// scheme so any email link reopens BasisRide instead of a web page. (The primary
-// confirmation path is the in-app 8-digit OTP code; this is a link fallback.)
-const emailRedirectTo =
-  Platform.OS === 'web' && typeof window !== 'undefined'
-    ? window.location.origin
-    : 'basisrides://';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -185,50 +176,44 @@ export function SignupScreen({ navigation }: Props) {
       return;
     }
 
-    // All profile fields ride along as auth metadata; a DB trigger
-    // (handle_new_user) creates the public.users row from it. This is what lets
-    // signup work even when there's no session yet (email confirmation on).
+    // Create the account and send the confirmation code in one call. The
+    // auth-email function creates the user (all profile fields ride along as
+    // metadata for the handle_new_user trigger) WITHOUT triggering Supabase's
+    // own email, then delivers a single branded 8-digit code via Resend. The OTP
+    // screen confirms it with verifyOtp.
     const hasCar = Number(form.carCapacity) > 0;
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
+    const { ok, error: signUpError } = await sendAuthEmail('signup', email, {
       password: form.password,
-      options: {
-        emailRedirectTo,
-        data: {
-          full_name: form.fullName.trim(),
-          child_name: form.childName.trim(),
-          grade: form.grade,
-          neighborhood: form.neighborhood.trim(),
-          address: form.address.trim(),
-          latitude: String(coords.lat),
-          longitude: String(coords.lng),
-          car_capacity: String(Number(form.carCapacity)),
-          car_color: hasCar ? form.carColor : '',
-          car_type: hasCar ? form.carType : '',
-          license_plate: hasCar ? form.licensePlate.trim() : '',
-          invite_code: inviteCode.trim().toUpperCase(),
-        },
+      data: {
+        full_name: form.fullName.trim(),
+        child_name: form.childName.trim(),
+        grade: form.grade,
+        neighborhood: form.neighborhood.trim(),
+        address: form.address.trim(),
+        latitude: String(coords.lat),
+        longitude: String(coords.lng),
+        car_capacity: String(Number(form.carCapacity)),
+        car_color: hasCar ? form.carColor : '',
+        car_type: hasCar ? form.carType : '',
+        license_plate: hasCar ? form.licensePlate.trim() : '',
+        invite_code: inviteCode.trim().toUpperCase(),
       },
     });
 
     setLoading(false);
 
-    if (signUpError || !signUpData.user) {
-      setGlobalError(mapSupabaseError(signUpError));
+    if (!ok) {
+      setGlobalError(
+        /registered|exists/i.test(signUpError ?? '')
+          ? 'That email is already registered. Try logging in or resetting your password.'
+          : signUpError ?? 'Could not create your account. Please try again.',
+      );
       return;
     }
 
-    // Registration succeeded — confirm it with a tap.
+    // Account created — confirm with a tap, then collect the emailed code.
     impact();
-
-    // No session means email confirmation is required. Deliver the 8-digit code
-    // via Resend (Supabase's own SMTP is bypassed), then send the parent to the
-    // OTP screen; verifyOtp establishes the session there. If a session already
-    // exists (confirmation disabled), App.tsx's auth gate navigates into the app.
-    if (!signUpData.session) {
-      await sendAuthEmail('signup', email);
-      navigation.navigate('OTPVerification', { email, flow: 'signup' });
-    }
+    navigation.navigate('OTPVerification', { email, flow: 'signup' });
   }
 
   return (
