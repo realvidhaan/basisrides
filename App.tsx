@@ -20,10 +20,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { SignupScreen } from '@/screens/auth/SignupScreen';
-import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
-import { OTPVerificationScreen } from '@/screens/auth/OTPVerificationScreen';
-import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
-import { PasswordChangedScreen } from '@/screens/auth/PasswordChangedScreen';
 import { ScheduleScreen } from '@/screens/ScheduleScreen';
 import { EditScheduleScreen } from '@/screens/EditScheduleScreen';
 import { LiveTripScreen } from '@/screens/LiveTripScreen';
@@ -57,10 +53,6 @@ function AuthNavigator() {
       <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Signup" component={SignupScreen} />
-      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <AuthStack.Screen name="OTPVerification" component={OTPVerificationScreen} />
-      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-      <AuthStack.Screen name="PasswordChanged" component={PasswordChangedScreen} />
     </AuthStack.Navigator>
   );
 }

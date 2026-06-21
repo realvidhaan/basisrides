@@ -21,7 +21,7 @@ import { CarPicker } from '@/components/ui/CarPicker';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase } from '@/lib/supabase';
-import { sendAuthEmail } from '@/lib/authEmail';
+import { createAccount } from '@/lib/account';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
@@ -176,44 +176,49 @@ export function SignupScreen({ navigation }: Props) {
       return;
     }
 
-    // Create the account and send the confirmation code in one call. The
-    // auth-email function creates the user (all profile fields ride along as
-    // metadata for the handle_new_user trigger) WITHOUT triggering Supabase's
-    // own email, then delivers a single branded 8-digit code via Resend. The OTP
-    // screen confirms it with verifyOtp.
+    // Create the account (no email confirmation for v1) and sign in immediately.
+    // All profile fields ride along as metadata for the handle_new_user trigger.
     const hasCar = Number(form.carCapacity) > 0;
-    const { ok, error: signUpError } = await sendAuthEmail('signup', email, {
-      password: form.password,
-      data: {
-        full_name: form.fullName.trim(),
-        child_name: form.childName.trim(),
-        grade: form.grade,
-        neighborhood: form.neighborhood.trim(),
-        address: form.address.trim(),
-        latitude: String(coords.lat),
-        longitude: String(coords.lng),
-        car_capacity: String(Number(form.carCapacity)),
-        car_color: hasCar ? form.carColor : '',
-        car_type: hasCar ? form.carType : '',
-        license_plate: hasCar ? form.licensePlate.trim() : '',
-        invite_code: inviteCode.trim().toUpperCase(),
-      },
+    const { ok, error: signUpError } = await createAccount(email, form.password, {
+      full_name: form.fullName.trim(),
+      child_name: form.childName.trim(),
+      grade: form.grade,
+      neighborhood: form.neighborhood.trim(),
+      address: form.address.trim(),
+      latitude: String(coords.lat),
+      longitude: String(coords.lng),
+      car_capacity: String(Number(form.carCapacity)),
+      car_color: hasCar ? form.carColor : '',
+      car_type: hasCar ? form.carType : '',
+      license_plate: hasCar ? form.licensePlate.trim() : '',
+      invite_code: inviteCode.trim().toUpperCase(),
     });
 
-    setLoading(false);
-
     if (!ok) {
+      setLoading(false);
       setGlobalError(
         /registered|exists/i.test(signUpError ?? '')
-          ? 'That email is already registered. Try logging in or resetting your password.'
+          ? 'That email is already registered. Try logging in instead.'
           : signUpError ?? 'Could not create your account. Please try again.',
       );
       return;
     }
 
-    // Account created — confirm with a tap, then collect the emailed code.
+    // Sign in right away so the auth gate drops the parent into the app.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: form.password,
+    });
+    setLoading(false);
+
+    if (signInError) {
+      setGlobalError('Account created! Please log in to continue.');
+      navigation.navigate('Login');
+      return;
+    }
+
+    // Success — App.tsx onAuthStateChange drives navigation into the app.
     impact();
-    navigation.navigate('OTPVerification', { email, flow: 'signup' });
   }
 
   return (

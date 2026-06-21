@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
-import { sendAuthEmail } from '@/lib/authEmail';
 import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
 
@@ -26,18 +25,11 @@ export function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  // True when the failure was specifically an unconfirmed email, so we can offer
-  // to resend the confirmation link.
-  const [needsConfirm, setNeedsConfirm] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
 
   async function handleLogin(): Promise<void> {
     setError(null);
-    setNeedsConfirm(false);
-    setResent(false);
     setLoading(true);
 
     // A deliberate login is never part of a password reset. Clear any stale
@@ -53,28 +45,11 @@ export function LoginScreen({ navigation }: Props) {
 
     if (authError) {
       setError(mapSupabaseError(authError));
-      if (authError.message.toLowerCase().includes('not confirmed')) {
-        setNeedsConfirm(true);
-      }
     } else {
       // Confirm the successful sign-in with a tap before the gate navigates away.
       impact();
     }
     // On success, App.tsx onAuthStateChange drives navigation to HomeScreen.
-  }
-
-  async function handleResend(): Promise<void> {
-    if (resending || !email.trim()) return;
-    setResending(true);
-    setResent(false);
-    try {
-      const { ok } = await sendAuthEmail('signup', email.trim());
-      if (ok) setResent(true);
-    } catch {
-      // Non-fatal.
-    } finally {
-      setResending(false);
-    }
   }
 
   return (
@@ -97,22 +72,6 @@ export function LoginScreen({ navigation }: Props) {
         </Text>
 
         <ErrorMessage message={error} />
-
-        {needsConfirm ? (
-          <TouchableOpacity
-            style={styles.resendRow}
-            onPress={() => void handleResend()}
-            disabled={resending}
-          >
-            <Text style={styles.resendText}>
-              {resending
-                ? 'Sending…'
-                : resent
-                  ? 'Confirmation email sent ✓'
-                  : 'Resend confirmation email'}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
 
         <Input
           label="Email"
@@ -149,12 +108,7 @@ export function LoginScreen({ navigation }: Props) {
           }
         />
 
-        <TouchableOpacity
-          style={styles.forgotRow}
-          onPress={() => navigation.navigate('ForgotPassword')}
-        >
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </TouchableOpacity>
+        <View style={styles.spacer} />
 
         <Button
           title="Login"
@@ -209,25 +163,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingLeft: 8,
   },
-  resendRow: {
-    marginTop: -8,
-    marginBottom: 16,
-    alignSelf: 'flex-start',
-  },
-  resendText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#DC143C',
-  },
-  forgotRow: {
-    alignSelf: 'flex-end',
-    marginTop: -4,
-    marginBottom: 24,
-  },
-  forgotText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6A707C',
+  spacer: {
+    height: 16,
   },
   registerRow: {
     paddingHorizontal: 24,
