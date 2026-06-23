@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { MyScheduleDay, WeekdayKey } from '@/types';
@@ -132,10 +133,12 @@ export function useMySchedule(): UseMyScheduleResult {
           { onConflict: 'user_id,day_of_week' },
         );
         if (upsertError) {
+          Sentry.captureException(upsertError);
           setDays(snapshot);
           setError(mapSupabaseError(upsertError));
         }
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setDays(snapshot);
         setError('Could not save your schedule. Please try again.');
       }

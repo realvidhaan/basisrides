@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import * as Sentry from '@sentry/react-native';
 import type { ProfileStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -51,7 +52,8 @@ export function ProfileScreen({ navigation }: Props) {
     setLoggingOut(true);
     try {
       await supabase.auth.signOut();
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       setLoggingOut(false);
     }
     // On success App.tsx onAuthStateChange unmounts this screen.

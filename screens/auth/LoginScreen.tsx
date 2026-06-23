@@ -4,6 +4,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import * as Sentry from '@sentry/react-native';
 import type { AuthStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -44,6 +45,7 @@ export function LoginScreen({ navigation }: Props) {
     setLoading(false);
 
     if (authError) {
+      Sentry.captureException(authError);
       setError(mapSupabaseError(authError));
     } else {
       // Confirm the successful sign-in with a tap before the gate navigates away.

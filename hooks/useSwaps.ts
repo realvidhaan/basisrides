@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
@@ -132,12 +133,14 @@ export function useSwaps(): UseSwapsResult {
         if (iErr) {
           // A duplicate open request for the same day is fine — treat as success.
           if (/duplicate|unique/i.test(iErr.message)) return true;
+          Sentry.captureException(iErr);
           setError('Could not post your cover request. Please try again.');
           return false;
         }
         await fetchSwaps();
         return true;
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not post your cover request. Please try again.');
         return false;
       }
@@ -155,9 +158,12 @@ export function useSwaps(): UseSwapsResult {
           .update({ status: 'cancelled' })
           .eq('id', id)
           .eq('requester_id', uid);
-        if (uErr) setError('Could not cancel. Please try again.');
-        else await fetchSwaps();
-      } catch {
+        if (uErr) {
+          Sentry.captureException(uErr);
+          setError('Could not cancel. Please try again.');
+        } else await fetchSwaps();
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not cancel. Please try again.');
       }
     },
@@ -166,12 +172,14 @@ export function useSwaps(): UseSwapsResult {
 
   const acceptSwap = useCallback(
     async (id: string): Promise<void> => {
+      Sentry.captureMessage(`Swap acceptance flow started for swap ${id}`, 'info');
       setError(null);
       try {
         const { error: rErr } = await supabase.rpc('accept_swap', {
           p_swap_id: id,
         });
         if (rErr) {
+          Sentry.captureException(rErr);
           setError(
             /car/i.test(rErr.message)
               ? 'You need a car (set seats in Profile) to cover a drive.'
@@ -180,7 +188,8 @@ export function useSwaps(): UseSwapsResult {
         } else {
           await fetchSwaps();
         }
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not cover this drive. Please try again.');
       }
     },

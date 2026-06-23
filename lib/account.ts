@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -18,12 +19,16 @@ export async function createAccount(
     const { data: res, error } = await supabase.functions.invoke('create-account', {
       body: { email: email.trim(), password, data },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      Sentry.captureException(error);
+      return { ok: false, error: error.message };
+    }
     if (res && (res as { ok?: boolean }).ok === false) {
       return { ok: false, error: (res as { error?: string }).error };
     }
     return { ok: true };
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return { ok: false, error: 'Could not create your account. Please try again.' };
   }
 }

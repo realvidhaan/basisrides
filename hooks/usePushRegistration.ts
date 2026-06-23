@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
@@ -52,10 +53,14 @@ export function usePushRegistration(userId: string | null): void {
       if (cancelled || !token) return;
       // SECURITY DEFINER RPC so a device's token row can be (re)claimed by the
       // signed-in user without a permissive table UPDATE policy.
-      await supabase.rpc('register_push_token', {
-        p_token: token,
-        p_platform: Platform.OS,
-      });
+      try {
+        await supabase.rpc('register_push_token', {
+          p_token: token,
+          p_platform: Platform.OS,
+        });
+      } catch (e) {
+        Sentry.captureException(e);
+      }
     })();
 
     // Cold start: app opened by tapping a notification.

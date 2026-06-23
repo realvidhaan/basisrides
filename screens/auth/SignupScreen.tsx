@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Picker } from '@react-native-picker/picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import * as Sentry from '@sentry/react-native';
 import type { AuthStackParamList, Grade, GeoPoint, SignupFormValues } from '@/types';
 import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -148,6 +149,8 @@ export function SignupScreen({ navigation }: Props) {
       'email_exists',
       { p_email: email },
     );
+    // Fail open on a transient lookup error (see above), but still report it.
+    if (emailCheckError) Sentry.captureException(emailCheckError);
     if (!emailCheckError && emailTaken) {
       setLoading(false);
       setFieldErrors((prev) => ({
@@ -212,6 +215,7 @@ export function SignupScreen({ navigation }: Props) {
     setLoading(false);
 
     if (signInError) {
+      Sentry.captureException(signInError);
       setGlobalError('Account created! Please log in to continue.');
       navigation.navigate('Login');
       return;

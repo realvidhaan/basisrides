@@ -1,3 +1,4 @@
+import '@/lib/sentry'; // MUST be first — initializes Sentry before anything else renders
 import 'react-native-gesture-handler';
 import 'react-native-url-polyfill/auto';
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
@@ -218,11 +219,13 @@ export function useCarpool(): UseCarpoolResult {
           .from('schedule_skips')
           .insert({ user_id: user.id, skip_date: iso });
         if (insErr) {
+          Sentry.captureException(insErr);
           setError(mapSupabaseError(insErr));
           return;
         }
         await fetchAll(true);
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not update this day. Please try again.');
       }
     },
@@ -241,11 +244,13 @@ export function useCarpool(): UseCarpoolResult {
           .eq('user_id', user.id)
           .eq('skip_date', iso);
         if (delErr) {
+          Sentry.captureException(delErr);
           setError(mapSupabaseError(delErr));
           return;
         }
         await fetchAll(true);
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not update this day. Please try again.');
       }
     },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import type { Trip, TripStatus } from '@/types';
 
@@ -96,6 +97,10 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
   const startTrip = useCallback(
     async (riderIds: string[]): Promise<Trip | null> => {
       if (!driverId) return null;
+      Sentry.captureMessage(
+        `Ride claiming flow started for driver ${driverId} on ${iso}`,
+        'info',
+      );
       setError(null);
       try {
         const { data, error: upErr } = await supabase
@@ -113,13 +118,15 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
           .select('*')
           .single();
         if (upErr || !data) {
+          if (upErr) Sentry.captureException(upErr);
           setError('Could not start the trip. Please try again.');
           return null;
         }
         const tr = data as Trip;
         setTrip(tr);
         return tr;
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not start the trip. Please try again.');
         return null;
       }
@@ -136,8 +143,12 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
           .from('trips')
           .update({ status, updated_at: new Date().toISOString() })
           .eq('id', trip.id);
-        if (upErr) setError('Could not update the trip. Please try again.');
-      } catch {
+        if (upErr) {
+          Sentry.captureException(upErr);
+          setError('Could not update the trip. Please try again.');
+        }
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not update the trip. Please try again.');
       }
     },
@@ -156,14 +167,21 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
             .delete()
             .eq('trip_id', trip.id)
             .eq('rider_id', riderId);
-          if (dErr) setError('Could not update pickup. Please try again.');
+          if (dErr) {
+            Sentry.captureException(dErr);
+            setError('Could not update pickup. Please try again.');
+          }
         } else {
           const { error: iErr } = await supabase
             .from('trip_pickups')
             .insert({ trip_id: trip.id, rider_id: riderId });
-          if (iErr) setError('Could not update pickup. Please try again.');
+          if (iErr) {
+            Sentry.captureException(iErr);
+            setError('Could not update pickup. Please try again.');
+          }
         }
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setError('Could not update pickup. Please try again.');
       }
     },

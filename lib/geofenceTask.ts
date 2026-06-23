@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -78,7 +79,8 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
         .eq('ride_date', ctx.iso)
         .eq('status', 'on_my_way');
     }
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     // A dropped write is non-fatal — the driver still has manual controls.
   }
 });
