@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   ActivityIndicator,
   FlatList,
@@ -103,7 +104,8 @@ export function ConversationScreen({ navigation, route }: Props) {
         .update({ last_read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
         .eq('user_id', currentUserId);
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       // Non-fatal: the badge will simply update on the next read.
     }
   }, [conversationId, currentUserId]);

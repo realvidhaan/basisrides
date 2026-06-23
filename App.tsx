@@ -1,5 +1,6 @@
 import './global.css';
 
+import * as Sentry from '@sentry/react-native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -127,16 +128,22 @@ function MainNavigator() {
   );
 }
 
-export default function App() {
+function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [recovering, setRecovering] = useState(getRecovering());
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setInitializing(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: s } }) => {
+        setSession(s);
+        setInitializing(false);
+      })
+      .catch((e) => {
+        Sentry.captureException(e);
+        setInitializing(false);
+      });
 
     const {
       data: { subscription },
@@ -179,3 +186,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+// Sentry.wrap enables automatic performance tracing and touch/profiling hooks
+// on the root component.
+export default Sentry.wrap(App);

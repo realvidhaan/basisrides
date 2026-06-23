@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   ActivityIndicator,
   ScrollView,
@@ -91,10 +92,12 @@ export function InviteScreen({ navigation }: Props) {
           setCreating(false);
           return;
         }
+        Sentry.captureException(iErr);
         if (!/duplicate|unique/i.test(iErr.message)) break;
       }
       setError('Could not create an invite. Please try again.');
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       setError('Could not create an invite. Please try again.');
     } finally {
       setCreating(false);

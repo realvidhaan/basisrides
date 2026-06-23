@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   ScrollView,
   StyleSheet,
@@ -109,6 +110,7 @@ export function EditProfileScreen({ navigation }: Props) {
         })
         .eq('id', user.id);
       if (upErr) {
+        Sentry.captureException(upErr);
         setError(mapSupabaseError(upErr));
         return;
       }
@@ -116,7 +118,8 @@ export function EditProfileScreen({ navigation }: Props) {
       impact();
       await refetch();
       navigation.goBack();
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       setError('Could not save your changes. Please try again.');
     } finally {
       setSaving(false);

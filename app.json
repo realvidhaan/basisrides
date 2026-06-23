@@ -51,7 +51,15 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "vidhaans-projects",
+          "project": "react-native"
+        }
+      ]
     ],
     "extra": {
       "eas": {

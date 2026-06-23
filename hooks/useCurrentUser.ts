@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import type { UserProfile } from '@/types';
 
@@ -42,7 +43,8 @@ export function useCurrentUser(): UseCurrentUserResult {
       }
 
       setUser(data as UserProfile);
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       setUser(null);
     } finally {
       setLoading(false);

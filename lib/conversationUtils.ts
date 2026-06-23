@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { parseISO, formatMonthDay } from '@/lib/dateUtils';
 
@@ -29,10 +30,12 @@ export async function getOrCreateDM(
       other_user_id: otherUserId,
     });
     if (error || typeof data !== 'string') {
+      Sentry.captureException(error);
       throw new Error('Could not open this conversation. Please try again.');
     }
     return data;
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     throw new Error('Could not open this conversation. Please try again.');
   }
 }
@@ -53,10 +56,12 @@ export async function getOrCreateGroupChat(
       p_title: title,
     });
     if (error || typeof data !== 'string') {
+      Sentry.captureException(error);
       throw new Error('Could not open the group chat. Please try again.');
     }
     return data;
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     throw new Error('Could not open the group chat. Please try again.');
   }
 }

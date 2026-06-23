@@ -21,6 +21,8 @@
  */
 import { toISO, weekdayKeyFromDate } from '@/lib/dateUtils';
 import {
+  EARLY_DISMISSAL_PICKUP,
+  isEarlyDismissal,
   schoolDayStatus,
   schoolYearEnd,
   schoolYearStart,
@@ -234,6 +236,21 @@ function computeSingleDay(
           });
         }
       }
+    }
+  }
+
+  // Early dismissal: school lets out at 1:00 PM, so every pickup time that day
+  // is forced to 1:00 PM regardless of each parent's normally-set time. Car
+  // groupings and the driver rotation are unchanged — only the time shifts.
+  if (isEarlyDismissal(date)) {
+    const withTime = (m: CarMember): CarMember => ({
+      ...m,
+      time: EARLY_DISMISSAL_PICKUP,
+    });
+    for (const a of result.values()) {
+      a.time = EARLY_DISMISSAL_PICKUP;
+      a.driver = a.driver ? withTime(a.driver) : null;
+      a.riders = a.riders.map(withTime);
     }
   }
 

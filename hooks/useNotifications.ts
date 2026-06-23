@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { AppNotification } from '@/types';
@@ -85,7 +86,8 @@ export function useNotifications(): UseNotificationsResult {
         .update({ read_at: new Date().toISOString() })
         .eq('user_id', uid)
         .is('read_at', null);
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e);
       // Non-fatal: the badge clears on next fetch.
     }
   }, [uid]);

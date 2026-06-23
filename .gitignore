@@ -1,7 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
+# dependencies — the trailing-slash form only ignores a real dir, but node_modules
+# is a symlink here (kept out of iCloud via the .nosync trick) and iCloud spawns
+# " 2" dup symlinks, so match every node_modules* variant.
+node_modules*
 
 # Expo
 .expo/

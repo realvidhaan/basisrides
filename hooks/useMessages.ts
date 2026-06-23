@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { Message } from '@/types';
@@ -182,6 +183,7 @@ export function useMessages(conversationId: string): UseMessagesResult {
           .single();
 
         if (insErr || !data) {
+          Sentry.captureException(insErr);
           throw new Error('send failed');
         }
 
@@ -190,7 +192,8 @@ export function useMessages(conversationId: string): UseMessagesResult {
           const withoutTemp = prev.filter((m) => m.id !== tempId);
           return upsertMessage(withoutTemp, { ...real, senderName: myName });
         });
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         throw new Error('Message failed to send. Please try again.');
       }
