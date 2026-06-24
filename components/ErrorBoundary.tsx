@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 
 interface Props {
   children: React.ReactNode;
@@ -19,6 +20,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
+  }
+
+  // Render-time crashes caught here are NOT "uncaught" errors, so Sentry's global
+  // handler never sees them — report explicitly or we'd be blind to the exact
+  // crashes this boundary exists to catch.
+  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
   }
 
   handleReset = (): void => {

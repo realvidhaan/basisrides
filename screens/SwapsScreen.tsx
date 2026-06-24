@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -39,6 +39,27 @@ export function SwapsScreen({ navigation }: Props) {
     cancelSwap,
     acceptSwap,
   } = useSwaps();
+
+  // Guard against double-taps: without an in-flight lock, a second tap fires a
+  // second accept/cancel RPC against the now-changed row, so the user who just
+  // succeeded sees a false "already taken" error. The ref blocks same-frame
+  // re-entry; busyIds drives the disabled visual.
+  const inFlight = useRef<Set<string>>(new Set());
+  const [busyIds, setBusyIds] = useState<readonly string[]>([]);
+  const runOnce = useCallback(
+    async (id: string, fn: (id: string) => Promise<void>): Promise<void> => {
+      if (inFlight.current.has(id)) return;
+      inFlight.current.add(id);
+      setBusyIds((prev) => [...prev, id]);
+      try {
+        await fn(id);
+      } finally {
+        inFlight.current.delete(id);
+        setBusyIds((prev) => prev.filter((x) => x !== id));
+      }
+    },
+    [],
+  );
 
   return (
     <SafeAreaView style={[styles.container, webScreenFix]} edges={['top']}>
@@ -81,8 +102,9 @@ export function SwapsScreen({ navigation }: Props) {
                 ) : null}
                 {s.note ? <Text style={styles.cardNote}>“{s.note}”</Text> : null}
                 <TouchableOpacity
-                  style={styles.coverBtn}
-                  onPress={() => void acceptSwap(s.id)}
+                  style={[styles.coverBtn, busyIds.includes(s.id) && styles.coverBtnDisabled]}
+                  onPress={() => void runOnce(s.id, acceptSwap)}
+                  disabled={busyIds.includes(s.id)}
                   activeOpacity={0.85}
                 >
                   <Text style={styles.coverBtnText}>I&apos;ll cover this drive</Text>
@@ -131,7 +153,10 @@ export function SwapsScreen({ navigation }: Props) {
                 </View>
                 {s.note ? <Text style={styles.cardNote}>“{s.note}”</Text> : null}
                 {s.status === 'open' ? (
-                  <TouchableOpacity onPress={() => void cancelSwap(s.id)}>
+                  <TouchableOpacity
+                    onPress={() => void runOnce(s.id, cancelSwap)}
+                    disabled={busyIds.includes(s.id)}
+                  >
                     <Text style={styles.cancelText}>Cancel request</Text>
                   </TouchableOpacity>
                 ) : null}
@@ -188,6 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC143C',
     alignItems: 'center',
   },
+  coverBtnDisabled: { opacity: 0.5 },
   coverBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   myTop: {
     flexDirection: 'row',

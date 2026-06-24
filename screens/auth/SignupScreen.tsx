@@ -105,7 +105,11 @@ export function SignupScreen({ navigation }: Props) {
         }
       }
     }
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    // Validate the trimmed value — the same value that gets submitted — so a
+    // leading/trailing space (common from autofill) doesn't falsely reject a
+    // valid address.
+    const email = form.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'Enter a valid email address.';
     }
     if (form.password.length < 8) {

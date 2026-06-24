@@ -7,11 +7,11 @@ import { buildMapHtml, type MapHtmlOptions } from '@/lib/mapHtml';
  * -web renders into the DOM, so a real iframe works and needs no extra deps).
  * The iframe page subscribes to the live-location broadcast on its own.
  */
-export function LiveMap({ channel, stops, start, carColorKey }: MapHtmlOptions) {
+export function LiveMap({ channel, stops, start, carColorKey, destinations }: MapHtmlOptions) {
   const html = useMemo(
-    () => buildMapHtml({ channel, stops, start, carColorKey }),
+    () => buildMapHtml({ channel, stops, start, carColorKey, destinations }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [channel, JSON.stringify(stops), JSON.stringify(start), carColorKey],
+    [channel, JSON.stringify(stops), JSON.stringify(start), carColorKey, JSON.stringify(destinations)],
   );
 
   return (

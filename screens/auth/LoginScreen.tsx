@@ -30,6 +30,10 @@ export function LoginScreen({ navigation }: Props) {
   const passwordRef = useRef<TextInput>(null);
 
   async function handleLogin(): Promise<void> {
+    // Guard re-entry: the password field's onSubmitEditing can fire this again
+    // while a sign-in is already in flight (the Button is disabled, the keyboard
+    // action is not), causing a double submit.
+    if (loading) return;
     setError(null);
     setLoading(true);
 

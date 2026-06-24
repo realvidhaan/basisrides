@@ -139,7 +139,11 @@ export function LiveMap({ channel, stops, start, carColorKey, destinations }: Ma
     } else {
       mapRef.current?.animateCamera({ center: next }, { duration: 600 });
     }
-  }, [live, carCoord, destinations]);
+    // Depend on destinations by VALUE, not identity: the parent recreates the
+    // array each render, and keying on the array object would restart the 1400ms
+    // car animation mid-glide on every unrelated re-render during a live trip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, carCoord, JSON.stringify(destinations ?? [])]);
 
   return (
     <View style={styles.container}>

@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -73,6 +73,8 @@ export function ConversationScreen({ navigation, route }: Props) {
   const [isGroup, setIsGroup] = useState(false);
 
   const listRef = useRef<FlatList<DecoratedMessage>>(null);
+  const sendingRef = useRef(false);
+  const isFocused = useIsFocused();
 
   // Determine whether this is a group chat (controls showing sender names).
   useEffect(() => {
@@ -117,8 +119,11 @@ export function ConversationScreen({ navigation, route }: Props) {
   );
 
   useEffect(() => {
-    if (messages.length > 0) void markRead();
-  }, [messages.length, markRead]);
+    // Only mark read while the screen is actually focused. The component stays
+    // mounted in the tab/stack, so without the focus check a message arriving
+    // while the user is on another screen would clear its unread badge unseen.
+    if (isFocused && messages.length > 0) void markRead();
+  }, [isFocused, messages.length, markRead]);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -147,7 +152,10 @@ export function ConversationScreen({ navigation, route }: Props) {
 
   async function handleSend(): Promise<void> {
     const text = draft.trim();
-    if (!text) return;
+    // sendingRef blocks a same-frame double-tap (the disabled prop only updates
+    // on the next render), which would otherwise insert the message twice.
+    if (!text || sendingRef.current) return;
+    sendingRef.current = true;
     setDraft(''); // optimistic clear
     setSendError(null);
     try {
@@ -156,6 +164,8 @@ export function ConversationScreen({ navigation, route }: Props) {
     } catch {
       setDraft(text); // restore on failure
       setSendError('Message failed to send. Please try again.');
+    } finally {
+      sendingRef.current = false;
     }
   }
 

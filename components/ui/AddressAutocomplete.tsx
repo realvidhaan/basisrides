@@ -59,9 +59,13 @@ export function AddressAutocomplete({
       setLoading(false);
       return;
     }
-    setLoading(true);
     let active = true;
     const handle = setTimeout(() => {
+      // Set loading only when a request actually fires, not on every keystroke —
+      // otherwise the spinner shows for the whole typing pause with no request
+      // in flight, and each keystroke's cleanup (which clears the timer) would
+      // leave it stuck on.
+      setLoading(true);
       void searchAddresses(q).then((results) => {
         if (!active) return;
         setSuggestions(results);
