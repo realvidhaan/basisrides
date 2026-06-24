@@ -477,7 +477,7 @@ describe('SECURITY / EXPLOIT ATTEMPTS', () => {
   it('// SECURITY GAP: hardship_passes SELECT open to all members — documents the confirmed leak', async () => {
     // SECURITY GAP: hardship_passes SELECT policy allows any authenticated user to read
     //   all rows, exposing which families have hardship exemptions to all carpool members.
-    //   Migration 20260622_001_restrict_hardship_passes_select.sql fixes this.
+    //   Migration 20260622223701_restrict_hardship_passes_select.sql fixes this.
     const allFamiliesData = [
       { id: 'hp-1', user_id: USER_B.id, date: FUTURE_ISO, reason: 'Family emergency' },
     ];
@@ -495,7 +495,7 @@ describe('SECURITY / EXPLOIT ATTEMPTS', () => {
 
   it('// SECURITY GAP: rides SELECT open to all authenticated users — documents the confirmed leak', async () => {
     // SECURITY GAP: rides SELECT policy allows any authenticated user to read all ride records.
-    //   Migration 20260622_002_restrict_rides_select.sql fixes this.
+    //   Migration 20260622223702_restrict_rides_select.sql fixes this.
     harness.setQueryResult('rides', 'select', {
       data: [{ id: 'ride-1', driver_id: USER_B.id, rider_id: 'rider-c', date: FIXED_ISO }],
       error: null,
