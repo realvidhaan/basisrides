@@ -5,15 +5,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as Sentry from '@sentry/react-native';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { GeoPoint, MapStop, ScheduleStackParamList } from '@/types';
 import { BackButton } from '@/components/ui/BackButton';
+import { Button } from '@/components/ui/Button';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { DriverVehicleCard } from '@/components/ui/DriverVehicleCard';
 import { LiveMap } from '@/components/map/LiveMap';
@@ -73,6 +74,8 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
   // Fetch the car's members so we can pin homes on the map + list riders.
   const [carUsers, setCarUsers] = useState<CarUserRow[]>([]);
+  const [ending, setEnding] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
   const memberIds = useMemo(() => {
     if (!a) return [];
     const ids = new Set<string>();
@@ -95,8 +98,11 @@ export function LiveTripScreen({ navigation, route }: Props) {
           .select('id, full_name, child_name, latitude, longitude')
           .in('id', memberIds);
         if (active) setCarUsers((data ?? []) as CarUserRow[]);
-      } catch {
-        // Non-fatal: map still shows school; homes just won't pin.
+      } catch (e) {
+        // Non-fatal: map still shows school; homes just won't pin. Log it, since
+        // a persistent failure also leaves driverStart null, which disables the
+        // home auto-end geofence (the manual "End ride" button is the fallback).
+        Sentry.captureException(e);
       }
     })();
     return () => {
@@ -163,6 +169,19 @@ export function LiveTripScreen({ navigation, route }: Props) {
     tripActive,
   });
 
+  // The home auto-end geofence only registers when we know the driver's home
+  // coords. When they're missing (no saved address, or a failed users fetch),
+  // the trip can never auto-complete, so the manual control is the only way out.
+  const autoEndAvailable = driverStart !== null;
+
+  async function endRide(): Promise<void> {
+    if (ending) return;
+    setEnding(true);
+    await setStatus('completed');
+    setEnding(false);
+    setConfirmingEnd(false);
+  }
+
   const riders = a?.riders ?? [];
   const status = trip?.status ?? null;
   const statusLabel =
@@ -201,8 +220,9 @@ export function LiveTripScreen({ navigation, route }: Props) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Sharing your live location</Text>
             <Text style={styles.cardText}>
-              Your riders can see your car move in real time. The ride ends
-              automatically once you&apos;ve dropped everyone off and arrive home.
+              {autoEndAvailable
+                ? 'Your riders can see your car move in real time. The ride ends automatically once you’ve dropped everyone off and arrive home — or end it now below.'
+                : 'Your riders can see your car move in real time. Tap “End ride” once you’ve dropped everyone off.'}
             </Text>
             {riders.length > 0 ? (
               <>
@@ -220,14 +240,40 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 ))}
               </>
             ) : null}
-            <TouchableOpacity
-              style={styles.endEarlyBtn}
-              onPress={() => void setStatus('completed')}
-              activeOpacity={0.6}
-              hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
-            >
-              <Text style={styles.endEarlyText}>End early</Text>
-            </TouchableOpacity>
+            {confirmingEnd ? (
+              <View style={styles.endConfirm}>
+                <Text style={styles.endConfirmText}>
+                  End the ride for everyone? This notifies your riders and stops
+                  live location sharing.
+                </Text>
+                <View style={styles.endConfirmRow}>
+                  <View style={styles.endConfirmBtn}>
+                    <Button
+                      title="Keep sharing"
+                      variant="outline"
+                      disabled={ending}
+                      onPress={() => setConfirmingEnd(false)}
+                    />
+                  </View>
+                  <View style={styles.endConfirmBtn}>
+                    <Button
+                      title="End ride"
+                      variant="primary"
+                      loading={ending}
+                      onPress={() => void endRide()}
+                    />
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.endBtnWrap}>
+                <Button
+                  title="End ride"
+                  variant={autoEndAvailable ? 'outline' : 'primary'}
+                  onPress={() => setConfirmingEnd(true)}
+                />
+              </View>
+            )}
           </View>
         );
       }
@@ -421,11 +467,15 @@ const styles = StyleSheet.create({
   avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
-  endEarlyBtn: {
-    alignSelf: 'center',
-    marginTop: 18,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  endBtnWrap: { marginTop: 18 },
+  endConfirm: { marginTop: 18 },
+  endConfirmText: {
+    fontSize: 14,
+    color: '#6A707C',
+    lineHeight: 20,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-  endEarlyText: { fontSize: 13, color: '#8391A1', textDecorationLine: 'underline' },
+  endConfirmRow: { flexDirection: 'row', gap: 12 },
+  endConfirmBtn: { flex: 1 },
 });
