@@ -30,8 +30,10 @@ interface Params {
  *   on arrival (iOS reports the initial state, so being already at school fires
  *   immediately too).
  * - Once the trip is active, a home geofence is added so arriving home after the
- *   drop-offs auto-ends it. Home is only watched after the trip starts, so it
- *   can't false-complete while the driver is still home before the run.
+ *   drop-offs auto-ends it. The auto-end only fires after the driver is confirmed
+ *   away from home (reached school, or left the home region), so iOS's
+ *   initial-state Enter on (re)registration — e.g. after an app restart while the
+ *   driver is home — can't false-complete the trip. See lib/geofenceTask.ts.
  *
  * The actual DB writes happen in the geofence task (`lib/geofenceTask.ts`);
  * `useTrip`'s realtime subscription then updates the UI.
@@ -101,7 +103,9 @@ export function useTripGeofencing({
             longitude: home.lng,
             radius: HOME_RADIUS_M,
             notifyOnEnter: true,
-            notifyOnExit: false,
+            // Exit arms the auto-end: leaving home proves the driver is out on the
+            // run, so a later arrival home can safely complete the trip.
+            notifyOnExit: true,
           });
         }
 
