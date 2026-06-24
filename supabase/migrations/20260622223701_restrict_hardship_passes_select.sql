@@ -1,4 +1,4 @@
--- Migration: 20260622_001_restrict_hardship_passes_select.sql
+-- Migration: 20260622223701_restrict_hardship_passes_select.sql
 -- Severity: MEDIUM
 -- Finding: CONFIRMED-3 from security-audit/THREAT_MODEL.md
 --

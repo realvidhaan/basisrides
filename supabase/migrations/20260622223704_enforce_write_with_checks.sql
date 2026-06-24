@@ -1,4 +1,4 @@
--- Migration: 20260622_004_enforce_write_with_checks.sql
+-- Migration: 20260622223704_enforce_write_with_checks.sql
 -- Severity: MEDIUM
 -- Findings: Multiple tables may be missing with_check on INSERT/UPDATE
 --   (availability, schedule_skips, swaps, invites, trips, trip_pickups)

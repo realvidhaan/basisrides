@@ -1,4 +1,4 @@
--- Migration: 20260622_003_enforce_messages_conversation_membership.sql
+-- Migration: 20260622223703_enforce_messages_conversation_membership.sql
 -- Severity: HIGH (if gap exists — needs verification)
 -- Finding: CONFIRMED-5 from security-audit/THREAT_MODEL.md
 --

@@ -1,4 +1,4 @@
--- Migration: 20260622_002_restrict_rides_select.sql
+-- Migration: 20260622223702_restrict_rides_select.sql
 -- Severity: MEDIUM
 -- Finding: CONFIRMED-4 from security-audit/THREAT_MODEL.md
 --
