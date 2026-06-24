@@ -9,7 +9,10 @@
  * - preset: 'jest-expo' runs tests in a React Native-compatible environment.
  * - transformIgnorePatterns: Expo SDK 54 ships many packages as ESM.
  * - moduleNameMapper: maps the '@/*' path alias (from tsconfig.json) to root.
- * - testMatch: only runs the mocked suite by default (live probe requires .env.test).
+ * - testMatch: matches both suites; the npm scripts filter which run (default
+ *   `test`/`test:mocked` = mocked only; `test:live` = the live probe, which
+ *   requires .env.test). testMatch must include a file for any pattern to select
+ *   it — --testPathPattern only filters within testMatch.
  */
 
 /** @type {import('jest').Config} */
@@ -18,8 +21,10 @@ module.exports = {
 
   testEnvironment: 'node',
 
-  // Only run the mocked suite by default.
-  testMatch: ['**/__tests__/rls-mocked.test.ts'],
+  // Match both suites; the npm scripts select which actually run. Keeping the
+  // live probe out of testMatch (as before) made `npm run test:live` match zero
+  // files and pass vacuously.
+  testMatch: ['**/__tests__/**/*.test.ts'],
 
   // Transform: expo-modules-core and related Expo packages ship ESM and must be
   // transformed by babel-jest. The default jest-expo transformIgnorePatterns
