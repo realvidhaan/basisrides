@@ -12,13 +12,13 @@
  *   __testHarness.setQueryResult('users', 'select', { data: [...], error: null });
  */
 
-import {
-  createSupabaseMock,
-  type MockHarness,
-} from '../../supabaseMockFactory';
+// Reuse the SINGLE shared harness exported by the factory (path is one level up
+// from __mocks__/@supabase/). Creating a second harness here would split state:
+// tests configure the factory's __testHarness while createClient() would return
+// a different, unconfigured client.
+import { __testHarness } from '../supabaseMockFactory';
 
-// Singleton harness — shared across the entire test file
-export const __testHarness: MockHarness = createSupabaseMock();
+export { __testHarness };
 
 export function createClient() {
   return __testHarness.client;

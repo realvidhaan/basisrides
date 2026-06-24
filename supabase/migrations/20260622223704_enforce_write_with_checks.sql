@@ -1,164 +1,63 @@
 -- Migration: 20260622223704_enforce_write_with_checks.sql
 -- Severity: MEDIUM
--- Findings: Multiple tables may be missing with_check on INSERT/UPDATE
---   (availability, schedule_skips, swaps, invites, trips, trip_pickups)
 --
--- Problem:
---   Without explicit with_check expressions, a user could potentially INSERT
---   rows with a foreign user_id or requester_id (identity spoofing). The client
---   always passes the correct uid, but server-side enforcement is required.
+-- Verified against live pg_policies (2026-06). Reinforces server-side ownership
+-- on the INSERT-only write policies so a client cannot insert a row with a
+-- foreign owner id (identity spoofing), regardless of the current WITH CHECK.
+-- Each policy is dropped by its REAL name and recreated, so the migration is
+-- idempotent and never adds a duplicate.
 --
--- This migration reinforces with_check on all write policies for these tables.
---
--- IMPORTANT: Verify existing policy names before applying.
---   Run: SELECT policyname, cmd, qual, with_check FROM pg_policies
---        WHERE schemaname = 'public' ORDER BY tablename, cmd;
---
--- Adjust policy names to match what's actually in your project.
+-- INTENTIONALLY NOT TOUCHED:
+--   * availability (`avail_all_own`) and swaps (`swaps_all_own`) are FOR ALL
+--     policies; an omitted WITH CHECK defaults to the USING expression
+--     (auth.uid() = owner), so their writes are already owner-checked.
+--   * UPDATE/DELETE policies already correct: trips_update_own, hp_delete_own,
+--     skips_delete_own, rides_update_own/rides_delete_rider, tp_delete_driver,
+--     notif_update_own, users_update_own, cp_update_own.
+--   * Community-visible SELECT policies (users_select_all, avail_select_all,
+--     skips_select_all, swaps_select_all) are intentional — the carpool rotation
+--     reads every member's schedule — and are left in place.
 
--- ========================
--- availability
--- ========================
-DROP POLICY IF EXISTS "availability_insert" ON public.availability;
-DROP POLICY IF EXISTS "availability_update" ON public.availability;
-DROP POLICY IF EXISTS "Allow users to insert own availability" ON public.availability;
-DROP POLICY IF EXISTS "Allow users to update own availability" ON public.availability;
-
-CREATE POLICY "availability_insert_own"
-  ON public.availability
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "availability_update_own"
-  ON public.availability
-  FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "availability_delete_own"
-  ON public.availability
-  FOR DELETE
-  TO authenticated
-  USING (auth.uid() = user_id);
-
--- ========================
--- schedule_skips
--- ========================
-DROP POLICY IF EXISTS "schedule_skips_insert" ON public.schedule_skips;
-DROP POLICY IF EXISTS "schedule_skips_delete" ON public.schedule_skips;
-DROP POLICY IF EXISTS "Allow users to insert own skips" ON public.schedule_skips;
-DROP POLICY IF EXISTS "Allow users to delete own skips" ON public.schedule_skips;
-
-CREATE POLICY "schedule_skips_insert_own"
+-- schedule_skips: only the row's owner may insert.
+DROP POLICY IF EXISTS "skips_insert_own" ON public.schedule_skips;
+CREATE POLICY "skips_insert_own"
   ON public.schedule_skips
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
 
-CREATE POLICY "schedule_skips_delete_own"
-  ON public.schedule_skips
-  FOR DELETE
-  TO authenticated
-  USING (auth.uid() = user_id);
-
--- ========================
--- swaps
--- ========================
-DROP POLICY IF EXISTS "swaps_insert" ON public.swaps;
-DROP POLICY IF EXISTS "swaps_update" ON public.swaps;
-DROP POLICY IF EXISTS "Allow users to insert own swaps" ON public.swaps;
-DROP POLICY IF EXISTS "Allow users to update own swaps" ON public.swaps;
-
-CREATE POLICY "swaps_insert_own"
-  ON public.swaps
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = requester_id);
-
-CREATE POLICY "swaps_update_own"
-  ON public.swaps
-  FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = requester_id)
-  WITH CHECK (auth.uid() = requester_id);
-
--- ========================
--- invites
--- ========================
-DROP POLICY IF EXISTS "invites_insert" ON public.invites;
-DROP POLICY IF EXISTS "Allow users to insert own invites" ON public.invites;
-
+-- invites: only the inviter may create their invite.
+DROP POLICY IF EXISTS "invites_insert_own" ON public.invites;
 CREATE POLICY "invites_insert_own"
   ON public.invites
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = inviter_id);
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = inviter_id);
 
--- ========================
--- trips — driver-only writes
--- ========================
-DROP POLICY IF EXISTS "trips_insert" ON public.trips;
-DROP POLICY IF EXISTS "trips_update" ON public.trips;
-DROP POLICY IF EXISTS "Allow driver to insert trips" ON public.trips;
-DROP POLICY IF EXISTS "Allow driver to update trips" ON public.trips;
-
-CREATE POLICY "trips_insert_driver_only"
+-- trips: only the driver may create their trip (covers the live-trip upsert,
+-- whose INSERT branch is gated here and UPDATE branch by trips_update_own).
+DROP POLICY IF EXISTS "trips_insert_own" ON public.trips;
+CREATE POLICY "trips_insert_own"
   ON public.trips
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = driver_id);
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = driver_id);
 
-CREATE POLICY "trips_update_driver_only"
-  ON public.trips
-  FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = driver_id)
-  WITH CHECK (auth.uid() = driver_id);
+-- hardship_passes: only the row's owner may insert.
+DROP POLICY IF EXISTS "hp_insert_own" ON public.hardship_passes;
+CREATE POLICY "hp_insert_own"
+  ON public.hardship_passes
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
 
--- ========================
--- trip_pickups — driver of the parent trip only
--- ========================
-DROP POLICY IF EXISTS "trip_pickups_insert" ON public.trip_pickups;
-DROP POLICY IF EXISTS "trip_pickups_delete" ON public.trip_pickups;
-DROP POLICY IF EXISTS "Allow driver to insert pickups" ON public.trip_pickups;
-DROP POLICY IF EXISTS "Allow driver to delete pickups" ON public.trip_pickups;
-
-CREATE POLICY "trip_pickups_insert_driver_only"
+-- trip_pickups: only the driver of the parent trip may record a pickup.
+-- Mirrors the existing tp_delete_driver EXISTS-form (evaluated under the
+-- driver's own visibility of trips, which trips_select grants).
+DROP POLICY IF EXISTS "tp_insert_driver" ON public.trip_pickups;
+CREATE POLICY "tp_insert_driver"
   ON public.trip_pickups
-  FOR INSERT
-  TO authenticated
+  FOR INSERT TO authenticated
   WITH CHECK (
-    auth.uid() = (
-      SELECT driver_id FROM public.trips WHERE id = trip_id LIMIT 1
+    EXISTS (
+      SELECT 1 FROM public.trips t
+      WHERE t.id = trip_pickups.trip_id
+        AND t.driver_id = (select auth.uid())
     )
   );
-
-CREATE POLICY "trip_pickups_delete_driver_only"
-  ON public.trip_pickups
-  FOR DELETE
-  TO authenticated
-  USING (
-    auth.uid() = (
-      SELECT driver_id FROM public.trips WHERE id = trip_id LIMIT 1
-    )
-  );
-
--- ========================
--- hardship_passes — own writes
--- ========================
-DROP POLICY IF EXISTS "hardship_passes_insert" ON public.hardship_passes;
-DROP POLICY IF EXISTS "hardship_passes_delete" ON public.hardship_passes;
-
-CREATE POLICY "hardship_passes_insert_own"
-  ON public.hardship_passes
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "hardship_passes_delete_own"
-  ON public.hardship_passes
-  FOR DELETE
-  TO authenticated
-  USING (auth.uid() = user_id);
