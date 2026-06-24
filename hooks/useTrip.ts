@@ -47,10 +47,15 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
       const tr = (data as Trip | null) ?? null;
       setTrip(tr);
       if (tr) {
-        const { data: p } = await supabase
+        const { data: p, error: pErr } = await supabase
           .from('trip_pickups')
           .select('rider_id')
           .eq('trip_id', tr.id);
+        if (pErr) {
+          // Don't silently show an empty pickups set as if nobody is picked up.
+          setError('Could not load the trip. Please try again.');
+          return;
+        }
         setPickups(
           new Set((p ?? []).map((r) => (r as { rider_id: string }).rider_id)),
         );
@@ -138,6 +143,10 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
     async (status: TripStatus): Promise<void> => {
       if (!trip) return;
       setError(null);
+      // Optimistically reflect the new status (mirrors startTrip); realtime echo
+      // is idempotent. Roll back if the write fails so the UI doesn't lie.
+      const prevStatus = trip.status;
+      setTrip((t) => (t ? { ...t, status } : t));
       try {
         const { error: upErr } = await supabase
           .from('trips')
@@ -145,10 +154,12 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
           .eq('id', trip.id);
         if (upErr) {
           Sentry.captureException(upErr);
+          setTrip((t) => (t ? { ...t, status: prevStatus } : t));
           setError('Could not update the trip. Please try again.');
         }
       } catch (e) {
         Sentry.captureException(e);
+        setTrip((t) => (t ? { ...t, status: prevStatus } : t));
         setError('Could not update the trip. Please try again.');
       }
     },
@@ -160,6 +171,21 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
       if (!trip) return;
       setError(null);
       const had = pickups.has(riderId);
+      // Optimistically toggle so the driver's tap registers even if the realtime
+      // echo is delayed; roll back on failure.
+      setPickups((prev) => {
+        const next = new Set(prev);
+        if (had) next.delete(riderId);
+        else next.add(riderId);
+        return next;
+      });
+      const rollback = (): void =>
+        setPickups((prev) => {
+          const next = new Set(prev);
+          if (had) next.add(riderId);
+          else next.delete(riderId);
+          return next;
+        });
       try {
         if (had) {
           const { error: dErr } = await supabase
@@ -169,6 +195,7 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
             .eq('rider_id', riderId);
           if (dErr) {
             Sentry.captureException(dErr);
+            rollback();
             setError('Could not update pickup. Please try again.');
           }
         } else {
@@ -177,11 +204,13 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
             .insert({ trip_id: trip.id, rider_id: riderId });
           if (iErr) {
             Sentry.captureException(iErr);
+            rollback();
             setError('Could not update pickup. Please try again.');
           }
         }
       } catch (e) {
         Sentry.captureException(e);
+        rollback();
         setError('Could not update pickup. Please try again.');
       }
     },

@@ -22,10 +22,12 @@ export async function getOrCreateDM(
   currentUserId: string,
   otherUserId: string,
 ): Promise<string> {
+  // Guard outside the try so its specific message reaches the caller instead of
+  // being swallowed and replaced by the generic catch below.
+  if (currentUserId === otherUserId) {
+    throw new Error('Cannot start a conversation with yourself.');
+  }
   try {
-    if (currentUserId === otherUserId) {
-      throw new Error('Cannot start a conversation with yourself.');
-    }
     const { data, error } = await supabase.rpc('get_or_create_dm', {
       other_user_id: otherUserId,
     });

@@ -218,7 +218,9 @@ export function useCarpool(): UseCarpoolResult {
         const { error: insErr } = await supabase
           .from('schedule_skips')
           .insert({ user_id: user.id, skip_date: iso });
-        if (insErr) {
+        // A duplicate (already skipped — double-tap or another device) means the
+        // desired state already holds, so treat it as success rather than an error.
+        if (insErr && insErr.code !== '23505') {
           Sentry.captureException(insErr);
           setError(mapSupabaseError(insErr));
           return;

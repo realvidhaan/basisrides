@@ -143,7 +143,7 @@ function ruleBasedSchoolYear(startYear: number): SchoolYear {
   const thanksgivingThu = nthWeekday(Y, 11, 4, 4); // 4th Thursday of November
   const winterStart = nthWeekday(Y, 12, 1, 3); // 3rd Monday of December
   const skiMon = nthWeekday(Z, 2, 1, 3); // 3rd Monday of February
-  const springMon = nthWeekday(Z, 3, 1, 5); // last Monday of March (approx)
+  const springMon = lastWeekday(Z, 3, 1); // last Monday of March
 
   const breaks: DateRange[] = [
     one(nthWeekday(Y, 9, 1, 1), 'Labor Day'), // 1st Monday September

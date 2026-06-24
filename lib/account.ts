@@ -24,7 +24,12 @@ export async function createAccount(
       return { ok: false, error: error.message };
     }
     if (res && (res as { ok?: boolean }).ok === false) {
-      return { ok: false, error: (res as { error?: string }).error };
+      return {
+        ok: false,
+        error:
+          (res as { error?: string }).error ??
+          'Could not create your account. Please try again.',
+      };
     }
     return { ok: true };
   } catch (e) {
