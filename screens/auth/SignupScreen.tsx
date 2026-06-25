@@ -52,7 +52,6 @@ export function SignupScreen({ navigation }: Props) {
     password: '',
     confirmPassword: '',
   });
-  const [inviteCode, setInviteCode] = useState('');
   // Exact coordinates when the parent picks a suggested address; null if they
   // typed a freeform address (we'll geocode it on submit instead).
   const [addressCoords, setAddressCoords] = useState<GeoPoint | null>(null);
@@ -198,7 +197,6 @@ export function SignupScreen({ navigation }: Props) {
       car_color: hasCar ? form.carColor : '',
       car_type: hasCar ? form.carType : '',
       license_plate: hasCar ? form.licensePlate.trim() : '',
-      invite_code: inviteCode.trim().toUpperCase(),
     });
 
     if (!ok) {
@@ -414,15 +412,6 @@ export function SignupScreen({ navigation }: Props) {
               <Text style={styles.showHide}>{showConfirm ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
           }
-        />
-
-        <Input
-          label="Invite code (optional)"
-          value={inviteCode}
-          onChangeText={setInviteCode}
-          placeholder="From a parent who invited you"
-          autoCapitalize="characters"
-          autoCorrect={false}
         />
 
         <View style={styles.submitRow}>

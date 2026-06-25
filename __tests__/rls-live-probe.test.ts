@@ -250,17 +250,6 @@ describeOrSkip('LIVE RLS PROBE (requires .env.test + throwaway Supabase project)
   });
 
   // -------------------------------------------------------------------------
-  // invites table
-  // -------------------------------------------------------------------------
-
-  it('[invites] user A CANNOT insert an invite with inviter_id = user B', async () => {
-    const { error } = await clientA
-      .from('invites')
-      .insert({ code: 'TSTZZZ', inviter_id: USER_B_ID! });
-    expect(isRlsError(error)).toBe(true);
-  });
-
-  // -------------------------------------------------------------------------
   // hardship_passes — SECURITY GAP
   // -------------------------------------------------------------------------
 

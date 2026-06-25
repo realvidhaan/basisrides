@@ -129,16 +129,6 @@ export function ProfileScreen({ navigation }: Props) {
             <Ionicons name="chevron-forward" size={18} color="#8391A1" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionRow}
-            onPress={() => navigation.navigate('Invite')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="person-add-outline" size={20} color="#DC143C" />
-            <Text style={styles.actionText}>Invite parents</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
-          </TouchableOpacity>
-
           <View style={styles.logoutRow}>
             <Button
               title="Log out"

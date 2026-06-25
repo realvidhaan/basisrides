@@ -25,7 +25,6 @@ export type MessagesStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
-  Invite: undefined;
 };
 
 export type MainTabParamList = {
@@ -160,7 +159,7 @@ export interface ConversationPreview {
   unreadCount: number;
 }
 
-// ---- Live trips, notifications, invites (Day 7) ----
+// ---- Live trips, notifications (Day 7) ----
 
 export type TripStatus = 'on_my_way' | 'arrived' | 'completed' | 'cancelled';
 
@@ -197,18 +196,10 @@ export interface MapStop {
 export interface AppNotification {
   id: string;
   user_id: string;
-  type: string; // 'message' | 'trip' | 'pickup' | 'invite' | ...
+  type: string; // 'message' | 'trip' | 'pickup' | 'swap' | ...
   title: string;
   body: string | null;
   data: Record<string, unknown> | null;
   read_at: string | null;
   created_at: string;
-}
-
-export interface Invite {
-  code: string;
-  inviter_id: string;
-  created_at: string;
-  accepted_by: string | null;
-  accepted_at: string | null;
 }

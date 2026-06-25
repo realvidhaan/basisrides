@@ -18,7 +18,7 @@ let notifChannelSeq = 0;
 /**
  * The signed-in user's in-app notification feed, kept live via realtime. Rows
  * are created only by SECURITY DEFINER triggers (new message, trip status,
- * pickup) and the redeem_invite RPC, so this hook is read + mark-as-read only.
+ * pickup), so this hook is read + mark-as-read only.
  */
 export function useNotifications(): UseNotificationsResult {
   const { user } = useCurrentUser();

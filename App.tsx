@@ -28,7 +28,6 @@ import { NotificationsScreen } from '@/screens/NotificationsScreen';
 import { SwapsScreen } from '@/screens/SwapsScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
-import { InviteScreen } from '@/screens/profile/InviteScreen';
 import { MessagesListScreen } from '@/screens/messages/MessagesListScreen';
 import { ConversationScreen } from '@/screens/messages/ConversationScreen';
 import type {
@@ -75,7 +74,6 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
-      <ProfileStack.Screen name="Invite" component={InviteScreen} />
     </ProfileStack.Navigator>
   );
 }

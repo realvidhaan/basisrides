@@ -109,11 +109,12 @@ Direct `pg_policies` introspection was unavailable because the Supabase MCP OAut
 | SELECT | Not in client code | Push tokens are device credentials — SELECT should be restricted to own or service role only. |
 | INSERT/UPDATE | Via `register_push_token` SECURITY DEFINER RPC | **GOOD**. |
 
-### 2.13 `invites`
-| Op | Policy (inferred) | Risk |
-|----|-------------------|------|
-| SELECT | Inviter or accepted_by | OK — `InviteScreen` queries `.eq('inviter_id', user.id)`. |
-| INSERT | Client inserts `{ code, inviter_id: user.id }` — needs `with_check(auth.uid() = inviter_id)` | **MEDIUM** — without check, user A could create an invite attributed to user B. |
+### 2.13 `invites` (feature removed)
+The invite-code feature has been removed from the app — there is no longer any
+client code that reads or writes the `invites` table (the `InviteScreen` and the
+signup invite-code field were deleted). The `invites` table and `redeem_invite`
+RPC may still exist server-side; drop them in a follow-up DB migration if no
+longer needed.
 
 ### 2.14 `rides` (in DB but no client code found)
 | Op | Policy (inferred) | Risk |
@@ -131,11 +132,10 @@ Direct `pg_policies` introspection was unavailable because the Supabase MCP OAut
 **Fix:** Either in the `create-account` edge function or a `handle_new_user` DB trigger, validate `email ILIKE '%@bisv.org'` (or the correct allowed domain) and reject registrations from outside it.  
 **Severity:** HIGH — this is a child safety issue for a school carpooling app.
 
-### CONFIRMED-2: Invite code is optional, not enforced server-side (HIGH)
-**Location:** `screens/auth/SignupScreen.tsx` lines ~177, ~202; `lib/account.ts`  
-**Finding:** The invite code field is labeled "optional" in the UI and is passed as `invite_code` in the `data` metadata blob, but there is no visible client-side enforcement that a valid code is required. The `create-account` edge function presumably handles this, but no rejection path is shown in `lib/account.ts` beyond generic error handling.  
-**Risk:** If the edge function does not gate on a valid invite code, the system is open registration rather than invite-only. Combined with CONFIRMED-1 (no email restriction), this means anyone can sign up.  
-**Severity:** HIGH — depends on whether the edge function enforces it. Flagged as confirmed because the UI treats the field as optional and the client code has no enforcement.
+### CONFIRMED-2: Invite code is optional, not enforced server-side (RESOLVED — feature removed)
+**Location:** (formerly) `screens/auth/SignupScreen.tsx`; `lib/account.ts`  
+**Finding (historical):** The invite code field was labeled "optional" in the UI and passed as `invite_code` in the `data` metadata blob, with no client-side enforcement that a valid code was required.  
+**Resolution:** The invite-code feature was removed entirely from the app — the signup field, the `InviteScreen`, and the `invite_code` signup metadata are gone, so the app no longer presents invite codes as a (non-)gating mechanism. Account access still hinges on CONFIRMED-1 (email-domain restriction), which remains the right place to gate registration.
 
 ### CONFIRMED-3: `hardship_passes` SELECT is unrestricted (MEDIUM)
 **Location:** Inferred from RLS spec; no client code reads this table.  

@@ -401,16 +401,6 @@ describe('SECURITY / EXPLOIT ATTEMPTS', () => {
     expect(result.error!.code).toBe('42501');
   });
 
-  it('user A inserts an invite with inviter_id = user B (identity spoofing): RLS with_check denies it', async () => {
-    // SECURITY: invites INSERT with_check must be `auth.uid() = inviter_id`
-    harness.setQueryResult('invites', 'insert', RLS_DENY_WRITE);
-    const chain = harness.client.from('invites');
-    chain.insert({ code: 'ABCDEF', inviter_id: USER_B.id });
-    const result = await chain;
-    expect(result.error).not.toBeNull();
-    expect(result.error!.code).toBe('42501');
-  });
-
   it('user A DELETE a trip where they are the driver (only rider may delete): RLS denies it', async () => {
     // Per spec: rides DELETE only if you\'re the RIDER. Driver cannot self-delete.
     harness.setQueryResult('trips', 'delete', RLS_DENY_WRITE);

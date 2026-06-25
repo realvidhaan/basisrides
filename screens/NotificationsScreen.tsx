@@ -38,8 +38,6 @@ function iconFor(type: string): string {
       return '🚗';
     case 'pickup':
       return '✅';
-    case 'invite':
-      return '🎉';
     case 'swap':
       return '🤝';
     default:
