@@ -11,6 +11,14 @@ Sentry.init({
   // can't be silently disabled. Requires a native rebuild to take effect.
   enableNative: true,
   enableNativeCrashHandling: true,
+  // iOS App Hang Tracking flags any main-thread block longer than
+  // appHangTimeoutInterval (default 2s) as an "App Hanging" error. In dev builds
+  // on the Simulator this fires constantly on routine work — Metro bundling,
+  // Hermes/JS load on reload, the dev bridge, and native permission dialogs all
+  // block the main thread past 2s — producing false positives with no
+  // symbolicated frames. Keep it ON in production (real devices, where a true
+  // >2s freeze is a real, actionable problem) and OFF in development.
+  enableAppHangTracking: !__DEV__,
   // The ReactNativeErrorHandlers integration (enabled by default) installs the
   // global `onerror` + `onunhandledrejection` hooks, so uncaught JS errors and
   // unhandled promise rejections are reported automatically.
