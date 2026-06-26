@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +30,7 @@ import { useTripGeofencing } from '@/hooks/useTripGeofencing';
 import { supabase } from '@/lib/supabase';
 import { SCHOOL } from '@/lib/places';
 import { tripLocChannel } from '@/lib/liveTrip';
+import { track } from '@/lib/analytics';
 import { formatDayLabel, formatTime, parseISO } from '@/lib/dateUtils';
 
 type Nav = StackNavigationProp<ScheduleStackParamList, 'LiveTrip'>;
@@ -189,6 +190,15 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
   const riders = a?.riders ?? [];
   const status = trip?.status ?? null;
+
+  // Activation funnel: fire trip_completed once per completed trip (per viewer).
+  const trackedCompleteRef = useRef(false);
+  useEffect(() => {
+    if (status === 'completed' && !trackedCompleteRef.current) {
+      trackedCompleteRef.current = true;
+      track('trip_completed', { role: isDriver ? 'driver' : 'rider' });
+    }
+  }, [status, isDriver]);
   const statusLabel =
     status === 'completed'
       ? 'Arrived — ride complete'

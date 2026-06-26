@@ -25,6 +25,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import type { CarColorKey, CarTypeKey } from '@/lib/carOptions';
 import { supabase } from '@/lib/supabase';
 import { createAccount } from '@/lib/account';
+import { track } from '@/lib/analytics';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
@@ -280,6 +281,7 @@ export function SignupScreen({ navigation }: Props) {
     }
 
     // Success — App.tsx onAuthStateChange drives navigation into the app.
+    track('signup_completed', { is_driver: hasCar });
     impact();
   }
 
