@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
+  Linking,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import * as Sentry from '@sentry/react-native';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -190,6 +195,75 @@ export function LiveTripScreen({ navigation, route }: Props) {
       : status === 'on_my_way'
         ? 'En route to destination'
         : 'En route to pickup';
+
+  // Emergency: the most reliable safety action is a direct call to 911. We
+  // confirm first (so a stray tap doesn't dial) then hand off to the dialer.
+  function handleEmergency(): void {
+    Alert.alert(
+      'Emergency',
+      'Call 911 now? Use this only in a real emergency.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call 911',
+          style: 'destructive',
+          onPress: () =>
+            Linking.openURL('tel:911').catch((e) => {
+              Sentry.captureException(e);
+              Alert.alert('Could not start the call', 'Please dial 911 directly.');
+            }),
+        },
+      ],
+    );
+  }
+
+  // Share a plain-text status update to a parent who isn't in the car (e.g. the
+  // other parent at home). A live read-only web link is a planned follow-up.
+  async function handleShareStatus(): Promise<void> {
+    const driverName = isDriver ? 'I' : (a?.driver?.name ?? 'The driver');
+    const verb = isDriver ? 'am' : 'is';
+    const phase =
+      status === 'completed'
+        ? `${driverName} ${verb} done — everyone's dropped off.`
+        : status === 'on_my_way'
+          ? `${driverName} ${verb} en route on the BasisRide carpool right now.`
+          : `${driverName} ${verb} getting ready for the BasisRide carpool (pickup ${a ? formatTime(a.time) : 'soon'}).`;
+    try {
+      await Share.share({ message: `BasisRide trip update: ${phase}` });
+    } catch (e) {
+      Sentry.captureException(e);
+    }
+  }
+
+  function renderSafety() {
+    // Safety controls are available the whole time there's an active carpool,
+    // up until the ride is complete.
+    if (!a || a.role === 'unmatched' || status === 'completed') return null;
+    return (
+      <View style={styles.safetyRow}>
+        <TouchableOpacity
+          style={[styles.safetyBtn, styles.sosBtn]}
+          onPress={handleEmergency}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Emergency — call 911"
+        >
+          <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.sosText}>Emergency</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.safetyBtn, styles.shareBtn]}
+          onPress={() => void handleShareStatus()}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Share trip status"
+        >
+          <Ionicons name="share-outline" size={20} color="#DC143C" />
+          <Text style={styles.shareText}>Share status</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   function renderControls() {
     if (!a || a.role === 'unmatched') {
@@ -380,6 +454,8 @@ export function LiveTripScreen({ navigation, route }: Props) {
           {shareError ? <ErrorMessage message={shareError} /> : null}
 
           {renderControls()}
+
+          {renderSafety()}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -401,6 +477,28 @@ const styles = StyleSheet.create({
   headerTitleWrap: { flex: 1 },
   title: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
   subtitle: { fontSize: 13, color: '#8391A1', marginTop: 1 },
+  safetyRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  safetyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  sosBtn: { backgroundColor: '#DC143C' },
+  sosText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  shareBtn: {
+    borderWidth: 1.5,
+    borderColor: '#DC143C',
+    backgroundColor: '#FFF1F1',
+  },
+  shareText: { fontSize: 15, fontWeight: '700', color: '#DC143C' },
   headerSpacer: { width: 41 },
   loadingArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
