@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { supabase } from '@/lib/supabase';
+import { deleteAccount } from '@/lib/account';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
 
@@ -38,6 +40,7 @@ export function ProfileScreen({ navigation }: Props) {
   const { user, loading, refetch } = useCurrentUser();
 
   const [loggingOut, setLoggingOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // ProfileScreen stays mounted beneath EditProfile in the stack, so its
   // useCurrentUser snapshot goes stale after an edit. Re-pull on every focus
@@ -57,6 +60,39 @@ export function ProfileScreen({ navigation }: Props) {
       setLoggingOut(false);
     }
     // On success App.tsx onAuthStateChange unmounts this screen.
+  }
+
+  function confirmDelete(): void {
+    // Two-step destructive confirm: deletion is permanent and removes the
+    // family's profile, schedule, messages and trip history.
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account, your child’s info, your schedule, messages and trip history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void handleDelete() },
+      ],
+    );
+  }
+
+  async function handleDelete(): Promise<void> {
+    setDeleting(true);
+    const { ok, error } = await deleteAccount();
+    if (!ok) {
+      setDeleting(false);
+      Alert.alert(
+        'Could not delete account',
+        error ?? 'Something went wrong. Please try again.',
+      );
+      return;
+    }
+    // Account is gone server-side; sign out to drop back to the auth flow.
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      Sentry.captureException(e);
+    }
+    // App.tsx onAuthStateChange unmounts this screen on sign-out.
   }
 
   return (
@@ -137,6 +173,21 @@ export function ProfileScreen({ navigation }: Props) {
               loading={loggingOut}
             />
           </View>
+
+          <TouchableOpacity
+            style={styles.deleteRow}
+            onPress={confirmDelete}
+            disabled={deleting}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Delete account"
+          >
+            {deleting ? (
+              <ActivityIndicator color="#DC143C" />
+            ) : (
+              <Text style={styles.deleteText}>Delete account</Text>
+            )}
+          </TouchableOpacity>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -215,4 +266,10 @@ const styles = StyleSheet.create({
   },
   actionText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
   logoutRow: { marginTop: 8 },
+  deleteRow: {
+    marginTop: 20,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  deleteText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
 });
