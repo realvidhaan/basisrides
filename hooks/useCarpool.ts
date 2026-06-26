@@ -161,27 +161,42 @@ export function useCarpool(): UseCarpoolResult {
   useEffect(() => {
     void fetchAll(false);
 
+    // Coalesce realtime bursts: during a pickup window many availability/skip/
+    // swap rows change in quick succession, and each change would otherwise
+    // trigger a full 3-table refetch on every subscribed client. Debounce so a
+    // burst collapses into a single refetch (~1s later — within tolerance),
+    // cutting redundant DB compute + egress at peak.
+    let refetchTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefetch = (): void => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => {
+        refetchTimer = null;
+        void fetchAll(true);
+      }, 800);
+    };
+
     channelSeq += 1;
     const channel = supabase
       .channel(`carpool-${channelSeq}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'availability' },
-        () => void fetchAll(true),
+        scheduleRefetch,
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'schedule_skips' },
-        () => void fetchAll(true),
+        scheduleRefetch,
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'swaps' },
-        () => void fetchAll(true),
+        scheduleRefetch,
       )
       .subscribe();
 
     return () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
       void supabase.removeChannel(channel);
     };
   }, [fetchAll]);

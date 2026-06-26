@@ -31,21 +31,11 @@ AppState.addEventListener('change', (state) => {
 export function mapSupabaseError(error: { message: string } | null): string {
   if (!error) return '';
   const msg = error.message.toLowerCase();
-  if (msg.includes('not confirmed')) {
-    return 'Please confirm your email first — check your inbox for the link.';
-  }
   if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
     return 'Incorrect email or password. Try again.';
   }
   if (msg.includes('user already registered') || msg.includes('already exists')) {
     return 'An account with this email already exists.';
-  }
-  if (
-    msg.includes('otp') ||
-    msg.includes('token') ||
-    msg.includes('expired')
-  ) {
-    return 'Code expired or incorrect. Please request a new one.';
   }
   if (
     msg.includes('same password') ||

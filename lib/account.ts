@@ -2,13 +2,10 @@ import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 
 /**
- * Creates an immediately-usable account for v1 (no email confirmation). The
+ * Creates an immediately-usable account (no email confirmation). The
  * `create-account` Edge Function uses admin.createUser(email_confirm:true), so
  * no verification email is sent and the client can sign in right away. Profile
  * fields are passed as `data` for the handle_new_user trigger.
- *
- * Email verification can be reintroduced later (the auth-email function, Vault
- * key, and DMARC record all remain in place) once the sending domain is warm.
  */
 export async function createAccount(
   email: string,

@@ -28,7 +28,6 @@ import { createAccount } from '@/lib/account';
 import { track } from '@/lib/analytics';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
-import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
@@ -154,10 +153,6 @@ export function SignupScreen({ navigation }: Props) {
     if (!validate()) return;
 
     setLoading(true);
-
-    // Creating an account is never part of a password reset. Clear any stale
-    // recovery flag so the auth gate opens once the session is created.
-    setRecovering(false);
 
     const email = form.email.trim().toLowerCase();
     const inviteCode = normalizeCode(form.inviteCode);

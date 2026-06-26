@@ -7,10 +7,17 @@ import MapView, {
   type Region,
 } from 'react-native-maps';
 import Svg, { Path, Rect } from 'react-native-svg';
-import type { MapHtmlOptions } from '@/lib/mapHtml';
-import type { GeoPoint } from '@/types';
+import type { GeoPoint, MapStop } from '@/types';
 import { carColor } from '@/lib/carOptions';
 import { useLiveDriverLocation } from '@/hooks/useLiveDriverLocation';
+
+export interface LiveMapProps {
+  channel: string; // Supabase broadcast channel to subscribe to for live GPS
+  stops: MapStop[]; // school + rider/driver homes to pin
+  start: { lat: number; lng: number } | null; // initial car position
+  carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
+  destinations?: { lat: number; lng: number }[]; // keep car + these drop-offs framed live
+}
 
 // BISV-area fallback so the map always has somewhere to open (matches the old
 // Leaflet default) when a trip has no pins yet.
@@ -73,7 +80,7 @@ function CarBadge({ colorKey }: { colorKey?: string | null }) {
  * `useLiveDriverLocation`, which subscribes to the same Supabase broadcast the
  * webview used to consume — identical behaviour, fully native rendering.
  */
-export function LiveMap({ channel, stops, start, carColorKey, destinations }: MapHtmlOptions) {
+export function LiveMap({ channel, stops, start, carColorKey, destinations }: LiveMapProps) {
   const mapRef = useRef<MapView | null>(null);
   const live = useLiveDriverLocation(channel);
 

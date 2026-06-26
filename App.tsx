@@ -12,7 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
-import { getRecovering, subscribeRecovering } from '@/lib/authFlow';
 import { navigationRef } from '@/lib/navigation';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
 import '@/lib/locationTask'; // registers the background location task at launch
@@ -129,7 +128,6 @@ function MainNavigator() {
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
-  const [recovering, setRecovering] = useState(getRecovering());
 
   useEffect(() => {
     supabase.auth
@@ -149,17 +147,12 @@ function App() {
       setSession(s);
     });
 
-    const unsubscribeRecovering = subscribeRecovering(setRecovering);
-
     return () => {
       subscription.unsubscribe();
-      unsubscribeRecovering();
     };
   }, []);
 
-  // During a password-recovery flow a session exists, but we must stay in the
-  // auth stack so the user can finish resetting their password.
-  const showMain = session !== null && !recovering;
+  const showMain = session !== null;
 
   // Register push + tap-to-navigate only once the user is in the main app.
   usePushRegistration(showMain ? (session?.user.id ?? null) : null);

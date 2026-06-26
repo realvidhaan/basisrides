@@ -55,7 +55,11 @@ export function useLocationSharing(
         if (!alreadyRunning) {
           await Location.startLocationUpdatesAsync(LOCATION_TASK, {
             accuracy: Location.Accuracy.High,
-            timeInterval: 4000,
+            // Emit at most one fix every 8s (or per 15m moved, whichever comes
+            // first — a stopped car stops emitting). The rider's marker eases
+            // over each new fix in LiveMap, so this halves Realtime broadcast
+            // volume with no visible change to the live-tracking experience.
+            timeInterval: 8000,
             distanceInterval: 15,
             showsBackgroundLocationIndicator: true,
             activityType: Location.ActivityType.AutomotiveNavigation,

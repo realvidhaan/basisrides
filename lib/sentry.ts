@@ -4,8 +4,10 @@ import * as Sentry from '@sentry/react-native';
 // running before any other app code (or its module side effects) executes.
 Sentry.init({
   dsn: 'https://4381efb7f0fb5880ab8b9497c3e60fe2@o4511611934212096.ingest.us.sentry.io/4511611941814272',
-  // Capture 100% of transactions for performance tracing.
-  tracesSampleRate: 1.0,
+  // Sample 10% of transactions for performance tracing. Full (1.0) capture
+  // overruns Sentry's free-tier performance-unit quota at scale; 10% keeps a
+  // representative signal while staying comfortably inside the free plan.
+  tracesSampleRate: 0.1,
   debug: false,
   // Native (iOS/Android) crash reporting. On by default; set explicitly so it
   // can't be silently disabled. Requires a native rebuild to take effect.
