@@ -26,10 +26,14 @@ items shipped on `master` are checked; the rest need your accounts/credentials.
 `8QPUKESG GTKLJFAU E5SL3RP2 A6APGGZ6`
 Generate more anytime: `SELECT * FROM public.generate_invite_codes(20, 'note');` (service role / SQL editor).
 
-### Legal (needs hosting + attorney review)
+### Legal
 - [x] Drafts written: `legal/terms-of-service.md`, `legal/privacy-policy.md`.
-- [ ] Have an attorney review (especially the liability framing).
-- [ ] Host both at public URLs; update `TERMS_URL` / `PRIVACY_URL` in `SignupScreen.tsx`.
+- [x] Hosted (public, no-auth) via the `legal` Supabase Edge Function and wired
+      into `SignupScreen.tsx`:
+      - Terms: https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/terms
+      - Privacy: https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/privacy
+- [ ] **You:** have an attorney review the liability framing before public launch.
+- [ ] Optional: front with a custom domain later, then update the two URLs.
 
 ### Analytics (pick a provider)
 - [x] Provider-agnostic `lib/analytics.ts` + funnel call sites (`signup_completed`,

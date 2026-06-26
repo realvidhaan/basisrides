@@ -31,9 +31,11 @@ import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
 
-// Public legal docs (see /legal). Update these to the live hosted URLs.
-const TERMS_URL = 'https://basisride.app/terms';
-const PRIVACY_URL = 'https://basisride.app/privacy';
+// Public legal pages, served by the `legal` Supabase Edge Function (verify_jwt
+// off). Swap to a custom domain later if you get one; content lives in
+// supabase/functions/legal and mirrors /legal/*.md.
+const TERMS_URL = 'https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/terms';
+const PRIVACY_URL = 'https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/privacy';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
