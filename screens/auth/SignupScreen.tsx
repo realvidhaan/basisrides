@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import * as Sentry from '@sentry/react-native';
@@ -27,6 +29,10 @@ import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
+
+// Public legal docs (see /legal). Update these to the live hosted URLs.
+const TERMS_URL = 'https://basisride.app/terms';
+const PRIVACY_URL = 'https://basisride.app/privacy';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -52,6 +58,7 @@ export function SignupScreen({ navigation }: Props) {
     email: '',
     password: '',
     confirmPassword: '',
+    agreedToTerms: false,
   });
   // Exact coordinates when the parent picks a suggested address; null if they
   // typed a freeform address (we'll geocode it on submit instead).
@@ -126,6 +133,10 @@ export function SignupScreen({ navigation }: Props) {
     }
     if (form.password !== form.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match.';
+    }
+    if (!form.agreedToTerms) {
+      errors.agreedToTerms =
+        'Please confirm you are a BISV parent/guardian and agree to the Terms and Privacy Policy.';
     }
     setFieldErrors(errors);
     // Mirror the address flow: surface a top banner when the plate/state is the
@@ -474,6 +485,35 @@ export function SignupScreen({ navigation }: Props) {
           }
         />
 
+        <TouchableOpacity
+          style={styles.consentRow}
+          onPress={() => updateField('agreedToTerms', !form.agreedToTerms)}
+          activeOpacity={0.7}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: form.agreedToTerms }}
+          accessibilityLabel="Agree to Terms and Privacy Policy"
+        >
+          <Ionicons
+            name={form.agreedToTerms ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={form.agreedToTerms ? '#DC143C' : '#8391A1'}
+          />
+          <Text style={styles.consentText}>
+            I&apos;m a BISV parent/guardian and I agree to the{' '}
+            <Text style={styles.consentLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+              Terms
+            </Text>{' '}
+            and{' '}
+            <Text style={styles.consentLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            , including the collection of my and my child&apos;s information.
+          </Text>
+        </TouchableOpacity>
+        {fieldErrors.agreedToTerms ? (
+          <Text style={styles.fieldError}>{fieldErrors.agreedToTerms}</Text>
+        ) : null}
+
         <View style={styles.submitRow}>
           <Button title="Create account" onPress={handleSignup} loading={loading} />
         </View>
@@ -573,6 +613,23 @@ const styles = StyleSheet.create({
     color: '#DC143C',
     fontWeight: '500',
     paddingLeft: 8,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  consentText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#6A707C',
+    lineHeight: 19,
+  },
+  consentLink: {
+    color: '#DC143C',
+    fontWeight: '600',
   },
   submitRow: {
     marginTop: 8,

@@ -106,6 +106,7 @@ export interface SignupFormValues {
   email: string;
   password: string;
   confirmPassword: string;
+  agreedToTerms: boolean;
 }
 
 // The five carpool weekdays.
