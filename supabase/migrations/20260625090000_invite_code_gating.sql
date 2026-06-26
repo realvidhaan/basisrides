@@ -140,5 +140,11 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.generate_invite_codes(int, text) FROM PUBLIC;
+-- Supabase grants EXECUTE on public functions to anon/authenticated by DEFAULT;
+-- REVOKE ... FROM PUBLIC does NOT remove those explicit role grants, so we must
+-- revoke from the roles by name or any signed-in user could mint their own codes.
+REVOKE ALL ON FUNCTION public.generate_invite_codes(int, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.generate_invite_codes(int, text) TO service_role;
+
+-- The trigger function must never be callable directly via the REST API.
+REVOKE EXECUTE ON FUNCTION public.enforce_invite_code() FROM PUBLIC, anon, authenticated;

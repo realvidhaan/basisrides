@@ -5,29 +5,26 @@ items shipped on `master` are checked; the rest need your accounts/credentials.
 
 ## Gate 1 — before TestFlight goes to real BISV families
 
-### Security & data (apply to PRODUCTION Supabase — needs your access)
-These migrations exist in `supabase/migrations/` but are **not yet live**. Apply
-them in the Supabase SQL editor (per memory note, the MCP connector lacks scope),
-in this order, then verify:
+### Security & data (applied to PRODUCTION Supabase 2026-06-25 via MCP)
+- [x] All 6 migrations applied (4 security + invite-code gating + reports/blocks).
+- [x] Follow-up fix: revoked `generate_invite_codes` / `enforce_invite_code`
+      EXECUTE from anon+authenticated (Supabase's default grant survived
+      `REVOKE FROM PUBLIC`). Now service_role only.
+- [x] Generated 20 launch invite codes (see below).
+- [x] Verified: `validate_invite_code` → true for a real code, false for garbage;
+      gating trigger present on `auth.users`; new tables RLS-on; leaky
+      `hardship_passes`/`rides` SELECT restricted; `public.users` → `auth.users`
+      FK is ON DELETE CASCADE (account deletion cascades the profile).
+- [x] Deployed the `delete-account` Edge Function (verify_jwt on).
+- [ ] **You:** post a code (or a per-family code) in **ParentSquare** — the trusted channel.
+- [ ] **You:** on TestFlight, do one real signup with a code (succeeds) and one
+      with no/garbage code (rejected) to confirm end-to-end.
 
-1. `20260622223701_restrict_hardship_passes_select.sql`
-2. `20260622223702_restrict_rides_select.sql`
-3. `20260622223703_enforce_messages_conversation_membership.sql`
-4. `20260622223704_enforce_write_with_checks.sql`
-5. `20260625090000_invite_code_gating.sql`  ← critical account gate
-6. `20260625091000_reports_and_blocks.sql`  ← report/block tables
-
-Then:
-- [ ] Generate launch invite codes: `SELECT * FROM public.generate_invite_codes(20, 'TestFlight batch');`
-- [ ] Post codes (or a per-family code) in **ParentSquare** — that's the trusted channel.
-- [ ] Verify: a signup with **no/invalid code is rejected** (test the create-account
-      function directly, not just the UI). Confirm an allowed code signs up cleanly.
-- [ ] Verify live policies: `SELECT * FROM pg_policies WHERE tablename IN
-      ('hardship_passes','rides','messages','reports','blocks');`
-- [ ] Confirm cascade for account deletion: `SELECT conname, confdeltype FROM
-      pg_constraint WHERE confrelid='public.users'::regclass;` (`c` = cascade).
-      If app tables don't cascade from `public.users`, add a cleanup before relying on delete.
-- [x] Deploy the `delete-account` Edge Function: `supabase functions deploy delete-account`.
+**Launch invite codes (single-use, generated 2026-06-25):**
+`9QTPV4JH ZAP52236 EJMUNNAM TUNYNAZM AVP69YYS LTV3JN5L CNB7LS8Q Z872AKFG`
+`M6JY3Y8R SCUCEXVW E5YL7J9B ZVSRXW45 PE8QTG2X ZV6XXJZH TX7JNKSF X5XEGAKJ`
+`8QPUKESG GTKLJFAU E5SL3RP2 A6APGGZ6`
+Generate more anytime: `SELECT * FROM public.generate_invite_codes(20, 'note');` (service role / SQL editor).
 
 ### Legal (needs hosting + attorney review)
 - [x] Drafts written: `legal/terms-of-service.md`, `legal/privacy-policy.md`.
