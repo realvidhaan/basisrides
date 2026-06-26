@@ -10,21 +10,24 @@ items shipped on `master` are checked; the rest need your accounts/credentials.
 - [x] Follow-up fix: revoked `generate_invite_codes` / `enforce_invite_code`
       EXECUTE from anon+authenticated (Supabase's default grant survived
       `REVOKE FROM PUBLIC`). Now service_role only.
-- [x] Generated 20 launch invite codes (see below).
-- [x] Verified: `validate_invite_code` → true for a real code, false for garbage;
-      gating trigger present on `auth.users`; new tables RLS-on; leaky
-      `hardship_passes`/`rides` SELECT restricted; `public.users` → `auth.users`
-      FK is ON DELETE CASCADE (account deletion cascades the profile).
+- [x] Switched to ONE REUSABLE code (migration 20260626040000). A code is valid
+      while `active=true` and works for unlimited signups; rotate if it leaks.
+      The old single-use codes were deactivated.
+- [x] Verified: only 1 active code; `validate_invite_code` true for it (case-
+      insensitive), false for retired codes; gating trigger present on
+      `auth.users`; new tables RLS-on; leaky `hardship_passes`/`rides` SELECT
+      restricted; `public.users` → `auth.users` FK is ON DELETE CASCADE.
 - [x] Deployed the `delete-account` Edge Function (verify_jwt on).
-- [ ] **You:** post a code (or a per-family code) in **ParentSquare** — the trusted channel.
-- [ ] **You:** on TestFlight, do one real signup with a code (succeeds) and one
-      with no/garbage code (rejected) to confirm end-to-end.
+- [ ] **You:** post the active code in **ParentSquare** — the trusted channel.
+- [ ] **You:** on TestFlight, sign up with the code (succeeds) and with a
+      garbage code (rejected) to confirm end-to-end.
 
-**Launch invite codes (single-use, generated 2026-06-25):**
-`9QTPV4JH ZAP52236 EJMUNNAM TUNYNAZM AVP69YYS LTV3JN5L CNB7LS8Q Z872AKFG`
-`M6JY3Y8R SCUCEXVW E5YL7J9B ZVSRXW45 PE8QTG2X ZV6XXJZH TX7JNKSF X5XEGAKJ`
-`8QPUKESG GTKLJFAU E5SL3RP2 A6APGGZ6`
-Generate more anytime: `SELECT * FROM public.generate_invite_codes(20, 'note');` (service role / SQL editor).
+**Active reusable invite code (generated 2026-06-26):** `64WUQHE3`
+
+Managing the code (service role / SQL editor — these are locked to service_role):
+- Pick a memorable code: `SELECT public.set_invite_code('BISVFALL2026', 'note');`
+- Rotate after a leak (random): `SELECT public.rotate_invite_code('rotated');`
+Both deactivate all others so exactly one code is ever live.
 
 ### Legal
 - [x] Drafts written: `legal/terms-of-service.md`, `legal/privacy-policy.md`.

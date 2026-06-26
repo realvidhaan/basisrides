@@ -176,10 +176,10 @@ export function SignupScreen({ navigation }: Props) {
       setLoading(false);
       setFieldErrors((prev) => ({
         ...prev,
-        inviteCode: "That invite code isn't valid or has already been used.",
+        inviteCode: "That invite code isn't valid.",
       }));
       setGlobalError(
-        'Your invite code is invalid or already used. Ask a BISV parent or check the ParentSquare post for a fresh one.',
+        "That invite code isn't valid. Check the current code on your BISV ParentSquare post.",
       );
       return;
     }
@@ -250,9 +250,9 @@ export function SignupScreen({ navigation }: Props) {
       if (/invite/i.test(signUpError ?? '')) {
         setFieldErrors((prev) => ({
           ...prev,
-          inviteCode: 'That invite code was just used. Ask for a fresh one.',
+          inviteCode: 'That invite code is no longer valid.',
         }));
-        setGlobalError('That invite code is no longer valid. Ask a BISV parent for a fresh one.');
+        setGlobalError('That invite code is no longer valid. Check ParentSquare for the current code.');
         return;
       }
       setGlobalError(
