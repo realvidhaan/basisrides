@@ -38,6 +38,7 @@ type FieldErrors = Partial<Record<keyof SignupFormValues, string>>;
 
 export function SignupScreen({ navigation }: Props) {
   const [form, setForm] = useState<SignupFormValues>({
+    inviteCode: '',
     fullName: '',
     childName: '',
     grade: '6th',
@@ -80,8 +81,17 @@ export function SignupScreen({ navigation }: Props) {
     });
   }
 
+  // Normalize an invite code the same way the DB does (strip non-alphanumerics,
+  // upper-case) so "abcd-1234" and "ABCD 1234" both match the stored code.
+  function normalizeCode(raw: string): string {
+    return raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  }
+
   function validate(): boolean {
     const errors: FieldErrors = {};
+    if (!normalizeCode(form.inviteCode)) {
+      errors.inviteCode = 'Enter the invite code from your BISV ParentSquare post.';
+    }
     if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
     if (!form.childName.trim()) errors.childName = "Child's name is required.";
     if (!form.neighborhood) errors.neighborhood = 'Please select your city.';
@@ -141,6 +151,29 @@ export function SignupScreen({ navigation }: Props) {
     setRecovering(false);
 
     const email = form.email.trim().toLowerCase();
+    const inviteCode = normalizeCode(form.inviteCode);
+
+    // Pre-check the invite code so a bad/used code fails fast with a clear
+    // message instead of a generic "couldn't create account" after the whole
+    // form is submitted. The hard gate is a BEFORE INSERT trigger on auth.users
+    // (migration 20260625090000) — this RPC is read-only UX. Fail open on a
+    // transient RPC error: the trigger still blocks an invalid code server-side.
+    const { data: codeValid, error: codeCheckError } = await supabase.rpc(
+      'validate_invite_code',
+      { p_code: inviteCode },
+    );
+    if (codeCheckError) Sentry.captureException(codeCheckError);
+    if (!codeCheckError && !codeValid) {
+      setLoading(false);
+      setFieldErrors((prev) => ({
+        ...prev,
+        inviteCode: "That invite code isn't valid or has already been used.",
+      }));
+      setGlobalError(
+        'Your invite code is invalid or already used. Ask a BISV parent or check the ParentSquare post for a fresh one.',
+      );
+      return;
+    }
 
     // Pre-check: block signup if this email already belongs to an account.
     // Supabase's signUp obfuscates "user already registered" (anti-enumeration),
@@ -186,6 +219,7 @@ export function SignupScreen({ navigation }: Props) {
     // All profile fields ride along as metadata for the handle_new_user trigger.
     const hasCar = Number(form.carCapacity) > 0;
     const { ok, error: signUpError } = await createAccount(email, form.password, {
+      invite_code: inviteCode,
       full_name: form.fullName.trim(),
       child_name: form.childName.trim(),
       grade: form.grade,
@@ -201,6 +235,17 @@ export function SignupScreen({ navigation }: Props) {
 
     if (!ok) {
       setLoading(false);
+      // The invite-code trigger can reject server-side even after our pre-check
+      // (e.g. the code was used by someone else in the meantime). Surface that
+      // as an invite error rather than a generic failure.
+      if (/invite/i.test(signUpError ?? '')) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          inviteCode: 'That invite code was just used. Ask for a fresh one.',
+        }));
+        setGlobalError('That invite code is no longer valid. Ask a BISV parent for a fresh one.');
+        return;
+      }
       setGlobalError(
         /registered|exists/i.test(signUpError ?? '')
           ? 'That email is already registered. Try logging in instead.'
@@ -244,6 +289,21 @@ export function SignupScreen({ navigation }: Props) {
 
       <FormScroll style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <ErrorMessage message={globalError} />
+
+        <Input
+          label="Invite code"
+          value={form.inviteCode}
+          onChangeText={(t) => updateField('inviteCode', t)}
+          placeholder="From your BISV ParentSquare post"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          error={fieldErrors.inviteCode}
+          returnKeyType="next"
+        />
+        <Text style={styles.helperText}>
+          BasisRide is invite-only for verified BISV families. Enter the code
+          shared on ParentSquare.
+        </Text>
 
         <Input
           label="Full name"

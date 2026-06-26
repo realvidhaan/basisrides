@@ -92,6 +92,7 @@ export interface UserProfile {
 }
 
 export interface SignupFormValues {
+  inviteCode: string;
   fullName: string;
   childName: string;
   grade: Grade;

@@ -531,17 +531,31 @@ describe('SECURITY / EXPLOIT ATTEMPTS', () => {
     // After fix: this should require authentication and return an auth error for anon callers.
   });
 
-  it('no server-side BISV domain restriction: edge function accepts non-school email (CONFIRMED-1)', async () => {
-    // CONFIRMED-1: The create-account edge function accepts any email domain.
-    // No client-side domain check exists; the edge function apparently does not enforce it.
-    harness.setFunctionResult('create-account', { data: { ok: true }, error: null });
+  it('invite-code gating: signup without a valid invite code is rejected (CONFIRMED-1 fixed)', async () => {
+    // CONFIRMED-1 fix (migration 20260625090000): account creation is gated on a
+    // single-use invite code. A BEFORE INSERT trigger on auth.users consumes the
+    // code in raw_user_meta_data and RAISEs check_violation if it is missing,
+    // unknown, or already used — aborting the whole signup transaction. Here we
+    // assert the contract the edge function surfaces to the client: a signup
+    // carrying no (or an invalid) invite_code comes back as a rejection.
+    harness.setFunctionResult('create-account', {
+      data: { ok: false, error: 'INVITE_CODE_INVALID: invite code is invalid or already used' },
+      error: null,
+    });
     const result = await harness.client.functions.invoke('create-account', {
       body: { email: 'anyone@gmail.com', password: 'password123', data: { full_name: 'Random Person' } },
     });
-    // Currently succeeds — this IS the vulnerability (child-safety issue for a school app).
+    const payload = result.data as { ok: boolean; error?: string };
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toMatch(/invite/i);
+  });
+
+  it('invite-code gating: validate_invite_code RPC reports an unused code as redeemable', async () => {
+    // Read-only UX pre-check used by SignupScreen before submitting the form.
+    harness.setRpcResult('validate_invite_code', { data: true, error: null });
+    const result = await harness.client.rpc('validate_invite_code', { p_code: 'ABCD2345' });
     expect(result.error).toBeNull();
-    expect((result.data as { ok: boolean }).ok).toBe(true);
-    // After fix in create-account edge function: expect result to indicate domain rejection.
+    expect(result.data).toBe(true);
   });
 });
 
