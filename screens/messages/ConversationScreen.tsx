@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -25,6 +26,7 @@ import { webScreenFix } from '@/components/ui/FormScroll';
 import { useMessages, type ChatMessage } from '@/hooks/useMessages';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
+import { blockUser, reportUser } from '@/lib/moderation';
 import { formatTime } from '@/lib/dateUtils';
 
 type ConversationNavigationProp = StackNavigationProp<
@@ -63,7 +65,8 @@ function timeOf(iso: string): string {
 
 export function ConversationScreen({ navigation, route }: Props) {
   const { conversationId, title } = route.params;
-  const { messages, loading, error, sendMessage } = useMessages(conversationId);
+  const { messages, loading, error, sendMessage, refreshBlocks } =
+    useMessages(conversationId);
   const { user } = useCurrentUser();
   const currentUserId = user?.id ?? null;
   const tabBarHeight = useBottomTabBarHeight();
@@ -169,6 +172,60 @@ export function ConversationScreen({ navigation, route }: Props) {
     }
   }
 
+  // Long-press another member's message to report or block them (Apple 1.2).
+  // Own messages are skipped — you can't report yourself.
+  function onMessageLongPress(message: ChatMessage): void {
+    if (message.sender_id === currentUserId) return;
+    Alert.alert(message.senderName, 'Keep BasisRide safe for every family.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Report message', onPress: () => void handleReport(message) },
+      {
+        text: `Block ${message.senderName}`,
+        style: 'destructive',
+        onPress: () => confirmBlock(message),
+      },
+    ]);
+  }
+
+  async function handleReport(message: ChatMessage): Promise<void> {
+    const { ok, error: reportErr } = await reportUser({
+      reportedUserId: message.sender_id,
+      conversationId,
+      messageId: message.id.startsWith('temp-') ? null : message.id,
+      reason: 'reported_from_chat',
+    });
+    Alert.alert(
+      ok ? 'Report received' : 'Could not report',
+      ok
+        ? "Thanks — we'll review this within 24 hours."
+        : reportErr ?? 'Please try again.',
+    );
+  }
+
+  function confirmBlock(message: ChatMessage): void {
+    Alert.alert(
+      `Block ${message.senderName}?`,
+      "You'll stop seeing their messages. You can change this later.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () => void handleBlock(message),
+        },
+      ],
+    );
+  }
+
+  async function handleBlock(message: ChatMessage): Promise<void> {
+    const { ok, error: blockErr } = await blockUser(message.sender_id);
+    if (!ok) {
+      Alert.alert('Could not block', blockErr ?? 'Please try again.');
+      return;
+    }
+    await refreshBlocks();
+  }
+
   function renderItem({ item }: { item: DecoratedMessage }) {
     const { message, mine, showName, showTime, gapTop } = item;
     return (
@@ -176,7 +233,10 @@ export function ConversationScreen({ navigation, route }: Props) {
         {showName ? (
           <Text style={styles.senderName}>{message.senderName}</Text>
         ) : null}
-        <View
+        <TouchableOpacity
+          activeOpacity={mine ? 1 : 0.8}
+          onLongPress={() => onMessageLongPress(message)}
+          delayLongPress={350}
           style={[
             styles.bubble,
             mine ? styles.bubbleMine : styles.bubbleTheirs,
@@ -185,7 +245,7 @@ export function ConversationScreen({ navigation, route }: Props) {
           <Text style={mine ? styles.bubbleTextMine : styles.bubbleTextTheirs}>
             {message.content}
           </Text>
-        </View>
+        </TouchableOpacity>
         {showTime ? (
           <Text style={[styles.time, mine ? styles.timeMine : styles.timeTheirs]}>
             {timeOf(message.created_at)}

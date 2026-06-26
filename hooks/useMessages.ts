@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { fetchBlockedIds } from '@/lib/moderation';
 import type { Message } from '@/types';
 
 export type ChatMessage = Message & { senderName: string };
@@ -20,6 +21,8 @@ interface UseMessagesResult {
   loading: boolean;
   error: string | null;
   sendMessage: (content: string) => Promise<void>;
+  /** Re-pull the caller's block list and re-filter (call after blocking). */
+  refreshBlocks: () => Promise<void>;
 }
 
 // Unique realtime topic per hook instance (matches the app's channel pattern).
@@ -53,6 +56,21 @@ export function useMessages(conversationId: string): UseMessagesResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Block list: messages from blocked senders are filtered out of the returned
+  // list (Apple 1.2). Held in a ref + version counter so updates recompute the
+  // memoized output without re-running the load effect.
+  const blockedRef = useRef<Set<string>>(new Set());
+  const [blockedVersion, setBlockedVersion] = useState(0);
+
+  const refreshBlocks = useCallback(async (): Promise<void> => {
+    blockedRef.current = await fetchBlockedIds();
+    setBlockedVersion((v) => v + 1);
+  }, []);
+
+  useEffect(() => {
+    void refreshBlocks();
+  }, [refreshBlocks]);
 
   // Cache of userId -> display name so realtime inserts can be labelled without
   // a join. Seeded from the initial load and topped up on demand.
@@ -201,8 +219,16 @@ export function useMessages(conversationId: string): UseMessagesResult {
     [conversationId, user],
   );
 
+  // Hide messages from blocked senders. Covers both the initial load and
+  // realtime inserts (a blocked user's incoming message is filtered on render).
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !blockedRef.current.has(m.sender_id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- blockedVersion gates the recompute
+    [messages, blockedVersion],
+  );
+
   return useMemo(
-    () => ({ messages, loading, error, sendMessage }),
-    [messages, loading, error, sendMessage],
+    () => ({ messages: visibleMessages, loading, error, sendMessage, refreshBlocks }),
+    [visibleMessages, loading, error, sendMessage, refreshBlocks],
   );
 }
