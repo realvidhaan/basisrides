@@ -48,19 +48,48 @@ Generate more anytime: `SELECT * FROM public.generate_invite_codes(20, 'note');`
 - [x] Report + block on chat (long-press a message).
 - [x] Emergency 911 + share status on the live trip screen.
 
-### App Store Connect (needs your Apple Developer account)
-- [ ] Fill the **App Privacy** questionnaire accurately: precise location,
-      name, child name (other data), home address, email, user content
-      (messages), diagnostics. The `.xcprivacy` manifest stays as-is; this is
-      the App Store Connect labels.
-- [ ] Set the age rating (with report/block shipped you can justify a lower
-      rating than the 17+ unmoderated-chat default). Do **not** use the Kids category.
-- [ ] Add Privacy Policy + Terms (Support URL) links to the listing.
-- [ ] Populate `eas.json` → `submit.production.ios`: `appleId`, `ascAppId`, `teamId`
-      (or pass via `eas submit` flags).
-- [ ] `npx expo-doctor` clean → `eas build -p ios --profile production` → `eas submit`.
-- [ ] Smoke-test the full flow on a **real device**: invite-code signup → schedule
-      → match → live trip (map + 911 + share) → message → report/block → delete account.
+### Getting from "no Apple account" to TestFlight (do these in order)
+
+**1. Enroll in the Apple Developer Program** — https://developer.apple.com/programs/enroll/
+   - $99/year. Sign in with your Apple ID; enroll as an **Individual** (fastest).
+   - Apple may take a few hours to ~2 days to verify identity. You can't build a
+     submittable iOS app until this is active.
+
+**2. Build the iOS app with EAS** (EAS manages all signing — no Xcode needed):
+   - `npx expo-doctor` (fix anything it flags)
+   - `eas build --platform ios --profile production`
+   - First run prompts you to log in to Apple; EAS auto-creates the App ID,
+     distribution certificate, and provisioning profile. Just say yes.
+
+**3. Create an App Store Connect API key** (cleaner than Apple-ID + password) —
+   App Store Connect → Users and Access → Integrations → keys → generate, role
+   "App Manager". Note the Key ID, Issuer ID, and download the .p8 once.
+
+**4. Submit to TestFlight:**
+   - `eas submit --platform ios --profile production` — it can create the
+     App Store Connect app record and upload the build. Provide the API key from
+     step 3 when prompted (or add `ascApiKeyPath`/`ascApiKeyId`/`ascApiKeyIssuerId`
+     to `eas.json` → `submit.production.ios`).
+   - The build appears in TestFlight after ~5–15 min of Apple processing.
+
+**5. In App Store Connect, before inviting external testers:**
+   - [ ] **App Privacy** questionnaire — declare accurately: precise **Location**,
+         **Name**, child's name (Other Data), home **Address** (Sensitive Info or
+         Contact Info), **Email**, **User Content** (messages), **Diagnostics**.
+         The `.xcprivacy` manifest stays as-is; this is the separate ASC labels.
+   - [ ] **Age rating** — answer the questionnaire honestly. With report/block +
+         the EULA shipped you can justify a lower rating than the 17+ default for
+         unmoderated chat. Do **NOT** use the Kids category.
+   - [ ] **Privacy Policy URL** (Terms can go in App Description / EULA):
+         `https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/privacy`
+   - [ ] Add yourself + a few BISV parents as **TestFlight testers**.
+
+**6. Smoke-test on a real device** (not the simulator): invite-code signup →
+   schedule → match → live trip (map + 911 + share) → message → report/block →
+   delete account.
+
+Note: an Apple ID + the free tier lets you run a dev build on your own device,
+but **TestFlight and the App Store require the paid Developer Program** (step 1).
 
 ## Post-launch
 - [ ] `npm audit` — resolve the 3 moderate Dependabot advisories.
