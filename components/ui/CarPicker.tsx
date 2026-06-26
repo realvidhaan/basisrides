@@ -1,8 +1,8 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '@/components/ui/Input';
+import { SelectField } from '@/components/ui/SelectField';
 import { CarIllustration } from '@/components/CarIllustration';
 import {
   CAR_COLORS,
@@ -93,26 +93,14 @@ export function CarPicker({ values, onChange, stateError, plateError }: Props) {
         })}
       </View>
 
-      <Text style={styles.fieldLabel}>Plate state</Text>
-      <View
-        style={[
-          styles.pickerContainer,
-          stateError ? styles.pickerContainerError : null,
-        ]}
-      >
-        <Picker<string>
-          selectedValue={values.state}
-          onValueChange={(val) => set('state', val)}
-          style={styles.picker}
-          itemStyle={styles.pickerItem}
-        >
-          <Picker.Item label="Select state" value="" color="#A0A0A0" />
-          {US_STATES.map((s) => (
-            <Picker.Item key={s.code} label={s.name} value={s.code} />
-          ))}
-        </Picker>
-      </View>
-      {stateError ? <Text style={styles.fieldError}>{stateError}</Text> : null}
+      <SelectField
+        label="Plate state"
+        value={values.state}
+        placeholder="Select state"
+        options={US_STATES.map((s) => ({ label: s.name, value: s.code }))}
+        onChange={(val) => set('state', val)}
+        error={stateError}
+      />
 
       <Input
         label="License plate"
@@ -145,20 +133,6 @@ const styles = StyleSheet.create({
     color: '#0A0A0A',
     marginBottom: 8,
   },
-  pickerContainer: {
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    height: Platform.OS === 'ios' ? 160 : 52,
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  pickerContainerError: { borderColor: '#DC143C', marginBottom: 4 },
-  picker: { color: '#0A0A0A' },
-  pickerItem: { fontSize: 15, color: '#0A0A0A' },
-  fieldError: { fontSize: 12, color: '#DC143C', marginTop: 4, marginBottom: 12 },
   plateHint: { fontSize: 12, color: '#6B6B6B', marginTop: 6 },
   swatchRow: {
     flexDirection: 'row',

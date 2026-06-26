@@ -10,13 +10,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import * as Sentry from '@sentry/react-native';
 import type { AuthStackParamList, Grade, GeoPoint, SignupFormValues } from '@/types';
 import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SelectField } from '@/components/ui/SelectField';
 import { LegalModal, type LegalDoc } from '@/components/legal/LegalModal';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
@@ -335,46 +335,21 @@ export function SignupScreen({ navigation }: Props) {
           returnKeyType="next"
         />
 
-        <View style={styles.pickerWrapper}>
-          <Text style={styles.pickerLabel}>Grade</Text>
-          <View style={styles.pickerContainer}>
-            <Picker<Grade>
-              selectedValue={form.grade}
-              onValueChange={(val) => updateField('grade', val)}
-              style={styles.picker}
-              itemStyle={styles.pickerItem}
-            >
-              {GRADES.map((g) => (
-                <Picker.Item key={g} label={g} value={g} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+        <SelectField
+          label="Grade"
+          value={form.grade}
+          options={GRADES.map((g) => ({ label: g, value: g }))}
+          onChange={(val) => updateField('grade', val as Grade)}
+        />
 
-        <View style={styles.pickerWrapper}>
-          <Text style={styles.pickerLabel}>Neighborhood</Text>
-          <View
-            style={[
-              styles.pickerContainer,
-              fieldErrors.neighborhood ? styles.pickerContainerError : null,
-            ]}
-          >
-            <Picker<string>
-              selectedValue={form.neighborhood}
-              onValueChange={(val) => updateField('neighborhood', val)}
-              style={styles.picker}
-              itemStyle={styles.pickerItem}
-            >
-              <Picker.Item label="Select your city" value="" color="#A0A0A0" />
-              {NEIGHBORHOODS.map((city) => (
-                <Picker.Item key={city} label={city} value={city} />
-              ))}
-            </Picker>
-          </View>
-          {fieldErrors.neighborhood ? (
-            <Text style={styles.fieldError}>{fieldErrors.neighborhood}</Text>
-          ) : null}
-        </View>
+        <SelectField
+          label="Neighborhood"
+          value={form.neighborhood}
+          placeholder="Select your city"
+          options={NEIGHBORHOODS.map((city) => ({ label: city, value: city }))}
+          onChange={(val) => updateField('neighborhood', val)}
+          error={fieldErrors.neighborhood}
+        />
 
         <AddressAutocomplete
           label="Home address"
