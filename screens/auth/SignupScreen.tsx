@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import type { AuthStackParamList, Grade, GeoPoint, SignupFormValues } from '@/ty
 import { GRADES, NEIGHBORHOODS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LegalModal, type LegalDoc } from '@/components/legal/LegalModal';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { FormScroll, webScreenFix } from '@/components/ui/FormScroll';
 import { CarPicker } from '@/components/ui/CarPicker';
@@ -30,12 +30,6 @@ import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { setRecovering } from '@/lib/authFlow';
 import { impact } from '@/lib/haptics';
-
-// Public legal pages, served by the `legal` Supabase Edge Function (verify_jwt
-// off). Swap to a custom domain later if you get one; content lives in
-// supabase/functions/legal and mirrors /legal/*.md.
-const TERMS_URL = 'https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/terms';
-const PRIVACY_URL = 'https://itfrksemudjaicksfucr.supabase.co/functions/v1/legal/privacy';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -71,6 +65,7 @@ export function SignupScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
 
   const childNameRef = useRef<TextInput>(null);
   const carCapacityRef = useRef<TextInput>(null);
@@ -504,11 +499,11 @@ export function SignupScreen({ navigation }: Props) {
           />
           <Text style={styles.consentText}>
             I&apos;m a BISV parent/guardian and I agree to the{' '}
-            <Text style={styles.consentLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+            <Text style={styles.consentLink} onPress={() => setLegalDoc('terms')}>
               Terms
             </Text>{' '}
             and{' '}
-            <Text style={styles.consentLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+            <Text style={styles.consentLink} onPress={() => setLegalDoc('privacy')}>
               Privacy Policy
             </Text>
             , including the collection of my and my child&apos;s information.
@@ -522,6 +517,12 @@ export function SignupScreen({ navigation }: Props) {
           <Button title="Create account" onPress={handleSignup} loading={loading} />
         </View>
       </FormScroll>
+
+      <LegalModal
+        visible={legalDoc !== null}
+        doc={legalDoc ?? 'privacy'}
+        onClose={() => setLegalDoc(null)}
+      />
     </SafeAreaView>
   );
 }
