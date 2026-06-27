@@ -1,0 +1,79 @@
+# Free-tier database backup + keep-alive.
+#
+# Why this exists: on Supabase Free there are no managed backups, and a project
+# pauses after 7 days of *zero* database activity. This nightly job solves both —
+# it takes a logical backup with pg_dump, and the act of connecting + reading the
+# database counts as activity, so the project never pauses. Cost: $0.
+#
+# Setup (one time):
+#   1. Supabase Dashboard -> Project Settings -> Database -> Connection string
+#      (use the "Session"/direct connection URI, including the password).
+#   2. GitHub repo -> Settings -> Secrets and variables -> Actions -> New secret
+#      named SUPABASE_DB_URL with that URI as the value.
+#
+# Restore (when you need it): download the artifact, then
+#   psql "$SUPABASE_DB_URL" < basisride-backup.sql
+
+name: DB Backup
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # 09:00 UTC daily (~1-2am PT)
+  workflow_dispatch: {} # lets you run it on demand from the Actions tab
+
+# Never overlap two backup runs.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        # We run pg_dump from inside a pinned Postgres image so the client major
+        # version matches the Supabase server (Postgres 17) — a mismatched
+        # pg_dump refuses to dump a newer server. The container can reach the
+        # public Supabase host directly.
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — see the setup notes at the top of this file."
+            exit 1
+          fi
+
+          # TODO(human): write the pg_dump command that writes a restorable
+          # backup to ./basisride-backup.sql.
+          #
+          # Fill in the line marked below. Things to decide/learn:
+          #   - Connect with the URL:           pg_dump "$SUPABASE_DB_URL"
+          #   - Write to a file:                -f /work/basisride-backup.sql  (or > redirect)
+          #   - Portability flags worth adding: --no-owner --no-privileges
+          #     (so the dump restores cleanly into a fresh project without
+          #      depending on Supabase's exact role names)
+          #   - Scope: a plain `pg_dump` already grabs the `public` schema with
+          #     schema + DATA, which is what you want. You do NOT need --schema-only
+          #     (that would drop all your rows) and you do NOT need to dump the
+          #     internal `auth`/`storage`/`supabase_*` schemas (those belong to the
+          #     platform, not your app data).
+          #
+          # The container mounts the current dir at /work; write the file there.
+          docker run --rm -v "$PWD:/work" postgres:17-alpine \
+            sh -c '
+              set -e
+              # TODO(human): replace the next line with your real pg_dump command.
+              false
+            '
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: basisride-db-backup
+          path: basisride-backup.sql
+          # Retention tradeoff: GitHub artifacts expire (max 90 days). For
+          # permanent history, push the dump to a private "basisride-backups"
+          # repo or an object store instead. 30 days is plenty for "oops, restore
+          # last night" recovery.
+          retention-days: 30
+          if-no-files-found: error

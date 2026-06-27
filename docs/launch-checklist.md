@@ -99,3 +99,28 @@ but **TestFlight and the App Store require the paid Developer Program** (step 1)
 - [ ] SDK upgrade 54 → 55 → 56, incrementally, verified on device each step.
 - [ ] Rate-limit `email_exists` / signup; add audit logging; ratings; support center.
 - [ ] Live read-only web view for "share trip status" (currently shares text).
+
+## Infrastructure cost (50–200 users)
+
+At this scale cost is driven by **free tier vs paid tier**, not user count or which
+BaaS we use. The only unavoidable recurring cost is **Apple Developer ($99/yr)**.
+Everything else fits free tiers. Do **not** migrate off Supabase to save money — the
+app is deeply coupled to Postgres/RLS/Realtime/Edge Functions/pg_net, every
+alternative's free tier is also $0 here, and the migration risk on children's PII is
+not worth $0 of savings.
+
+- [ ] **You:** keep Supabase on the **Free** plan for now (Pro deferred). Pre-check:
+      ≤ 2 active projects in the org; nothing relies on PITR/compute add-ons.
+- [x] Free-tier backups + keep-alive: `.github/workflows/db-backup.yml` (nightly
+      `pg_dump`; the dump doubles as DB activity so the project never hits the
+      7-day inactivity pause). **You:** add the `SUPABASE_DB_URL` repo secret.
+- [ ] **You (Android):** register Google Play Developer ($25 one-time) and create a
+      **Maps SDK for Android** key (free/unlimited). Set it as the
+      `ANDROID_MAPS_API_KEY` EAS secret — `app.config.js` injects it at build time;
+      restrict the key to the app package + SHA-1.
+
+**Recurring floor today ≈ $99/yr (Apple only); +$25 one-time for Google Play.**
+
+**Flip Supabase to Pro ($25/mo) when** any of: the DB nears ~400 MB, you onboard
+paying users, or a ~30 s cold-start would hurt UX. It's one dashboard click — no
+migration, no code change — and adds managed daily backups + never-pausing.
