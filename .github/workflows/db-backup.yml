@@ -43,27 +43,30 @@ jobs:
             exit 1
           fi
 
-          # TODO(human): write the pg_dump command that writes a restorable
-          # backup to ./basisride-backup.sql.
-          #
-          # Fill in the line marked below. Things to decide/learn:
-          #   - Connect with the URL:           pg_dump "$SUPABASE_DB_URL"
-          #   - Write to a file:                -f /work/basisride-backup.sql  (or > redirect)
-          #   - Portability flags worth adding: --no-owner --no-privileges
-          #     (so the dump restores cleanly into a fresh project without
-          #      depending on Supabase's exact role names)
-          #   - Scope: a plain `pg_dump` already grabs the `public` schema with
-          #     schema + DATA, which is what you want. You do NOT need --schema-only
-          #     (that would drop all your rows) and you do NOT need to dump the
-          #     internal `auth`/`storage`/`supabase_*` schemas (those belong to the
-          #     platform, not your app data).
-          #
-          # The container mounts the current dir at /work; write the file there.
-          docker run --rm -v "$PWD:/work" postgres:17-alpine \
+          # Logical backup of YOUR application data — the `public` schema with
+          # schema + rows. Flags explained:
+          #   --schema=public     only our app tables (users, trips, messages,
+          #                       availability, swaps, invite_codes, reports,
+          #                       blocks…). Deliberately skips the platform-managed
+          #                       auth/storage/vault/supabase_* schemas: the
+          #                       connecting role can't fully read some of them
+          #                       (pg_dump would error), and they're recreated by
+          #                       Supabase on a fresh project anyway. Our
+          #                       irreplaceable data — the community schedule and
+          #                       relationships — all lives in `public`.
+          #   --no-owner          don't emit "ALTER … OWNER TO" lines, so the dump
+          #   --no-privileges     restores into a fresh project without depending
+          #                       on Supabase's exact role names/grants.
+          # We pass -e so the container inherits the secret, and mount the work dir
+          # at /work so the file lands back on the runner for upload.
+          docker run --rm -e SUPABASE_DB_URL -v "$PWD:/work" postgres:17-alpine \
             sh -c '
               set -e
-              # TODO(human): replace the next line with your real pg_dump command.
-              false
+              pg_dump "$SUPABASE_DB_URL" \
+                --schema=public \
+                --no-owner \
+                --no-privileges \
+                -f /work/basisride-backup.sql
             '
 
       - name: Upload backup artifact
