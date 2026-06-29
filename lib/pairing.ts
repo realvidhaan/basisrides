@@ -83,6 +83,46 @@ function member(p: Participant): CarMember {
   return { userId: p.userId, name: p.name, time: p.time, car: p.car, address: p.address };
 }
 
+/** Canonical (order-independent) key for a block between two users. */
+export function blockKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * Seats riders into the chosen drivers' cars, never placing two users with a
+ * block between them in the same car (driver↔rider or rider↔rider). First-fit
+ * in driver order, so with no blocks this reproduces the simple sequential
+ * fill. Returns the per-car rider lists and anyone who couldn't be seated.
+ */
+function seatRidersBlockAware(
+  chosen: Participant[],
+  riders: Participant[],
+  blocked: Set<string>,
+): { carRiders: Map<string, Participant[]>; unseated: Participant[] } {
+  const carRiders = new Map<string, Participant[]>();
+  const free = new Map<string, number>();
+  for (const d of chosen) {
+    carRiders.set(d.userId, []);
+    free.set(d.userId, Math.max(0, d.capacity - 1));
+  }
+  const unseated: Participant[] = [];
+  for (const r of riders) {
+    let placed = false;
+    for (const d of chosen) {
+      if ((free.get(d.userId) ?? 0) <= 0) continue;
+      if (blocked.has(blockKey(r.userId, d.userId))) continue;
+      const list = carRiders.get(d.userId)!;
+      if (list.some((x) => blocked.has(blockKey(r.userId, x.userId)))) continue;
+      list.push(r);
+      free.set(d.userId, (free.get(d.userId) ?? 0) - 1);
+      placed = true;
+      break;
+    }
+    if (!placed) unseated.push(r);
+  }
+  return { carRiders, unseated };
+}
+
 /**
  * Computes everyone's assignment for a single date and increments `driveCount`
  * for whoever is chosen to drive (so later dates see the updated history).
@@ -92,6 +132,7 @@ function computeSingleDay(
   skips: Set<string>,
   coverOff: Set<string>,
   coverForce: Set<string>,
+  blocked: Set<string>,
   driveCount: Map<string, number>,
   date: Date,
   iso: string,
@@ -172,29 +213,29 @@ function computeSingleDay(
         return a.userId < b.userId ? -1 : 1;
       });
 
-      // Choose as few drivers as needed to seat the whole cluster.
+      // Choose as few drivers as needed to seat the whole cluster, then seat
+      // riders block-aware. A block can strand a rider even when raw capacity
+      // exists (every available car has someone they're blocked with), so if
+      // anyone is left unseated we pull in additional volunteer drivers — when
+      // any remain — until everyone fits or the candidates run out.
       const chosen: Participant[] = [];
+      let ci = 0;
       let seats = 0;
-      for (const d of ordered) {
-        if (seats >= cluster.length) break;
-        chosen.push(d);
-        seats += d.capacity;
+      while (ci < ordered.length && seats < cluster.length) {
+        chosen.push(ordered[ci]);
+        seats += ordered[ci].capacity;
+        ci += 1;
       }
-      const chosenIds = new Set(chosen.map((d) => d.userId));
-      const riders = cluster.filter((p) => !chosenIds.has(p.userId));
 
-      // Fill each driver up to capacity-1 riders (their own child takes a seat).
-      const carRiders = new Map<string, Participant[]>();
-      for (const d of chosen) carRiders.set(d.userId, []);
-      let ri = 0;
-      for (const d of chosen) {
-        let free = Math.max(0, d.capacity - 1);
-        while (free > 0 && ri < riders.length) {
-          carRiders.get(d.userId)?.push(riders[ri]);
-          ri += 1;
-          free -= 1;
-        }
+      let riders = cluster.filter((p) => !chosen.some((d) => d.userId === p.userId));
+      let seating = seatRidersBlockAware(chosen, riders, blocked);
+      while (seating.unseated.length > 0 && ci < ordered.length) {
+        chosen.push(ordered[ci]);
+        ci += 1;
+        riders = cluster.filter((p) => !chosen.some((d) => d.userId === p.userId));
+        seating = seatRidersBlockAware(chosen, riders, blocked);
       }
+      const carRiders = seating.carRiders;
 
       // Emit drivers (and bump their season drive count).
       for (const d of chosen) {
@@ -224,7 +265,8 @@ function computeSingleDay(
         }
       }
 
-      // Anyone who couldn't be seated is unmatched.
+      // Anyone who couldn't be seated (capacity or an unavoidable block) is
+      // unmatched for the day.
       for (const r of riders) {
         if (!seatedRiderIds.has(r.userId)) {
           result.set(r.userId, {
@@ -276,6 +318,7 @@ export function createRotationEngine(
   skips: Set<string> = new Set(),
   coverOff: Set<string> = new Set(),
   coverForce: Set<string> = new Set(),
+  blocked: Set<string> = new Set(),
 ): RotationEngine {
   const driveCount = new Map<string, number>();
   const cache = new Map<string, Map<string, UserAssignment>>();
@@ -298,6 +341,7 @@ export function createRotationEngine(
             skips,
             coverOff,
             coverForce,
+            blocked,
             driveCount,
             new Date(cursor),
             iso,

@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
 import { toISO } from '@/lib/dateUtils';
 import {
+  blockKey,
   createRotationEngine,
   type Participant,
   type UserAssignment,
@@ -65,6 +66,7 @@ export function useCarpool(): UseCarpoolResult {
   const [mySkipDates, setMySkipDates] = useState<string[]>([]);
   const [coverOff, setCoverOff] = useState<Set<string>>(new Set());
   const [coverForce, setCoverForce] = useState<Set<string>>(new Set());
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,7 +76,7 @@ export function useCarpool(): UseCarpoolResult {
     async (silent: boolean): Promise<void> => {
       if (!silent) setLoading(true);
       try {
-        const [partRes, skipRes, swapRes] = await Promise.all([
+        const [partRes, skipRes, swapRes, blockRes] = await Promise.all([
           supabase
             .from('availability')
             .select(
@@ -88,6 +90,9 @@ export function useCarpool(): UseCarpoolResult {
             .from('swaps')
             .select('requester_id, accepted_by, day, status')
             .eq('status', 'filled'),
+          // Community-wide block pairs (existence only, no direction/reason) so
+          // the deterministic engine keeps blocked users out of the same car.
+          supabase.rpc('community_blocked_pairs'),
         ]);
 
         if (partRes.error) {
@@ -101,6 +106,12 @@ export function useCarpool(): UseCarpoolResult {
         if (swapRes.error) {
           setError(mapSupabaseError(swapRes.error));
           return;
+        }
+        if (blockRes.error) {
+          // Non-fatal: message-level blocking still holds server-side; only
+          // carpool co-assignment separation degrades without the pairs, so log
+          // and continue rather than failing the whole schedule view.
+          Sentry.captureException(blockRes.error);
         }
 
         const partRows = (partRes.data ?? []) as unknown as RawParticipantRow[];
@@ -143,11 +154,16 @@ export function useCarpool(): UseCarpoolResult {
           if (sw.accepted_by) forceSet.add(`${sw.accepted_by}|${sw.day}`);
         }
 
+        const blockRows = (blockRes.data ?? []) as { user_a: string; user_b: string }[];
+        const blockSet = new Set<string>();
+        for (const bp of blockRows) blockSet.add(blockKey(bp.user_a, bp.user_b));
+
         setParticipants(next);
         setSkips(skipSet);
         setMySkipDates(mineSkips);
         setCoverOff(offSet);
         setCoverForce(forceSet);
+        setBlocked(blockSet);
         setError(null);
       } catch {
         setError('Something went wrong loading carpools. Please try again.');
@@ -193,6 +209,11 @@ export function useCarpool(): UseCarpoolResult {
         { event: '*', schema: 'public', table: 'swaps' },
         scheduleRefetch,
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blocks' },
+        scheduleRefetch,
+      )
       .subscribe();
 
     return () => {
@@ -204,8 +225,8 @@ export function useCarpool(): UseCarpoolResult {
   // One engine per data snapshot; it memoizes per-date results internally and
   // carries cumulative drive history for the even-out rotation.
   const engine = useMemo(
-    () => createRotationEngine(participants, skips, coverOff, coverForce),
-    [participants, skips, coverOff, coverForce],
+    () => createRotationEngine(participants, skips, coverOff, coverForce, blocked),
+    [participants, skips, coverOff, coverForce, blocked],
   );
 
   const assignmentFor = useCallback(
