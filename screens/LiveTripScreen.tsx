@@ -49,7 +49,8 @@ interface CarUserRow {
   longitude: number | null;
 }
 
-function initials(name: string): string {
+function initials(name: string | null | undefined): string {
+  if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -65,13 +66,18 @@ const MAP_HEIGHT = Math.min(
 export function LiveTripScreen({ navigation, route }: Props) {
   const iso = route.params.date;
   const date = parseISO(iso);
-  const { currentUserId, assignmentFor } = useCarpool();
+  const { currentUserId, assignmentFor, loading: carpoolLoading } = useCarpool();
   const a = assignmentFor(date);
 
   const isDriver = a?.role === 'drive';
   const driverId = isDriver ? currentUserId : (a?.driver?.userId ?? null);
 
-  const { trip, loading, error, setStatus } = useTrip(driverId, iso);
+  const { trip, loading: tripLoading, error, setStatus, startTrip } = useTrip(driverId, iso);
+
+  // useTrip short-circuits to loading=false while driverId is still null, so on
+  // its own it would let the "No live trip" card render for the whole duration
+  // of the carpool fetch. Gate on both.
+  const loading = carpoolLoading || tripLoading;
 
   // The driver shares GPS only while the ride is active (started, not ended).
   const sharingActive = isDriver && trip?.status === 'on_my_way';
@@ -80,6 +86,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
   // Fetch the car's members so we can pin homes on the map + list riders.
   const [carUsers, setCarUsers] = useState<CarUserRow[]>([]);
+  const [starting, setStarting] = useState(false);
   const [ending, setEnding] = useState(false);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const memberIds = useMemo(() => {
@@ -156,9 +163,11 @@ export function LiveTripScreen({ navigation, route }: Props) {
     [carUsers, riderIdSet],
   );
 
-  // Geofencing replaces the old "Start ride" button and runs even when the app
-  // is backgrounded or killed: the trip goes live when the driver reaches BISV
-  // to collect riders, and auto-ends once they're home after the drop-offs.
+  // Geofencing runs even when the app is backgrounded or killed: the trip goes
+  // live when the driver reaches BISV to collect riders, and auto-ends once
+  // they're home after the drop-offs. It is the convenient path, not the only
+  // one — the driver can always start manually (see startRide), which is what
+  // makes the feature usable away from campus and testable on a simulator.
   const tripActive = trip?.status === 'on_my_way';
   const tripEnded = trip?.status === 'completed' || trip?.status === 'cancelled';
   const riderIds = useMemo(
@@ -179,6 +188,18 @@ export function LiveTripScreen({ navigation, route }: Props) {
   // coords. When they're missing (no saved address, or a failed users fetch),
   // the trip can never auto-complete, so the manual control is the only way out.
   const autoEndAvailable = driverStart !== null;
+
+  // Manual start. The geofence upserts on the same (driver_id, ride_date) key,
+  // so starting by hand and then driving into the pickup region is idempotent
+  // rather than a duplicate trip. useTrip surfaces failures via `error`, which
+  // is already rendered above the controls.
+  async function startRide(): Promise<void> {
+    if (starting) return;
+    setStarting(true);
+    const started = await startTrip(riderIds);
+    if (started) track('trip_started', { role: 'driver' });
+    setStarting(false);
+  }
 
   async function endRide(): Promise<void> {
     if (ending) return;
@@ -361,11 +382,24 @@ export function LiveTripScreen({ navigation, route }: Props) {
           </View>
         );
       }
-      // No trip yet → en route to the first pickup. Tracking arms automatically.
+      // No trip yet → en route to the first pickup. The geofence arms tracking
+      // on arrival at BISV, but the driver can start now — leaving early, or
+      // anywhere the geofence can't reach them.
       return (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>En route to pickup</Text>
-          <Text style={styles.cardText}>Tracking starts automatically at pickup.</Text>
+          <Text style={styles.cardTitle}>Ready to drive</Text>
+          <Text style={styles.cardText}>
+            Start the ride when you set off — your riders will see your car move
+            in real time. It also starts on its own when you reach {SCHOOL.name}.
+          </Text>
+          <View style={styles.startBtnWrap}>
+            <Button
+              title="Start ride"
+              variant="primary"
+              loading={starting}
+              onPress={() => void startRide()}
+            />
+          </View>
         </View>
       );
     }
@@ -436,6 +470,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 start={driverStart}
                 destinations={riderHomes}
                 carColorKey={a.driver?.car.color ?? null}
+                tripActive={tripActive}
               />
             </View>
           ) : null}
@@ -575,6 +610,7 @@ const styles = StyleSheet.create({
   avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  startBtnWrap: { marginTop: 18 },
   endBtnWrap: { marginTop: 18 },
   endConfirm: { marginTop: 18 },
   endConfirmText: {

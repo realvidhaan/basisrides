@@ -60,7 +60,7 @@ export interface UseCarpoolResult {
  * availability, schedule_skips, and swaps. Also exposes skip actions.
  */
 export function useCarpool(): UseCarpoolResult {
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [skips, setSkips] = useState<Set<string>>(new Set());
   const [mySkipDates, setMySkipDates] = useState<string[]>([]);
@@ -296,7 +296,11 @@ export function useCarpool(): UseCarpoolResult {
   );
 
   return {
-    loading,
+    // Stay "loading" while the profile is still resolving. fetchAll runs once
+    // with uid === null and clears its own flag, so without this the UI gets a
+    // window of loading=false over empty data and flashes the wrong empty state
+    // ("Not carpooling this day" / "No live trip") before the real fetch lands.
+    loading: loading || userLoading,
     error,
     currentUserId: uid,
     assignmentFor,

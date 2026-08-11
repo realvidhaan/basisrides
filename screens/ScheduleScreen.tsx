@@ -28,7 +28,7 @@ import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useSwaps } from '@/hooks/useSwaps';
-import { schoolDayStatus } from '@/lib/schoolCalendar';
+import { nextSchoolDay, schoolDayStatus } from '@/lib/schoolCalendar';
 import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUtils';
 import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
 
@@ -42,7 +42,8 @@ interface Props {
   navigation: ScheduleNavigationProp;
 }
 
-function initials(name: string): string {
+function initials(name: string | null | undefined): string {
+  if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -123,7 +124,10 @@ function MemberRow({
 }
 
 export function ScheduleScreen({ navigation }: Props) {
-  const [selected, setSelected] = useState<Date>(() => new Date());
+  // Open on the nearest day that actually has a carpool. Defaulting to "today"
+  // lands on a weekend, a break, or (before the year opens) summer, and the
+  // resulting empty state reads as if the app is broken.
+  const [selected, setSelected] = useState<Date>(() => nextSchoolDay(new Date()));
   const [chatError, setChatError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const {
@@ -136,16 +140,22 @@ export function ScheduleScreen({ navigation }: Props) {
     dropSkip,
   } = useCarpool();
   const { unreadCount } = useNotifications();
-  const { openCount, requestCover } = useSwaps();
+  const { openCount, requestCover, error: swapError } = useSwaps();
 
   async function askForCover(): Promise<void> {
     const ok = await requestCover(toISO(selected), '');
     if (ok) navigation.navigate('Swaps');
+    // On failure useSwaps sets `swapError`, rendered below — without it the tap
+    // did nothing at all: no navigation, no message, no spinner.
   }
 
   function goToConversation(conversationId: string, title: string): void {
     navigation.navigate('MessagesTab', {
       screen: 'Conversation',
+      // Without this React Navigation initialises the Messages stack with
+      // Conversation as its ONLY route the first time we jump into that tab, so
+      // the chat's back button has nothing to pop to and does nothing.
+      initial: false,
       params: { conversationId, title },
     });
   }
@@ -424,6 +434,7 @@ export function ScheduleScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {error ? <ErrorMessage message={error} /> : null}
+        {swapError ? <ErrorMessage message={swapError} /> : null}
 
         <CalendarPicker selected={selected} onSelect={setSelected} dayInfo={dayInfo} />
 
