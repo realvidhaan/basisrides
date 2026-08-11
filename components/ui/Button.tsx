@@ -32,6 +32,12 @@ export function Button({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.85}
+      // TouchableOpacity has no implicit role, so without these VoiceOver
+      // announces every button in the app as plain text. `busy` is what tells a
+      // screen reader the tap registered while the spinner is up.
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         styles.button,
         isOutline ? styles.buttonOutline : styles.buttonPrimary,
