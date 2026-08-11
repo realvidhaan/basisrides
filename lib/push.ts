@@ -23,24 +23,28 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === 'web') return null;
 
-  // Android needs a channel before the OS will surface the permission prompt.
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Carpool alerts',
-      importance: Notifications.AndroidImportance.MAX,
-      lightColor: '#DC143C',
-    });
-  }
-
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') return null;
-
+  // The whole body is guarded: the channel/permission calls can also reject
+  // (no notifications module in a bare Simulator build, permission prompt
+  // dismissed by the OS), and the caller only `void`s this promise — an escaped
+  // rejection surfaces as a red LogBox warning over the app at launch.
   try {
+    // Android needs a channel before the OS will surface the permission prompt.
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Carpool alerts',
+        importance: Notifications.AndroidImportance.MAX,
+        lightColor: '#DC143C',
+      });
+    }
+
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    let finalStatus = existing;
+    if (existing !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') return null;
+
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
@@ -48,7 +52,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     const token = await Notifications.getExpoPushTokenAsync({ projectId });
     return token.data;
   } catch {
-    // No APNs on the Simulator / token fetch failed — non-fatal.
+    // No APNs on the Simulator / permission or token call failed — non-fatal.
     return null;
   }
 }

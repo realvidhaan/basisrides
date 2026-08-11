@@ -149,6 +149,11 @@ export function SignupScreen({ navigation }: Props) {
   }
 
   async function handleSignup(): Promise<void> {
+    // Guard re-entry: the confirm-password field's onSubmitEditing can fire this
+    // again while the invite-code / email-exists round-trips are still in flight
+    // (the Button is disabled, the keyboard action is not), and the second pass
+    // then reports the account it just created as "already registered".
+    if (loading) return;
     setGlobalError(null);
     if (!validate()) return;
 

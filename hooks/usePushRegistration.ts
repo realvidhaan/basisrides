@@ -20,9 +20,13 @@ function routeFromData(data: NotifData, attempt = 0): void {
     if (attempt < 10) setTimeout(() => routeFromData(data, attempt + 1), 400);
     return;
   }
+  // `initial: false` keeps the target stack's default screen underneath, so the
+  // back button still works on the first jump into a tab this session (React
+  // Navigation otherwise initialises the stack with only the pushed screen).
   if (typeof data.conversation_id === 'string') {
     navigationRef.navigate('MessagesTab', {
       screen: 'Conversation',
+      initial: false,
       params: {
         conversationId: data.conversation_id,
         title:
@@ -34,6 +38,7 @@ function routeFromData(data: NotifData, attempt = 0): void {
   } else if (typeof data.ride_date === 'string') {
     navigationRef.navigate('ScheduleTab', {
       screen: 'LiveTrip',
+      initial: false,
       params: { date: data.ride_date },
     });
   }
