@@ -54,8 +54,8 @@
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "start": "expo start",
-    "demo": "EXPO_PUBLIC_DEMO_MODE=1 expo start --dev-client",
+    "start": "expo start --clear",
+    "demo": "EXPO_PUBLIC_DEMO_MODE=1 expo start --dev-client --clear",
     "go": "EXPO_GO=1 expo start --tunnel --go",
     "android": "expo run:android",
     "ios": "expo run:ios",

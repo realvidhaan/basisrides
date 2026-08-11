@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -71,9 +71,18 @@ export function useCarpool(): UseCarpoolResult {
   const [error, setError] = useState<string | null>(null);
 
   const uid = user?.id ?? null;
+  const fetchSeq = useRef(0);
 
   const fetchAll = useCallback(
     async (silent: boolean): Promise<void> => {
+      // fetchAll runs once with uid === null and again once the profile lands.
+      // Those two requests are in flight together and there is no ordering
+      // guarantee, so the anonymous one can resolve last and overwrite the
+      // authenticated result — most visibly wiping mySkipDates, which makes a
+      // day the user had skipped quietly rejoin the rotation on screen.
+      // Stamp each run and let only the newest one commit.
+      const seq = fetchSeq.current + 1;
+      fetchSeq.current = seq;
       if (!silent) setLoading(true);
       try {
         const [partRes, skipRes, swapRes, blockRes] = await Promise.all([
@@ -94,6 +103,8 @@ export function useCarpool(): UseCarpoolResult {
           // the deterministic engine keeps blocked users out of the same car.
           supabase.rpc('community_blocked_pairs'),
         ]);
+
+        if (seq !== fetchSeq.current) return; // a newer run started; drop this one
 
         if (partRes.error) {
           setError(mapSupabaseError(partRes.error));
@@ -168,7 +179,9 @@ export function useCarpool(): UseCarpoolResult {
       } catch {
         setError('Something went wrong loading carpools. Please try again.');
       } finally {
-        if (!silent) setLoading(false);
+        // Only the newest run may clear the flag, or a stale one landing late
+        // would report "loaded" while the current fetch is still running.
+        if (!silent && seq === fetchSeq.current) setLoading(false);
       }
     },
     [uid],

@@ -16,8 +16,16 @@
  *
  * Read as a full static member expression, never destructured off `process.env`:
  * babel-preset-expo inlines EXPO_PUBLIC_* at bundle time only in that form. With
- * the variable unset this folds to the literal `false`, so every demo code path
- * is dead code in a normal build.
+ * the variable unset this compiles to the literal `false` and the name
+ * EXPO_PUBLIC_DEMO_MODE does not appear in the bundle at all — verified against
+ * a production bundle. The demo modules are still *shipped* (Metro does not
+ * tree-shake them); what the flag guarantees is that they are unreachable —
+ * buildDemoRoute is never called and the ticker never creates a timer.
+ *
+ * IMPORTANT: Metro's transform cache does not key on EXPO_PUBLIC_* values, so
+ * switching this on or off without clearing the cache silently keeps the
+ * PREVIOUS setting — in both directions. Both `npm start` and `npm run demo`
+ * therefore pass --clear; don't remove it.
  */
 export const DEMO_MODE = process.env.EXPO_PUBLIC_DEMO_MODE === '1';
 

@@ -23,9 +23,12 @@ export function useDemoDriverLocation(
   // and keying on identity would restart the drive continuously.
   const routeKey = JSON.stringify(route);
   const routeRef = useRef(route);
-  routeRef.current = route;
 
   useEffect(() => {
+    // Committed inside the effect, never during render — a render React throws
+    // away must not be able to change what the running interval emits.
+    routeRef.current = route;
+
     if (!enabled || routeRef.current.length < 2) {
       setPayload(null);
       return;
@@ -48,6 +51,8 @@ export function useDemoDriverLocation(
     }, DEMO_TICK_MS);
 
     return () => clearInterval(timer);
+    // `route` is intentionally tracked by value via routeKey, not by identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, routeKey]);
 
   return payload;
