@@ -214,6 +214,31 @@ export function schoolDayStatus(date: Date): SchoolDayStatus {
 }
 
 /**
+ * The first carpool-eligible school day on or after `from`.
+ *
+ * Screens default their selected date to "today", but today is very often NOT a
+ * school day — a weekend, a break, or (before the year opens) summer. Landing on
+ * one of those renders an empty "no carpool this day" state that reads as if the
+ * app is broken. Callers use this to open on the nearest day that actually has a
+ * carpool instead.
+ *
+ * Clamped to the school year: a `from` before the first day snaps forward to it.
+ * The scan is bounded — past the last day there is no next school day in this
+ * year, so we give up and return `from` unchanged rather than spin.
+ */
+export function nextSchoolDay(from: Date): Date {
+  const start = schoolYearStart();
+  const cursor = from.getTime() < start.getTime() ? new Date(start) : parseISO(toISO(from));
+
+  const end = schoolYearEnd();
+  while (cursor.getTime() <= end.getTime()) {
+    if (!schoolDayStatus(cursor).blocked) return cursor;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return from;
+}
+
+/**
  * Whether `date` is an early-dismissal school day. On these days the carpool
  * pickup time is overridden to EARLY_DISMISSAL_PICKUP (1:00 PM).
  */

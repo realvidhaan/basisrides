@@ -33,6 +33,12 @@ export function useTrip(driverId: string | null, iso: string): UseTripResult {
       setLoading(false);
       return;
     }
+    // driverId arrives asynchronously (the carpool assignment resolves first),
+    // so this callback runs a second time with a real id after the null pass
+    // already cleared `loading`. Without re-raising it the screen treats "no
+    // trip fetched yet" as "no trip exists" for the whole fetch, and would
+    // offer Start ride on a day whose trip is already completed.
+    setLoading(true);
     try {
       const { data, error: tErr } = await supabase
         .from('trips')

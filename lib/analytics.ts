@@ -21,6 +21,7 @@ import * as Sentry from '@sentry/react-native';
 export type AnalyticsEvent =
   | 'signup_completed'
   | 'login_completed'
+  | 'trip_started'
   | 'trip_completed'
   | 'carpool_matched_viewed';
 

@@ -54,12 +54,13 @@
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --clear",
+    "demo": "EXPO_PUBLIC_DEMO_MODE=1 expo start --dev-client --clear",
     "go": "EXPO_GO=1 expo start --tunnel --go",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --testPathPattern='rls-mocked\\.test\\.ts$'",
+    "test": "jest --testPathPattern='(rls-mocked|scheduling-demo)\\.test\\.ts$'",
     "test:mocked": "jest --testPathPattern='rls-mocked\\.test\\.ts$'",
     "test:live": "jest --testPathPattern='rls-live-probe\\.test\\.ts$' --env=node",
     "test:coverage": "jest --coverage --testPathPattern='rls-mocked\\.test\\.ts$'"
