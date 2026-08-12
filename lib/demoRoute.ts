@@ -13,6 +13,23 @@ export interface RoutePosition {
 }
 
 /**
+ * Equirectangular approximation, scaled for this latitude. Over a 12 km city
+ * route the error against haversine is centimetres, and it is called for every
+ * vertex at module load, so the cheap form is the right one.
+ *
+ * Declared before CUMULATIVE deliberately: that table is built by an IIFE at
+ * module load, and hoisting is the only reason a later declaration would work.
+ * Converting this to a const arrow function would then throw at import time.
+ */
+function flatMetres(a: GeoPoint, b: GeoPoint): number {
+  const mPerDegLat = 111_320;
+  const mPerDegLng = mPerDegLat * Math.cos((a.lat * Math.PI) / 180);
+  const dy = (b.lat - a.lat) * mPerDegLat;
+  const dx = (b.lng - a.lng) * mPerDegLng;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
  * Cumulative distance to each vertex, in metres, computed once.
  *
  * Progress is mapped through THIS table rather than through vertex count.
@@ -32,19 +49,6 @@ const CUMULATIVE: number[] = (() => {
 })();
 
 const TOTAL_METRES = CUMULATIVE[CUMULATIVE.length - 1];
-
-/**
- * Equirectangular approximation, scaled for this latitude. Over a 12 km city
- * route the error against haversine is centimetres, and it is called for every
- * vertex at module load, so the cheap form is the right one.
- */
-function flatMetres(a: GeoPoint, b: GeoPoint): number {
-  const mPerDegLat = 111_320;
-  const mPerDegLng = mPerDegLat * Math.cos((a.lat * Math.PI) / 180);
-  const dy = (b.lat - a.lat) * mPerDegLat;
-  const dx = (b.lng - a.lng) * mPerDegLng;
-  return Math.sqrt(dx * dx + dy * dy);
-}
 
 /** Initial bearing from `a` to `b`, degrees clockwise from north. */
 function bearing(a: GeoPoint, b: GeoPoint): number {
