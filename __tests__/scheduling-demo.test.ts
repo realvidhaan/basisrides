@@ -1,7 +1,6 @@
 import { nextSchoolDay, schoolDayStatus } from '@/lib/schoolCalendar';
 import { toISO } from '@/lib/dateUtils';
-import { buildDemoRoute, pointAlong } from '@/lib/demoRoute';
-import type { MapStop } from '@/types';
+import { DEMO_ROUTE, DEMO_STOPS, positionAt } from '@/lib/demoRoute';
 
 describe('nextSchoolDay', () => {
   it('moves today (2026-08-11, day before term) to the first school day', () => {
@@ -31,41 +30,89 @@ describe('nextSchoolDay', () => {
 });
 
 describe('demo route', () => {
-  const stops: MapStop[] = [
-    { id: 'school', name: 'BISV', point: { lat: 37.3197, lng: -121.912 }, kind: 'school' },
-    { id: 'r1', name: 'R1', point: { lat: 37.34, lng: -121.93 }, kind: 'rider' },
-    { id: 'r2', name: 'R2', point: { lat: 37.33, lng: -121.92 }, kind: 'rider' },
-  ];
-  const home = { lat: 37.35, lng: -121.95 };
+  const metres = (a: { lat: number; lng: number }, b: { lat: number; lng: number }): number => {
+    const mLat = 111_320;
+    const mLng = mLat * Math.cos((a.lat * Math.PI) / 180);
+    return Math.hypot((b.lat - a.lat) * mLat, (b.lng - a.lng) * mLng);
+  };
 
-  it('orders school -> nearest riders -> driver home', () => {
-    const r = buildDemoRoute(stops, home);
-    expect(r[0]).toEqual(stops[0].point);
-    expect(r[1]).toEqual(stops[2].point); // r2 is nearer the school than r1
-    expect(r[r.length - 1]).toEqual(home);
+  it('is a real multi-point road route, not a straight line', () => {
+    expect(DEMO_ROUTE.length).toBeGreaterThan(100);
+    // A straight line would make the path length equal the start→end distance.
+    let path = 0;
+    for (let i = 1; i < DEMO_ROUTE.length; i += 1) path += metres(DEMO_ROUTE[i - 1], DEMO_ROUTE[i]);
+    const direct = metres(DEMO_ROUTE[0], DEMO_ROUTE[DEMO_ROUTE.length - 1]);
+    expect(path).toBeGreaterThan(direct * 1.15);
   });
 
-  it('returns [] when there is nothing to drive (degenerate input)', () => {
-    expect(buildDemoRoute([stops[0]], null)).toEqual([]);
-    expect(buildDemoRoute([], null)).toEqual([]);
+  it('starts at school and ends at the driver home, with stops in between', () => {
+    expect(DEMO_STOPS[0].kind).toBe('school');
+    expect(DEMO_STOPS[0].index).toBe(0);
+    expect(DEMO_STOPS[DEMO_STOPS.length - 1].kind).toBe('driver');
+    expect(DEMO_STOPS[DEMO_STOPS.length - 1].index).toBe(DEMO_ROUTE.length - 1);
+    // indices strictly increase, so stops are visited in drive order
+    for (let i = 1; i < DEMO_STOPS.length; i += 1) {
+      expect(DEMO_STOPS[i].index).toBeGreaterThan(DEMO_STOPS[i - 1].index);
+      expect(DEMO_STOPS[i].index).toBeLessThan(DEMO_ROUTE.length);
+    }
   });
 
-  it('interpolates monotonically from start to end', () => {
-    const r = buildDemoRoute(stops, home);
-    const a = pointAlong(r, 0);
-    const b = pointAlong(r, 1);
-    expect(a?.point).toEqual(r[0]);
-    expect(b?.point.lat).toBeCloseTo(home.lat, 4);
-    expect(b?.point.lng).toBeCloseTo(home.lng, 4);
-    expect(Number.isFinite(a?.heading ?? NaN)).toBe(true);
+  it('holds a STEADY speed — progress is linear in distance ALONG the route', () => {
+    // The property the demo is judged on: the car must not crawl through dense
+    // turn geometry and then rocket down a sparse expressway stretch.
+    //
+    // Measured along the path, not as straight-line distance between samples:
+    // rounding a corner genuinely covers less straight-line distance for the
+    // same road distance, so a chord metric reports a false slowdown at every
+    // turn. Road distance is what "constant speed" actually means.
+    const cumulative = [0];
+    for (let i = 1; i < DEMO_ROUTE.length; i += 1) {
+      cumulative.push(cumulative[i - 1] + metres(DEMO_ROUTE[i - 1], DEMO_ROUTE[i]));
+    }
+    const total = cumulative[cumulative.length - 1];
+
+    const alongRoute = (f: number): number => {
+      const { point, index } = positionAt(f);
+      return cumulative[index] + metres(DEMO_ROUTE[index], point);
+    };
+
+    const SAMPLES = 200;
+    let worst = 0;
+    for (let i = 0; i <= SAMPLES; i += 1) {
+      const f = i / SAMPLES;
+      worst = Math.max(worst, Math.abs(alongRoute(f) - f * total) / total);
+    }
+    // Sub-1% of a 12.6 km route is ~100 m of drift across the whole drive.
+    expect(worst).toBeLessThan(0.01);
   });
 
-  it('never yields NaN coordinates across the whole traversal', () => {
-    const r = buildDemoRoute(stops, home);
-    for (let i = 0; i <= 90; i += 1) {
-      const p = pointAlong(r, i / 90);
-      expect(Number.isFinite(p?.point.lat ?? NaN)).toBe(true);
-      expect(Number.isFinite(p?.point.lng ?? NaN)).toBe(true);
+  it('is monotonic, finite, and clamps at both ends', () => {
+    expect(positionAt(0).point).toEqual(DEMO_ROUTE[0]);
+    expect(positionAt(1).point).toEqual(DEMO_ROUTE[DEMO_ROUTE.length - 1]);
+    expect(positionAt(-5).point).toEqual(DEMO_ROUTE[0]);
+    expect(positionAt(99).point).toEqual(DEMO_ROUTE[DEMO_ROUTE.length - 1]);
+
+    let travelled = 0;
+    let prev = positionAt(0).point;
+    for (let i = 1; i <= 200; i += 1) {
+      const p = positionAt(i / 200);
+      expect(Number.isFinite(p.point.lat)).toBe(true);
+      expect(Number.isFinite(p.point.lng)).toBe(true);
+      expect(Number.isFinite(p.heading)).toBe(true);
+      expect(p.heading).toBeGreaterThanOrEqual(0);
+      expect(p.heading).toBeLessThan(360);
+      travelled += metres(prev, p.point);
+      prev = p.point;
+    }
+    expect(travelled).toBeGreaterThan(10_000); // ~12.6 km route
+  });
+
+  it('advances the split index monotonically so the travelled line only grows', () => {
+    let last = -1;
+    for (let i = 0; i <= 200; i += 1) {
+      const { index } = positionAt(i / 200);
+      expect(index).toBeGreaterThanOrEqual(last);
+      last = index;
     }
   });
 });

@@ -1,59 +1,49 @@
 /**
- * Route synthesis for DEMO_MODE (see lib/demoMode). Builds a plausible drive
- * from the trip's REAL pins and interpolates a position along it, so the demo
- * shows the actual carpool geography rather than an invented one.
+ * Traversal helpers for the hardcoded demo route (see lib/demoRouteData).
  *
- * Every function here is only ever called behind the DEMO_MODE flag.
+ * Everything here is only ever reached behind the DEMO_MODE flag.
  */
-import type { GeoPoint, MapStop } from '@/types';
-import { haversineMeters } from '@/lib/geo';
+import type { GeoPoint } from '@/types';
+import { DEMO_ROUTE } from '@/lib/demoRouteData';
 
-/** A fix synthesised from the route: where the car is and which way it faces. */
 export interface RoutePosition {
   point: GeoPoint;
   heading: number; // degrees clockwise from north
-}
-
-function samePoint(a: GeoPoint, b: GeoPoint): boolean {
-  // ~1e-6 degrees is well under a metre — anything closer is the same pin.
-  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+  index: number; // last route vertex passed — where to split the polyline
 }
 
 /**
- * Order the trip's stops into an afternoon run: school → riders → driver home.
+ * Cumulative distance to each vertex, in metres, computed once.
  *
- * Riders are visited nearest-first from the current position (a greedy
- * nearest-neighbour tour). That is not the optimal route, but it looks like a
- * sensible drive and costs nothing — the real app never plans routes, so there
- * is no ordering logic to reuse here.
- *
- * Returns [] when there is nothing sensible to drive (fewer than two distinct
- * points), which makes the whole demo path inert rather than degenerate.
+ * Progress is mapped through THIS table rather than through vertex count.
+ * Road polylines have wildly uneven vertex spacing — dense through turns,
+ * sparse along a straight expressway — so stepping per vertex makes the car
+ * crawl through corners and rocket down straights. Interpolating by distance
+ * is what makes the speed read as constant.
  */
-export function buildDemoRoute(stops: MapStop[], driverHome: GeoPoint | null): GeoPoint[] {
-  const school = stops.find((s) => s.kind === 'school')?.point;
-  const home = driverHome ?? stops.find((s) => s.kind === 'driver')?.point ?? null;
-  const riders = stops.filter((s) => s.kind === 'rider').map((s) => s.point);
-
-  const origin = school ?? home;
-  if (!origin) return [];
-
-  const route: GeoPoint[] = [origin];
-  const remaining = [...riders];
-  let at = origin;
-  while (remaining.length > 0) {
-    let best = 0;
-    for (let i = 1; i < remaining.length; i += 1) {
-      if (haversineMeters(at, remaining[i]) < haversineMeters(at, remaining[best])) best = i;
-    }
-    at = remaining.splice(best, 1)[0];
-    route.push(at);
+const CUMULATIVE: number[] = (() => {
+  const out = [0];
+  let total = 0;
+  for (let i = 1; i < DEMO_ROUTE.length; i += 1) {
+    total += flatMetres(DEMO_ROUTE[i - 1], DEMO_ROUTE[i]);
+    out.push(total);
   }
-  if (home) route.push(home);
+  return out;
+})();
 
-  // Collapse consecutive duplicates (e.g. the driver's home is also a pin).
-  const deduped = route.filter((p, i) => i === 0 || !samePoint(p, route[i - 1]));
-  return deduped.length >= 2 ? deduped : [];
+const TOTAL_METRES = CUMULATIVE[CUMULATIVE.length - 1];
+
+/**
+ * Equirectangular approximation, scaled for this latitude. Over a 12 km city
+ * route the error against haversine is centimetres, and it is called for every
+ * vertex at module load, so the cheap form is the right one.
+ */
+function flatMetres(a: GeoPoint, b: GeoPoint): number {
+  const mPerDegLat = 111_320;
+  const mPerDegLng = mPerDegLat * Math.cos((a.lat * Math.PI) / 180);
+  const dy = (b.lat - a.lat) * mPerDegLat;
+  const dx = (b.lng - a.lng) * mPerDegLng;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 /** Initial bearing from `a` to `b`, degrees clockwise from north. */
@@ -67,39 +57,57 @@ function bearing(a: GeoPoint, b: GeoPoint): number {
   return (Math.atan2(y, x) / toRad + 360) % 360;
 }
 
-/**
- * Position at fraction `f` (0…1) of the way along `route`, by distance.
- *
- * Interpolation is linear in lat/lng within a segment. Over a few kilometres
- * that is visually indistinguishable from a great circle, and the car follows
- * straight lines between pins rather than roads — an honest demo artifact, since
- * road-snapping would need a Directions API key the project doesn't have.
- */
-export function pointAlong(route: GeoPoint[], f: number): RoutePosition | null {
-  if (route.length < 2) return null;
-
-  const legs: number[] = [];
-  let total = 0;
-  for (let i = 1; i < route.length; i += 1) {
-    const d = haversineMeters(route[i - 1], route[i]);
-    legs.push(d);
-    total += d;
+/** Binary search for the last vertex at or before `metres`. */
+function vertexAt(metres: number): number {
+  let lo = 0;
+  let hi = CUMULATIVE.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (CUMULATIVE[mid] <= metres) lo = mid;
+    else hi = mid - 1;
   }
-  if (total === 0) return null;
-
-  const target = Math.min(Math.max(f, 0), 1) * total;
-  let travelled = 0;
-  for (let i = 0; i < legs.length; i += 1) {
-    if (travelled + legs[i] >= target || i === legs.length - 1) {
-      const a = route[i];
-      const b = route[i + 1];
-      const t = legs[i] === 0 ? 0 : Math.min((target - travelled) / legs[i], 1);
-      return {
-        point: { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t },
-        heading: bearing(a, b),
-      };
-    }
-    travelled += legs[i];
-  }
-  return null;
+  return lo;
 }
+
+/**
+ * Position at fraction `f` (0…1) of the way along the route, BY DISTANCE.
+ *
+ * Heading is taken from the segment being travelled, and near a vertex is
+ * blended with the next segment's bearing so the car turns through a corner
+ * instead of snapping to the new bearing in one frame.
+ */
+export function positionAt(f: number): RoutePosition {
+  const clamped = Math.min(Math.max(f, 0), 1);
+  const target = clamped * TOTAL_METRES;
+  const i = vertexAt(target);
+
+  if (i >= DEMO_ROUTE.length - 1) {
+    const last = DEMO_ROUTE.length - 1;
+    return {
+      point: DEMO_ROUTE[last],
+      heading: bearing(DEMO_ROUTE[last - 1], DEMO_ROUTE[last]),
+      index: last,
+    };
+  }
+
+  const a = DEMO_ROUTE[i];
+  const b = DEMO_ROUTE[i + 1];
+  const segment = CUMULATIVE[i + 1] - CUMULATIVE[i];
+  const t = segment === 0 ? 0 : (target - CUMULATIVE[i]) / segment;
+
+  const here = bearing(a, b);
+  // Blend into the next segment's bearing over the last 30% of this one.
+  const next = i + 2 < DEMO_ROUTE.length ? bearing(b, DEMO_ROUTE[i + 2]) : here;
+  const blend = t > 0.7 ? (t - 0.7) / 0.3 : 0;
+  const delta = ((next - here + 540) % 360) - 180; // shortest way round
+  const heading = (here + delta * blend + 360) % 360;
+
+  return {
+    point: { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t },
+    heading,
+    index: i,
+  };
+}
+
+export { DEMO_ROUTE };
+export { DEMO_STOPS, type DemoStop } from '@/lib/demoRouteData';
