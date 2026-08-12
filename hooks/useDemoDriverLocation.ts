@@ -24,12 +24,35 @@ const IDLE: DemoDrive = { payload: null, progress: 0, index: 0, arrived: false }
 export function useDemoDriverLocation(enabled: boolean): DemoDrive {
   const [drive, setDrive] = useState<DemoDrive>(IDLE);
   const startedAt = useRef(0);
+  // Mirrors `drive` so the effect can read the latest value without taking it
+  // as a dependency — which would tear down and restart the interval on every
+  // single tick.
+  const driveRef = useRef(drive);
+  driveRef.current = drive;
+
+  /** The finished frame: car parked at the destination, whole route driven. */
+  const finished = (): DemoDrive => {
+    const end = positionAt(1);
+    return {
+      payload: { lat: end.point.lat, lng: end.point.lng, heading: end.heading },
+      progress: 1,
+      index: end.index,
+      arrived: true,
+    };
+  };
 
   useEffect(() => {
     if (!enabled) {
-      setDrive(IDLE);
+      // Disabled after the drive began — e.g. the driver ended the ride. Freeze
+      // on the completed picture instead of resetting, so the map reads as a
+      // finished trip rather than blanking out. If it never ran, stay idle.
+      setDrive((d) => (d.payload === null ? IDLE : finished()));
       return;
     }
+
+    // Already finished: hold the final frame. Without this, anything that
+    // re-runs the effect replays the whole drive from the school.
+    if (driveRef.current.arrived) return;
 
     // Progress is derived from the CLOCK, not from a tick counter. A dropped or
     // late tick then costs a frame of smoothness rather than stretching the

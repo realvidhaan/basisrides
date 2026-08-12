@@ -493,7 +493,9 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 start={driverStart}
                 destinations={riderHomes}
                 carColorKey={a.driver?.car.color ?? null}
-                demoRun={demoRun}
+                // Ending the ride stops the drive; the map freezes on the
+                // completed picture rather than replaying it.
+                demoRun={demoRun && !tripEnded}
                 onDemoArrived={() => setDemoArrived(true)}
               />
             </View>
