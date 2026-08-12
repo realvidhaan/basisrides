@@ -27,6 +27,9 @@ import { useDemoDriverLocation } from '@/hooks/useDemoDriverLocation';
 const ROUTE_CASING = 'rgba(17,24,39,0.30)';
 const ROUTE_REMAINING = '#A9B2C0';
 const ROUTE_TRAVELLED = '#DC143C';
+// On arrival the whole driven path flips to the app's success green, so the
+// finished trip reads as complete rather than as a ride still in progress.
+const ROUTE_ARRIVED = '#16A34A';
 const CASING_WIDTH = 11;
 const ROUTE_WIDTH = 7;
 
@@ -37,6 +40,7 @@ export interface LiveMapProps {
   carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
   destinations?: { lat: number; lng: number }[]; // keep car + these drop-offs framed live
   tripActive?: boolean; // ride under way — only consulted by DEMO_MODE
+  onDemoArrived?: () => void; // fires once when the DEMO_MODE drive completes
 }
 
 // BISV-area fallback so the map always has somewhere to open (matches the old
@@ -123,6 +127,7 @@ export function LiveMap({
   carColorKey,
   destinations,
   tripActive,
+  onDemoArrived,
 }: LiveMapProps) {
   const mapRef = useRef<MapView | null>(null);
 
@@ -274,19 +279,30 @@ export function LiveMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, carCoord, demoDriving, JSON.stringify(destinations ?? [])]);
 
-  // Split the route at the car. Both halves include the car's exact position,
-  // or a hairline gap opens under it at the seam.
   const routeLine = useMemo(
     () => DEMO_ROUTE.map((p) => ({ latitude: p.lat, longitude: p.lng })),
     [],
   );
-  const travelled = useMemo(() => {
-    if (!demoDriving || !demo.payload) return [];
-    return [
-      ...routeLine.slice(0, demo.index + 1),
-      { latitude: demo.payload.lat, longitude: demo.payload.lng },
-    ];
-  }, [demoDriving, demo.index, demo.payload, routeLine]);
+
+  /**
+   * The driven line is built from FIXED chunks, not from a growing slice.
+   *
+   * A single polyline that gains a point every tick hands react-native-maps a
+   * new coordinates array 10x a second, and each one tears down and recreates
+   * the native overlay — which is visible as a flicker. These chunks never
+   * change, so revealing one more just mounts a new overlay and leaves every
+   * existing one untouched. Throttling would only slow the flicker down; this
+   * removes the cause.
+   */
+  const chunks = useMemo(() => {
+    const SPAN = 8; // vertices per chunk — comfortably over iOS's 3-point floor
+    const out: { coords: typeof routeLine; from: number }[] = [];
+    for (let i = 0; i + 2 < routeLine.length; i += SPAN) {
+      // +1 so each chunk shares a vertex with the next and the seams close up.
+      out.push({ coords: routeLine.slice(i, Math.min(i + SPAN + 1, routeLine.length)), from: i });
+    }
+    return out;
+  }, [routeLine]);
 
   // "You have arrived": a ring that expands and fades out of the destination
   // pin, the same read as the pulse Maps apps use to call out a location.
@@ -295,6 +311,7 @@ export function LiveMap({
   useEffect(() => {
     if (!demo.arrived) return;
     setPulsing(true);
+    onDemoArrived?.();
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // Three rings, then stop. A permanent pulse reads as "loading", not
     // "arrived" — and it would keep the marker snapshotting forever.
@@ -313,7 +330,7 @@ export function LiveMap({
       pulse.setValue(0);
       setPulsing(false);
     };
-  }, [demo.arrived, pulse]);
+  }, [demo.arrived, pulse, onDemoArrived]);
 
   return (
     <View style={styles.container}>
@@ -345,17 +362,21 @@ export function LiveMap({
               lineCap="round"
               lineJoin="round"
             />
-            {/* iOS refuses to render a 2-point polyline, which is exactly what
-                the driven line is for the first tick. */}
-            {travelled.length >= 3 ? (
-              <Polyline
-                coordinates={travelled}
-                strokeColor={ROUTE_TRAVELLED}
-                strokeWidth={ROUTE_WIDTH}
-                lineCap="round"
-                lineJoin="round"
-              />
-            ) : null}
+            {/* Each driven chunk is a stable overlay: constant coordinates, and
+                the only thing that ever changes is the colour, once, on
+                arrival. Chunks past the car simply are not mounted. */}
+            {chunks.map((c) =>
+              c.from <= demo.index ? (
+                <Polyline
+                  key={c.from}
+                  coordinates={c.coords}
+                  strokeColor={demo.arrived ? ROUTE_ARRIVED : ROUTE_TRAVELLED}
+                  strokeWidth={ROUTE_WIDTH}
+                  lineCap="round"
+                  lineJoin="round"
+                />
+              ) : null,
+            )}
           </>
         ) : null}
 
@@ -393,7 +414,11 @@ export function LiveMap({
             key={s.id}
             coordinate={{ latitude: s.point.lat, longitude: s.point.lng }}
             title={s.name}
-            anchor={{ x: 0.5, y: 0.5 }}
+            // Lift the pin clear of the route line instead of sitting on it —
+            // centred, the glyph and the 11pt casing overlap and both get hard
+            // to read. centerOffset is the iOS lever; anchor is Google's.
+            anchor={{ x: 0.5, y: 0.68 }}
+            centerOffset={{ x: 0, y: -4 }}
             tracksViewChanges={false}
             zIndex={500}
           >
@@ -432,8 +457,8 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#DC143C',
-    backgroundColor: 'rgba(220,20,60,0.12)',
+    borderColor: '#16A34A',
+    backgroundColor: 'rgba(22,163,74,0.12)',
   },
   emojiWrap: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   emoji: { fontSize: 22 },

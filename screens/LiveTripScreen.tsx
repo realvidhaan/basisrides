@@ -220,12 +220,16 @@ export function LiveTripScreen({ navigation, route }: Props) {
       track('trip_completed', { role: isDriver ? 'driver' : 'rider' });
     }
   }, [status, isDriver]);
-  const statusLabel =
-    status === 'completed'
-      ? 'Arrived — ride complete'
-      : status === 'on_my_way'
-        ? 'En route to destination'
-        : 'En route to pickup';
+  // The demo drive finishes client-side without writing a status, so the map
+  // reports its own arrival and the banner follows it. Always false in a normal
+  // build, where `status` alone decides.
+  const [demoArrived, setDemoArrived] = useState(false);
+  const arrived = status === 'completed' || demoArrived;
+  const statusLabel = arrived
+    ? 'Arrived — everyone dropped off'
+    : status === 'on_my_way'
+      ? 'En route to destination'
+      : 'En route to pickup';
 
   // Emergency: the most reliable safety action is a direct call to 911. We
   // confirm first (so a stray tap doesn't dial) then hand off to the dialer.
@@ -322,12 +326,16 @@ export function LiveTripScreen({ navigation, route }: Props) {
       }
       if (status === 'on_my_way') {
         return (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Sharing your live location</Text>
+          <View style={[styles.card, arrived && styles.cardDone]}>
+            <Text style={styles.cardTitle}>
+              {arrived ? 'Everyone’s dropped off' : 'Sharing your live location'}
+            </Text>
             <Text style={styles.cardText}>
-              {autoEndAvailable
-                ? 'Your riders can see your car move in real time. The ride ends automatically once you’ve dropped everyone off and arrive home — or end it now below.'
-                : 'Your riders can see your car move in real time. Tap “End ride” once you’ve dropped everyone off.'}
+              {arrived
+                ? 'You’ve reached the last stop. End the ride to let your riders know you’re done.'
+                : autoEndAvailable
+                  ? 'Your riders can see your car move in real time. The ride ends automatically once you’ve dropped everyone off and arrive home — or end it now below.'
+                  : 'Your riders can see your car move in real time. Tap “End ride” once you’ve dropped everyone off.'}
             </Text>
             {riders.length > 0 ? (
               <>
@@ -479,22 +487,25 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 destinations={riderHomes}
                 carColorKey={a.driver?.car.color ?? null}
                 tripActive={tripActive}
+                onDemoArrived={() => setDemoArrived(true)}
               />
             </View>
           ) : null}
 
-          <View style={styles.statusBanner}>
+          <View style={[styles.statusBanner, arrived && styles.statusBannerDone]}>
             <View
               style={[
                 styles.statusDot,
-                status === 'completed'
+                arrived
                   ? styles.dotGreen
                   : status === 'on_my_way'
                     ? styles.dotCrimson
                     : styles.dotGrey,
               ]}
             />
-            <Text style={styles.statusText}>{statusLabel}</Text>
+            <Text style={[styles.statusText, arrived && styles.statusTextDone]}>
+              {statusLabel}
+            </Text>
           </View>
 
           {/* Riders waiting at the curb get the driver's car + plate, big and
@@ -577,7 +588,11 @@ const styles = StyleSheet.create({
   dotCrimson: { backgroundColor: '#DC143C' },
   dotGreen: { backgroundColor: '#16A34A' },
   dotGrey: { backgroundColor: '#C9CDD4' },
+  // Arrival tints the whole banner rather than just the dot — at a glance the
+  // green field is what reads as "done", not a 10pt circle.
+  statusBannerDone: { backgroundColor: '#EAF7EE' },
   statusText: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
+  statusTextDone: { color: '#15803D' },
   card: {
     borderWidth: 1.5,
     borderColor: '#E8ECF4',
