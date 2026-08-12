@@ -75,8 +75,11 @@ export function NotificationsScreen({ navigation }: Props) {
       const conversationId = asString(data.conversation_id);
       const title = asString(data.conversation_title) ?? 'Conversation';
       if (conversationId) {
+        // `initial: false` keeps MessagesList underneath, so the back button
+        // still works on the first jump into the Messages tab this session.
         navigation.navigate('MessagesTab', {
           screen: 'Conversation',
+          initial: false,
           params: { conversationId, title },
         });
       }

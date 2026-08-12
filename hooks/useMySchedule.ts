@@ -46,7 +46,7 @@ export interface UseMyScheduleResult {
  * drive vs ride. Optimistic upsert with rollback.
  */
 export function useMySchedule(): UseMyScheduleResult {
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const [days, setDays] = useState<Record<WeekdayKey, MyScheduleDay>>(emptyWeek);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,14 @@ export function useMySchedule(): UseMyScheduleResult {
   }, [days]);
 
   useEffect(() => {
-    if (!user) return;
+    // `useCurrentUser` returns a null user both while the profile is still
+    // loading and when the fetch failed (e.g. a dropped request). Track its
+    // `loading` instead of bailing out, otherwise a failed profile fetch leaves
+    // this spinner up forever with no error and no retry.
+    if (!user) {
+      setLoading(userLoading);
+      return;
+    }
     let active = true;
     void (async () => {
       setLoading(true);
@@ -97,7 +104,7 @@ export function useMySchedule(): UseMyScheduleResult {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, userLoading]);
 
   const setDay = useCallback(
     async (

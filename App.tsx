@@ -2,7 +2,7 @@ import './global.css';
 
 import * as Sentry from '@sentry/react-native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -157,15 +157,23 @@ function App() {
   // Register push + tap-to-navigate only once the user is in the main app.
   usePushRegistration(showMain ? (session?.user.id ?? null) : null);
 
-  if (initializing) return null;
-
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <ErrorBoundary>
-          <NavigationContainer ref={navigationRef}>
-            {showMain ? <MainNavigator /> : <AuthNavigator />}
-          </NavigationContainer>
+          {initializing ? (
+            // Reading the persisted session off storage is async. Render the
+            // app's own background + brand spinner instead of nothing, so cold
+            // start doesn't show a bare white frame. Deliberately JS-only —
+            // expo-splash-screen would mean a native rebuild.
+            <View style={styles.splash}>
+              <ActivityIndicator color="#DC143C" size="large" />
+            </View>
+          ) : (
+            <NavigationContainer ref={navigationRef}>
+              {showMain ? <MainNavigator /> : <AuthNavigator />}
+            </NavigationContainer>
+          )}
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -175,6 +183,12 @@ function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  splash: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
 });
 
