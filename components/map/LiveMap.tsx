@@ -39,7 +39,10 @@ export interface LiveMapProps {
   start: { lat: number; lng: number } | null; // initial car position
   carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
   destinations?: { lat: number; lng: number }[]; // keep car + these drop-offs framed live
-  tripActive?: boolean; // ride under way — only consulted by DEMO_MODE
+  // Runs the DEMO_MODE drive. Deliberately NOT the trip's status: the demo is
+  // armed by pressing "Start ride", so re-opening a trip that is already under
+  // way does not replay the animation on its own.
+  demoRun?: boolean;
   onDemoArrived?: () => void; // fires once when the DEMO_MODE drive completes
 }
 
@@ -126,7 +129,7 @@ export function LiveMap({
   start,
   carColorKey,
   destinations,
-  tripActive,
+  demoRun,
   onDemoArrived,
 }: LiveMapProps) {
   const mapRef = useRef<MapView | null>(null);
@@ -135,7 +138,7 @@ export function LiveMap({
   // Synthetic drive for demos. Both hooks are called unconditionally so hook
   // order never differs between builds; with DEMO_MODE folded to a literal
   // `false` at bundle time the demo hook creates no timer and returns idle.
-  const demo = useDemoDriverLocation(DEMO_MODE && (tripActive ?? false));
+  const demo = useDemoDriverLocation(DEMO_MODE && (demoRun ?? false));
   const live = DEMO_MODE ? (demo.payload ?? realLive) : realLive;
   const demoDriving = DEMO_MODE && demo.payload !== null;
 

@@ -197,7 +197,13 @@ export function LiveTripScreen({ navigation, route }: Props) {
     if (starting) return;
     setStarting(true);
     const started = await startTrip(riderIds);
-    if (started) track('trip_started', { role: 'driver' });
+    if (started) {
+      track('trip_started', { role: 'driver' });
+      // Arm the demo drive here rather than off the trip's status, so opening a
+      // ride that is already under way doesn't replay the animation by itself.
+      // Inert in a normal build, where DEMO_MODE gates the whole thing.
+      setDemoRun(true);
+    }
     setStarting(false);
   }
 
@@ -224,6 +230,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
   // reports its own arrival and the banner follows it. Always false in a normal
   // build, where `status` alone decides.
   const [demoArrived, setDemoArrived] = useState(false);
+  const [demoRun, setDemoRun] = useState(false);
   const arrived = status === 'completed' || demoArrived;
   const statusLabel = arrived
     ? 'Arrived — everyone dropped off'
@@ -486,7 +493,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 start={driverStart}
                 destinations={riderHomes}
                 carColorKey={a.driver?.car.color ?? null}
-                tripActive={tripActive}
+                demoRun={demoRun}
                 onDemoArrived={() => setDemoArrived(true)}
               />
             </View>
