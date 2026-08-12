@@ -29,8 +29,16 @@
  */
 export const DEMO_MODE = process.env.EXPO_PUBLIC_DEMO_MODE === '1';
 
-/** Seconds for the synthetic car to traverse the whole route, once. */
-export const DEMO_TRIP_SECONDS = 90;
+/** How long the synthetic car takes to drive the whole route, once. */
+export const DEMO_TRIP_MS = 10_000;
 
-/** How often the synthetic driver emits a fix, in ms. */
-export const DEMO_TICK_MS = 1000;
+/**
+ * How often the synthetic driver emits a fix.
+ *
+ * Keep this EQUAL to the marker's animation duration in LiveMap: the marker
+ * eases from each fix to the next over exactly one tick, so the motion is
+ * continuous. If the tick is longer than the animation the car arrives early
+ * and sits still until the next fix (visible stutter); if it is shorter, each
+ * animation is cut off mid-flight and the car lurches.
+ */
+export const DEMO_TICK_MS = 100;

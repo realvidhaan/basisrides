@@ -1,59 +1,63 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GeoPoint } from '@/types';
 import type { LocPayload } from '@/lib/liveTrip';
-import { DEMO_TICK_MS, DEMO_TRIP_SECONDS } from '@/lib/demoMode';
-import { pointAlong } from '@/lib/demoRoute';
+import { DEMO_TICK_MS, DEMO_TRIP_MS } from '@/lib/demoMode';
+import { positionAt } from '@/lib/demoRoute';
+
+export interface DemoDrive {
+  payload: LocPayload | null;
+  progress: number; // 0…1 along the route
+  index: number; // last route vertex passed — where the travelled polyline ends
+  arrived: boolean;
+}
+
+const IDLE: DemoDrive = { payload: null, progress: 0, index: 0, arrived: false };
 
 /**
- * Synthetic driver for DEMO_MODE (see lib/demoMode): walks the car along
- * `route` and emits fixes in the same shape the real broadcast delivers, so
- * everything downstream — the map, the car marker, its heading — is the
- * production code path with a different source of positions.
+ * Synthetic driver for DEMO_MODE (see lib/demoMode): walks the hardcoded route
+ * at a constant speed and emits fixes in the same shape the real broadcast
+ * delivers, so the map renders the production code path with a different source
+ * of positions.
  *
- * Inert unless explicitly enabled: with `enabled` false no timer is ever
- * created, so a normal build pays nothing for this hook existing.
+ * Inert unless enabled — with `enabled` false no timer is ever created, so a
+ * normal build pays nothing for this hook existing.
  */
-export function useDemoDriverLocation(
-  enabled: boolean,
-  route: GeoPoint[],
-): LocPayload | null {
-  const [payload, setPayload] = useState<LocPayload | null>(null);
-
-  // Depend on the route by VALUE: the parent rebuilds the array every render,
-  // and keying on identity would restart the drive continuously.
-  const routeKey = JSON.stringify(route);
-  const routeRef = useRef(route);
+export function useDemoDriverLocation(enabled: boolean): DemoDrive {
+  const [drive, setDrive] = useState<DemoDrive>(IDLE);
+  const startedAt = useRef(0);
 
   useEffect(() => {
-    // Committed inside the effect, never during render — a render React throws
-    // away must not be able to change what the running interval emits.
-    routeRef.current = route;
-
-    if (!enabled || routeRef.current.length < 2) {
-      setPayload(null);
+    if (!enabled) {
+      setDrive(IDLE);
       return;
     }
 
-    const steps = Math.max(1, Math.round((DEMO_TRIP_SECONDS * 1000) / DEMO_TICK_MS));
-    let step = 0;
-    const emit = (): void => {
-      const pos = pointAlong(routeRef.current, step / steps);
-      if (pos) setPayload({ lat: pos.point.lat, lng: pos.point.lng, heading: pos.heading });
+    // Progress is derived from the CLOCK, not from a tick counter. A dropped or
+    // late tick then costs a frame of smoothness rather than stretching the
+    // whole drive — the run always takes exactly DEMO_TRIP_MS.
+    startedAt.current = Date.now();
+
+    const emit = (): boolean => {
+      const elapsed = Date.now() - startedAt.current;
+      const progress = Math.min(elapsed / DEMO_TRIP_MS, 1);
+      const pos = positionAt(progress);
+      setDrive({
+        payload: { lat: pos.point.lat, lng: pos.point.lng, heading: pos.heading },
+        progress,
+        index: pos.index,
+        arrived: progress >= 1,
+      });
+      return progress >= 1;
     };
 
-    emit(); // place the car at the start immediately, don't wait a full tick
+    emit(); // place the car at the start immediately, don't wait a tick
     const timer = setInterval(() => {
-      // Clamp at the destination and hold. Looping would teleport the car back
-      // to school mid-demo, which reads as a bug.
-      if (step >= steps) return;
-      step += 1;
-      emit();
+      // Stop the timer on arrival and hold the final frame. Looping would
+      // teleport the car back to school mid-demo, which reads as a bug.
+      if (emit()) clearInterval(timer);
     }, DEMO_TICK_MS);
 
     return () => clearInterval(timer);
-    // `route` is intentionally tracked by value via routeKey, not by identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, routeKey]);
+  }, [enabled]);
 
-  return payload;
+  return drive;
 }

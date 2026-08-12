@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LOC_EVENT, type LocPayload } from '@/lib/liveTrip';
-import type { GeoPoint } from '@/types';
-import { DEMO_MODE } from '@/lib/demoMode';
-import { useDemoDriverLocation } from '@/hooks/useDemoDriverLocation';
-
-/** Stable empty route so the demo hook's deps don't churn. */
-const NO_ROUTE: GeoPoint[] = [];
-
-/** Synthetic-movement options, honoured only when DEMO_MODE is on. */
-export interface DemoDriverOptions {
-  active: boolean; // the trip is running, so the car should be moving
-  route: GeoPoint[];
-}
 
 /**
  * Subscribes to a driver's live-location broadcast channel and returns the most
@@ -23,10 +11,7 @@ export interface DemoDriverOptions {
  * Broadcast is ephemeral (nothing is persisted), so when the trip ends or the
  * screen unmounts the channel is simply removed.
  */
-export function useLiveDriverLocation(
-  channelName: string,
-  demo?: DemoDriverOptions,
-): LocPayload | null {
+export function useLiveDriverLocation(channelName: string): LocPayload | null {
   const [payload, setPayload] = useState<LocPayload | null>(null);
 
   useEffect(() => {
@@ -54,13 +39,5 @@ export function useLiveDriverLocation(
     };
   }, [channelName]);
 
-  // Called unconditionally so hook order never differs between demo and normal
-  // builds. With DEMO_MODE folded to `false` at bundle time this is a no-op
-  // hook that creates no timer, and the return below is literally `payload`.
-  const synthetic = useDemoDriverLocation(
-    DEMO_MODE && (demo?.active ?? false),
-    demo?.route ?? NO_ROUTE,
-  );
-
-  return DEMO_MODE ? (synthetic ?? payload) : payload;
+  return payload;
 }
