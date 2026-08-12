@@ -312,8 +312,8 @@ export function LiveTripScreen({ navigation, route }: Props) {
     if (isDriver) {
       if (status === 'completed') {
         return (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Ride complete ✅</Text>
+          <View style={[styles.card, styles.cardDone]}>
+            <Text style={styles.cardTitle}>Ride complete</Text>
             <Text style={styles.cardText}>
               Your riders have been notified that everyone&apos;s dropped off.
             </Text>
@@ -386,11 +386,16 @@ export function LiveTripScreen({ navigation, route }: Props) {
       // on arrival at BISV, but the driver can start now — leaving early, or
       // anywhere the geofence can't reach them.
       return (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ready to drive</Text>
+        <View style={[styles.card, styles.cardPrimary]}>
+          <Text style={[styles.cardTitle, styles.cardTitlePrimary]}>
+            Ready to drive
+          </Text>
+          {/* Deliberately promises the next state in the words that state uses
+              ("see your car move in real time"), so starting the ride reads as
+              this card keeping its word rather than a new screen appearing. */}
           <Text style={styles.cardText}>
-            Start the ride when you set off — your riders will see your car move
-            in real time. It also starts on its own when you reach {SCHOOL.name}.
+            Start when you set off. Your riders will see your car move in real
+            time.
           </Text>
           <View style={styles.startBtnWrap}>
             <Button
@@ -400,6 +405,9 @@ export function LiveTripScreen({ navigation, route }: Props) {
               onPress={() => void startRide()}
             />
           </View>
+          <Text style={styles.startHint}>
+            It also starts on its own at {SCHOOL.name}.
+          </Text>
         </View>
       );
     }
@@ -408,8 +416,8 @@ export function LiveTripScreen({ navigation, route }: Props) {
     const driverName = a.driver?.name ?? 'your driver';
     if (status === 'completed') {
       return (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Dropped off ✅</Text>
+        <View style={[styles.card, styles.cardDone]}>
+          <Text style={styles.cardTitle}>Dropped off</Text>
           <Text style={styles.cardText}>
             {driverName} has finished the carpool. See you next time!
           </Text>
@@ -577,12 +585,21 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  // The card frame carries the trip's state in the same three colours as the
+  // status dot above it: crimson while the card is asking the driver for
+  // something, green once the ride is done, neutral while it only reports. The
+  // border is the whole signal — no second badge competing with the banner.
+  cardPrimary: { borderColor: '#DC143C', padding: 20 },
+  cardDone: { borderColor: '#16A34A' },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1E232C',
     marginBottom: 6,
   },
+  // One clear step up from the reporting cards; matches the screen title's size
+  // so the acting card sits at the top of the page's type scale, not beside it.
+  cardTitlePrimary: { fontSize: 18, marginBottom: 8 },
   cardText: { fontSize: 14, color: '#6A707C', lineHeight: 20 },
   sectionLabel: {
     fontSize: 13,
@@ -611,6 +628,15 @@ const styles = StyleSheet.create({
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
   startBtnWrap: { marginTop: 18 },
+  // Reassurance, not instruction: sits under the button as fine print so the
+  // geofence is discoverable without competing with the tap it makes optional.
+  startHint: {
+    fontSize: 13,
+    color: '#6A707C',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 12,
+  },
   endBtnWrap: { marginTop: 18 },
   endConfirm: { marginTop: 18 },
   endConfirmText: {

@@ -2,9 +2,10 @@ import './global.css';
 
 import * as Sentry from '@sentry/react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -162,13 +163,30 @@ function App() {
       <SafeAreaProvider>
         <ErrorBoundary>
           {initializing ? (
-            // Reading the persisted session off storage is async. Render the
-            // app's own background + brand spinner instead of nothing, so cold
-            // start doesn't show a bare white frame. Deliberately JS-only —
-            // expo-splash-screen would mean a native rebuild.
-            <View style={styles.splash}>
-              <ActivityIndicator color="#DC143C" size="large" />
-            </View>
+            // Reading the persisted session off storage is async, so this is the
+            // literal first frame of every launch. It is WelcomeScreen with the
+            // buttons not yet arrived: same safe area, same 27pt gutter, same
+            // lockup at the same size and the same 56pt gap beneath it, so the
+            // logo does not move when the real screen mounts — the app resolves
+            // into place instead of cutting to it. Purely declarative and
+            // JS-only: nothing here gates or delays the transition, and
+            // expo-splash-screen would have meant a native rebuild.
+            <SafeAreaView style={styles.splash}>
+              <StatusBar style="dark" />
+              <Image
+                source={require('./assets/logo.png')}
+                style={styles.splashLogo}
+                resizeMode="contain"
+                accessibilityLabel="BasisRides"
+              />
+              <View style={styles.splashSlot}>
+                <ActivityIndicator
+                  color="#DC143C"
+                  size="small"
+                  accessibilityLabel="Restoring your session"
+                />
+              </View>
+            </SafeAreaView>
           ) : (
             <NavigationContainer ref={navigationRef}>
               {showMain ? <MainNavigator /> : <AuthNavigator />}
@@ -188,8 +206,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 27,
     backgroundColor: '#FFFFFF',
   },
+  splashLogo: { width: 240, height: 80, marginBottom: 56 },
+  // Exactly the height of WelcomeScreen's two 52pt buttons plus the 16pt gap
+  // between them. The spinner waits in the slot the buttons are about to take,
+  // which is what keeps the lockup from shifting on the handoff.
+  splashSlot: { height: 120, justifyContent: 'center' },
 });
 
 // Sentry.wrap enables automatic performance tracing and touch/profiling hooks
