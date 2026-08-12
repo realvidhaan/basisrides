@@ -24,11 +24,12 @@ const IDLE: DemoDrive = { payload: null, progress: 0, index: 0, arrived: false }
 export function useDemoDriverLocation(enabled: boolean): DemoDrive {
   const [drive, setDrive] = useState<DemoDrive>(IDLE);
   const startedAt = useRef(0);
-  // Mirrors `drive` so the effect can read the latest value without taking it
-  // as a dependency — which would tear down and restart the interval on every
-  // single tick.
-  const driveRef = useRef(drive);
-  driveRef.current = drive;
+  // Written only from inside the effect, never during render: a render React
+  // discards must not be able to convince the hook that a drive happened.
+  // These also keep `drive` itself out of the effect's dependencies, which
+  // would otherwise rebuild the interval on every tick.
+  const hasRunRef = useRef(false);
+  const arrivedRef = useRef(false);
 
   /** The finished frame: car parked at the destination, whole route driven. */
   const finished = (): DemoDrive => {
@@ -46,13 +47,17 @@ export function useDemoDriverLocation(enabled: boolean): DemoDrive {
       // Disabled after the drive began — e.g. the driver ended the ride. Freeze
       // on the completed picture instead of resetting, so the map reads as a
       // finished trip rather than blanking out. If it never ran, stay idle.
-      setDrive((d) => (d.payload === null ? IDLE : finished()));
+      if (hasRunRef.current) {
+        arrivedRef.current = true;
+        setDrive(finished());
+      }
       return;
     }
 
     // Already finished: hold the final frame. Without this, anything that
     // re-runs the effect replays the whole drive from the school.
-    if (driveRef.current.arrived) return;
+    if (arrivedRef.current) return;
+    hasRunRef.current = true;
 
     // Progress is derived from the CLOCK, not from a tick counter. A dropped or
     // late tick then costs a frame of smoothness rather than stretching the
@@ -66,13 +71,15 @@ export function useDemoDriverLocation(enabled: boolean): DemoDrive {
       // travelled-line split a negative index.
       const progress = Math.min(Math.max(elapsed / DEMO_TRIP_MS, 0), 1);
       const pos = positionAt(progress);
+      const done = progress >= 1;
+      if (done) arrivedRef.current = true;
       setDrive({
         payload: { lat: pos.point.lat, lng: pos.point.lng, heading: pos.heading },
         progress,
         index: pos.index,
-        arrived: progress >= 1,
+        arrived: done,
       });
-      return progress >= 1;
+      return done;
     };
 
     emit(); // place the car at the start immediately, don't wait a tick

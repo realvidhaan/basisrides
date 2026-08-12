@@ -299,10 +299,11 @@ export function LiveMap({
    */
   const chunks = useMemo(() => {
     const SPAN = 8; // vertices per chunk — comfortably over iOS's 3-point floor
-    const out: { coords: typeof routeLine; from: number }[] = [];
+    const out: { coords: typeof routeLine; from: number; end: number }[] = [];
     for (let i = 0; i + 2 < routeLine.length; i += SPAN) {
       // +1 so each chunk shares a vertex with the next and the seams close up.
-      out.push({ coords: routeLine.slice(i, Math.min(i + SPAN + 1, routeLine.length)), from: i });
+      const slice = routeLine.slice(i, Math.min(i + SPAN + 1, routeLine.length));
+      out.push({ coords: slice, from: i, end: i + slice.length - 1 });
     }
     return out;
   }, [routeLine]);
@@ -311,10 +312,21 @@ export function LiveMap({
   // pin, the same read as the pulse Maps apps use to call out a location.
   const pulse = useRef(new Animated.Value(0)).current;
   const [pulsing, setPulsing] = useState(false);
+  // Held in a ref so the effect below does NOT depend on it. The parent passes
+  // an inline arrow, so its identity changes every render — as a dependency it
+  // would re-run the whole arrival effect on each one, re-firing the haptic and
+  // restarting the rings for as long as the screen stayed open.
+  const onArrivedRef = useRef(onDemoArrived);
+  // Synced in an effect, and declared before the arrival effect so it commits
+  // first — never written during render.
+  useEffect(() => {
+    onArrivedRef.current = onDemoArrived;
+  }, [onDemoArrived]);
+
   useEffect(() => {
     if (!demo.arrived) return;
     setPulsing(true);
-    onDemoArrived?.();
+    onArrivedRef.current?.();
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // Three rings, then stop. A permanent pulse reads as "loading", not
     // "arrived" — and it would keep the marker snapshotting forever.
@@ -333,7 +345,7 @@ export function LiveMap({
       pulse.setValue(0);
       setPulsing(false);
     };
-  }, [demo.arrived, pulse, onDemoArrived]);
+  }, [demo.arrived, pulse]);
 
   return (
     <View style={styles.container}>
@@ -369,7 +381,10 @@ export function LiveMap({
                 the only thing that ever changes is the colour, once, on
                 arrival. Chunks past the car simply are not mounted. */}
             {chunks.map((c) =>
-              c.from <= demo.index ? (
+              // Reveal on the chunk's LAST vertex, not its first: keyed on
+              // `from` the line would turn red up to a chunk ahead of the car,
+              // which reads as broken. Trailing slightly reads as natural.
+              c.end <= demo.index ? (
                 <Polyline
                   key={c.from}
                   coordinates={c.coords}
