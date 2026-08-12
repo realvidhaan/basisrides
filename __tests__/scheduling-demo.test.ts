@@ -36,6 +36,18 @@ describe('demo route', () => {
     return Math.hypot((b.lat - a.lat) * mLat, (b.lng - a.lng) * mLng);
   };
 
+  // NOTE: `metres` below repeats the same equirectangular model `lib/demoRoute`
+  // uses, so the linearity test proves positionAt maps progress consistently
+  // THROUGH that model — it cannot catch an error IN the model, e.g. a wrong
+  // metres-per-degree constant. This absolute check pins the constant against
+  // an independently known fact: OSRM reported 12.64 km for this route.
+  it('measures the route at its known real-world length', () => {
+    let path = 0;
+    for (let i = 1; i < DEMO_ROUTE.length; i += 1) path += metres(DEMO_ROUTE[i - 1], DEMO_ROUTE[i]);
+    expect(path / 1000).toBeGreaterThan(12.3);
+    expect(path / 1000).toBeLessThan(13.0);
+  });
+
   it('is a real multi-point road route, not a straight line', () => {
     expect(DEMO_ROUTE.length).toBeGreaterThan(100);
     // A straight line would make the path length equal the start→end distance.

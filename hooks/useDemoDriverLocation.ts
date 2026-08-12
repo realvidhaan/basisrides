@@ -61,7 +61,10 @@ export function useDemoDriverLocation(enabled: boolean): DemoDrive {
 
     const emit = (): boolean => {
       const elapsed = Date.now() - startedAt.current;
-      const progress = Math.min(elapsed / DEMO_TRIP_MS, 1);
+      // Clamp BOTH ends: a wall-clock step backwards (NTP correction, manual
+      // clock change) would otherwise make progress negative and hand the
+      // travelled-line split a negative index.
+      const progress = Math.min(Math.max(elapsed / DEMO_TRIP_MS, 0), 1);
       const pos = positionAt(progress);
       setDrive({
         payload: { lat: pos.point.lat, lng: pos.point.lng, heading: pos.heading },
