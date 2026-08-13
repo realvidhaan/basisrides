@@ -112,11 +112,17 @@ const REPLIES: readonly { match: RegExp; reply: Reply }[] = [
  * something unscripted on stage and gets silence has a dead demo, so `replyFor`
  * can never return nothing — and because an unscripted exchange usually runs to
  * two or three turns, the fallback advances instead of repeating one line.
+ *
+ * Every line here is a pure ACKNOWLEDGEMENT, never an agreement or an answer.
+ * The fallback fires precisely when we do not understand the message, so a line
+ * that presumes a proposal ("That works for me") reads as a non-sequitur against
+ * anything that was not one — "my kid forgot her trombone" being the case that
+ * caught this. Acknowledgements stay coherent against literally any input.
  */
 const FALLBACK: readonly Reply[] = [
-  { text: 'Got it — what time works for pickup?' },
-  { text: "That works for me. I'll be there." },
-  { text: 'Sounds good — see you at the front circle.' },
+  { text: 'Got it — thanks for the heads up.' },
+  { text: 'Understood. I will keep an eye out.' },
+  { text: 'Noted — see you at the front circle.' },
 ];
 
 /** Never returns undefined. See FALLBACK. */
