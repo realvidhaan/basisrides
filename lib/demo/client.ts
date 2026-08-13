@@ -696,7 +696,16 @@ type DemoChannel = ReturnType<typeof createChannel>;
 // The client
 // ---------------------------------------------------------------------------
 
-/** A factory, not a singleton, so each test gets an isolated client. */
+/**
+ * Builds a fresh facade object, but NOT fresh state: tables, the session and
+ * realtime subscriptions all live at module scope in `lib/demo/store.ts`, so
+ * every client created in a process observes the same data. That is deliberate
+ * — it mirrors a real backend, where two clients pointed at one project must
+ * see each other's writes, and the app only ever constructs one.
+ *
+ * Tests that need a clean slate must call `__resetStore()` between cases;
+ * calling `createDemoClient()` again does not give them one.
+ */
 export function createDemoClient(): unknown {
   return {
     from(table: DemoTable) {

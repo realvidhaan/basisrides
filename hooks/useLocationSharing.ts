@@ -28,7 +28,29 @@ export function useLocationSharing(
     // In demo mode the car is driven by useDemoDriverLocation, not by GPS, so
     // there is nothing to share — and both permission requests below raise a
     // system dialog right in the middle of the live-trip beat.
-    if (DEMO_MODE || !active || !channelName || channelName === 'noop') {
+    //
+    // Demo mode must STOP the task, not merely decline to start it.
+    // `startLocationUpdatesAsync` registers natively and survives the JS bundle
+    // being swapped, so a phone that ran a real trip and then loaded the demo
+    // bundle would keep broadcasting the driver's actual GPS on the previous
+    // trip's channel, with nothing in the demo UI to reveal it. Tearing down
+    // here is the only place that can reach a registration the demo bundle
+    // never created.
+    if (DEMO_MODE) {
+      setSharing(false);
+      void (async () => {
+        const started = await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK,
+        ).catch(() => false);
+        if (started) {
+          await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
+        }
+        await setActiveTripChannel(null);
+      })();
+      return;
+    }
+
+    if (!active || !channelName || channelName === 'noop') {
       setSharing(false);
       return;
     }

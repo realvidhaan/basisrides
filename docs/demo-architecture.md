@@ -1304,8 +1304,11 @@ To satisfy the plan's automated-verification bullet without importing React:
 
 - `lib/demo/store.ts` exports a `__resetStore()` (dev/test only) that re-seeds
   from `SEED_TABLES` and clears every subscription.
-- `lib/demo/client.ts`'s `createDemoClient()` is a factory, not a singleton, so
-  each test gets an isolated client.
+- `lib/demo/client.ts`'s `createDemoClient()` returns a fresh facade but **not**
+  fresh state — tables, session and subscriptions are module-level, so every
+  client in a process shares them. This mirrors a real backend and matches the
+  app, which constructs exactly one client. Tests isolate with `__resetStore()`,
+  never by constructing a second client.
 - `companionAvailability()` is exported from `store.ts` so the exhaustive
   12-clock-value loop can assert the window invariant directly, without going
   through the query builder.

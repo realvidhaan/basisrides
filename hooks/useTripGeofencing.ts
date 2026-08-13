@@ -63,8 +63,6 @@ export function useTripGeofencing({
     // Geofences cannot fire indoors and the permission prompts land mid-demo, so
     // the demo never registers them. "Start ride" on LiveTripScreen is the
     // manual entry point and already exists — nothing else is lost.
-    if (DEMO_MODE) return;
-
     let cancelled = false;
 
     async function stop(): Promise<void> {
@@ -73,6 +71,16 @@ export function useTripGeofencing({
       ).catch(() => false);
       if (running) await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
       await setGeofenceContext(null);
+    }
+
+    // Demo mode STOPS rather than skips, for the same reason as
+    // useLocationSharing: `startGeofencingAsync` registers natively and outlives
+    // the JS bundle, so a device that ran a real trip could still fire a school
+    // or home transition — silently flipping a real `trips` row to
+    // 'on_my_way'/'completed' — while the demo bundle is on screen.
+    if (DEMO_MODE) {
+      void stop();
+      return;
     }
 
     if (!enabled || !driverId) {

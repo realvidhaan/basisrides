@@ -55,6 +55,16 @@ function startOfDay(d: Date): Date {
 }
 
 /**
+ * An ordinary in-term school day, used when the clock has run past the
+ * published calendar. `nextSchoolDay` returns `from` unchanged once the year is
+ * over (`lib/schoolCalendar.ts`), so on 2027-06-05 the demo would otherwise open
+ * on an out-of-term date, and `lib/pairing.ts` returns an empty map for those —
+ * every screen would be blank with no error to explain why. Falling back to a
+ * known good day keeps the demo usable after the calendar lapses.
+ */
+const DEMO_FALLBACK_DATE_ISO = '2026-08-13';
+
+/**
  * The day the demo opens on.
  *
  * Production opens on `nextSchoolDay(new Date())`. That is right for the app and
@@ -75,6 +85,9 @@ export function demoInitialDate(from: Date = new Date()): Date {
     next.setDate(next.getDate() + 1);
     cursor = nextSchoolDay(next);
   }
+  // Outside the published year nextSchoolDay is the identity, so the loop above
+  // cannot rescue us and `cursor` is still a blocked day.
+  if (schoolDayStatus(cursor).blocked) return parseISO(DEMO_FALLBACK_DATE_ISO);
   return cursor;
 }
 
