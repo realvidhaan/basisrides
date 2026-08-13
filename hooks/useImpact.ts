@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import {
@@ -40,7 +40,18 @@ export function useImpact(userId: string | null): UseImpactResult {
   const [totals, setTotals] = useState<ImpactTotals>(EMPTY_IMPACT);
   const [loading, setLoading] = useState(true);
 
+  // Two round-trips per run (trips, then their riders' homes) and no ordering
+  // guarantee between runs, so a `userId` change mid-flight lets the older run
+  // resolve last and commit the previous account's totals — or clear `loading`
+  // while the current run is still going. Stamp each run and let only the
+  // newest one write. Same pattern and same reason as useCarpool.ts:84.
+  const fetchSeq = useRef(0);
+
   const fetchImpact = useCallback(async (): Promise<void> => {
+    const seq = fetchSeq.current + 1;
+    fetchSeq.current = seq;
+    const isCurrent = (): boolean => seq === fetchSeq.current;
+
     if (!userId) {
       setTotals(EMPTY_IMPACT);
       setLoading(false);
@@ -58,7 +69,7 @@ export function useImpact(userId: string | null): UseImpactResult {
         .eq('status', 'completed');
       if (tErr || !data) {
         if (tErr) Sentry.captureException(tErr);
-        setTotals(EMPTY_IMPACT);
+        if (isCurrent()) setTotals(EMPTY_IMPACT);
         return;
       }
 
@@ -83,12 +94,12 @@ export function useImpact(userId: string | null): UseImpactResult {
         }
       }
 
-      setTotals(computeImpact(mine, homeById, userId));
+      if (isCurrent()) setTotals(computeImpact(mine, homeById, userId));
     } catch (e) {
       Sentry.captureException(e);
-      setTotals(EMPTY_IMPACT);
+      if (isCurrent()) setTotals(EMPTY_IMPACT);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [userId]);
 

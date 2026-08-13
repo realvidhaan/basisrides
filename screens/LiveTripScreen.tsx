@@ -233,9 +233,21 @@ export function LiveTripScreen({ navigation, route }: Props) {
   // applies the change optimistically and rolls back on failure, so the tap
   // lands at once even on a slow curbside connection; the haptic is the same
   // confirmation the rest of the app gives a committed tap.
+  //
+  // Guarded per rider, not globally: a driver at the curb double-taps, and both
+  // presses read the same `pickups.has(riderId)` before React re-renders. Both
+  // then insert the same (trip_id, rider_id) row, the second violates the unique
+  // constraint, and its rollback un-checks a rider who really is in the car.
+  // Keyed by rider so checking two riders in quick succession still works.
+  const pickupInFlight = useRef<Set<string>>(new Set());
+
   function handleTogglePickup(riderId: string): void {
+    if (pickupInFlight.current.has(riderId)) return;
+    pickupInFlight.current.add(riderId);
     impact();
-    void togglePickup(riderId);
+    void togglePickup(riderId).finally(() => {
+      pickupInFlight.current.delete(riderId);
+    });
   }
 
   // Activation funnel: fire trip_completed once per completed trip (per viewer).
@@ -388,7 +400,12 @@ export function LiveTripScreen({ navigation, route }: Props) {
                       // moving, so it has to be findable by role.
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: isPickedUp }}
-                      accessibilityLabel={`${r.name}, picked up`}
+                      // Identity only. `accessibilityRole="checkbox"` plus
+                      // `accessibilityState` already make VoiceOver append
+                      // "checked"/"not checked", so putting the status in the
+                      // label too announced an unchecked row as
+                      // "Marcus, picked up, not checked" — it contradicts itself.
+                      accessibilityLabel={r.name}
                       accessibilityHint={
                         isPickedUp
                           ? 'Marks this rider as not picked up'
