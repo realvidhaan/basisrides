@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
+import * as Sentry from '@sentry/react-native';
 import { LOCATION_TASK, setActiveTripChannel } from '@/lib/locationTask';
 import { DEMO_MODE } from '@/lib/demoMode';
 
@@ -45,7 +46,13 @@ export function useLocationSharing(
         if (started) {
           await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
         }
-        await setActiveTripChannel(null);
+        // Detached with `void`, so an escaping rejection becomes an unhandled
+        // one, and lib/sentry.ts's global handler turns those into a red LogBox
+        // overlay — on stage, mid-demo. Teardown is best-effort by nature:
+        // there is nothing useful to retry against, so report and move on.
+        await setActiveTripChannel(null).catch((e: unknown) => {
+          Sentry.captureException(e);
+        });
       })();
       return;
     }
@@ -116,7 +123,13 @@ export function useLocationSharing(
         if (started) {
           await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
         }
-        await setActiveTripChannel(null);
+        // Detached with `void`, so an escaping rejection becomes an unhandled
+        // one, and lib/sentry.ts's global handler turns those into a red LogBox
+        // overlay — on stage, mid-demo. Teardown is best-effort by nature:
+        // there is nothing useful to retry against, so report and move on.
+        await setActiveTripChannel(null).catch((e: unknown) => {
+          Sentry.captureException(e);
+        });
       })();
     };
   }, [active, channelName]);

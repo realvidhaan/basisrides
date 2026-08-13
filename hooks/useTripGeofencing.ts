@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import * as Location from 'expo-location';
+import * as Sentry from '@sentry/react-native';
 import type { GeoPoint } from '@/types';
 import {
   GEOFENCE_TASK,
@@ -70,7 +71,12 @@ export function useTripGeofencing({
         GEOFENCE_TASK,
       ).catch(() => false);
       if (running) await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
-      await setGeofenceContext(null);
+      // Every caller detaches this with `void`, so an escaping rejection becomes
+      // an unhandled one and lib/sentry.ts's global handler renders a red LogBox
+      // over the screen. Teardown is best-effort; report and move on.
+      await setGeofenceContext(null).catch((e: unknown) => {
+        Sentry.captureException(e);
+      });
     }
 
     // Demo mode STOPS rather than skips, for the same reason as
