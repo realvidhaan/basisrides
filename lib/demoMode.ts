@@ -81,11 +81,20 @@ export const DEMO_BOT_FOLLOWUP_MS = 2_400;
 /**
  * "A parent needs cover" ambient beat, measured from sign-in.
  *
- * From sign-in, not from launch: the app is on the Welcome screen for the first
- * minute of the demo and the beat has to land while the presenter is inside it.
+ * From sign-in, not from launch: the app sits on the Welcome screen until the
+ * presenter signs in, and `App.tsx` swaps to the tab navigator the instant the
+ * session lands — so sign-in IS "arrived on the Schedule screen", and this is
+ * the delay after that.
+ *
+ * Short on purpose. The point of this beat is that the audience SEES it happen:
+ * a banner drops, the swap badge goes 0 → 1, and the board gains a row that was
+ * not there a moment ago. Nothing is pre-seeded on the board precisely so the
+ * arrival is the whole event — at 45 s it landed long after the presenter had
+ * moved on and just looked like state that had always been there.
+ *
  * Who asks, and for which day, is in `lib/demo/fixtures.DEMO_AMBIENT_SWAP`.
  */
-export const DEMO_AMBIENT_SWAP_MS = 45_000;
+export const DEMO_AMBIENT_SWAP_MS = 8_000;
 
 /** "Trip complete" ambient beat, measured from the demo arrival. */
 export const DEMO_AMBIENT_TRIP_DONE_MS = 1_500;

@@ -401,19 +401,19 @@ const trips: Record<string, unknown>[] = PAST_TRIP_DAYS.map((iso, i) => {
   };
 });
 
-const swaps: Record<string, unknown>[] = [
-  {
-    // Invisible to useCarpool (that query filters `.eq('status','filled')`) but
-    // visible on the swap board, which is where the demo uses it.
-    id: 'f0000000-0000-4000-8000-000000000001',
-    requester_id: RACHEL_ID,
-    day: RACHEL_SWAP_DAY,
-    note: 'Dentist appointment — can anyone cover?',
-    status: 'open',
-    accepted_by: null,
-    created_at: at(YESTERDAY_ISO, 11, 2),
-  },
-];
+/**
+ * Deliberately empty.
+ *
+ * There used to be a seeded open request here, and it defeated the point of the
+ * ambient beat: the swap badge already read 1 when the app opened, so when the
+ * real request arrived eight seconds later it merely incremented a number
+ * nobody was watching. Starting the board empty makes the arrival visible —
+ * badge 0 → 1, a banner, and a row that was not there a moment ago.
+ *
+ * The demo's only open request is therefore the one `lib/demo/script.ts` writes
+ * live. Do not re-seed one here without also rethinking that beat.
+ */
+const swaps: Record<string, unknown>[] = [];
 
 /**
  * The cover request that lands mid-demo (ambient beat 1, `lib/demo/script.ts`).
@@ -455,7 +455,11 @@ const notifications: Record<string, unknown>[] = [
       conversation_id: DEMO_GROUP_CONVERSATION_ID,
       conversation_title: DEMO_GROUP_TITLE,
     },
-    read_at: null,
+    // Read, not unread. The feed still has history to show, but the bell badge
+    // starts at zero so the ambient cover request is what lights it up — the
+    // same reason the swap board seeds empty. An unread row here would turn a
+    // 0 → 1 jump into a 1 → 2 one, which reads as nothing happening.
+    read_at: at(YESTERDAY_ISO, 15, 52),
     created_at: at(YESTERDAY_ISO, 15, 44),
   },
   {

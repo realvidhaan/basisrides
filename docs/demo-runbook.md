@@ -111,21 +111,39 @@ Type `hello how are you`. A typing indicator appears, then:
 Follow with something like `can we do 3:15 tomorrow?` and then `thanks`. Each
 turn is about two seconds, so a three-turn exchange lands in 5–10 seconds.
 
+Lines that land well, and what comes back:
+
+| You type | Reply |
+|---|---|
+| `hi` / `hey` / `hello` | Hey! Are we still on for pickup this week? |
+| `how are you doing` | I'm good, thanks — when should we carpool? |
+| `when should we carpool` | Dismissal is 3:15 — does that work for you? (+ a second bubble) |
+| `does 3:15 work?` | That time works for me — I'll be at the front circle. |
+| `can you drive Wednesday` | Either way works — I can drive, or happily ride along. |
+| `I'm stuck in traffic` | No rush — we'll wait by the front circle. |
+| `Ava is sick` | No problem — I can cover that day. |
+| `thanks` | Anytime! See you at pickup. |
+
 Anything unscripted still gets an answer — the fallbacks are deliberate
 acknowledgements ("Got it — thanks for the heads up") that stay coherent against
-any input. But the scripted keywords are the ones that sound like a real
-conversation, so prefer greetings, times, and words like *drive*, *late*,
-*cancel*, *thanks*.
+any input. But the scripted lines above are the ones that sound like a real
+conversation, so prefer those.
 
 ### 5. Ambient notifications
 
 Two real iOS banners fire on their own:
 
-1. **~45 s after sign-in** — a cover request from Tom, which also lands a real
-   row on the swap board and bumps both header badges.
+1. **~8 s after you land on the Schedule screen** — a cover request from Tom.
+   Nothing is pre-seeded on the swap board, so this is visibly an *arrival*: a
+   banner drops, the ⇄ badge goes **0 → 1**, the bell goes **0 → 1**, and the
+   board gains a row that was not there a moment ago. Worth pausing for — it is
+   the clearest "this app is live" moment in the demo.
 2. **just after the drive completes** — trip complete.
 
-Both timings live in `lib/demoMode.ts` if you want them elsewhere.
+Both timings live in `lib/demoMode.ts` if you want them elsewhere. If you want
+beat 1 later — say you plan to talk over the calendar first — raise
+`DEMO_AMBIENT_SWAP_MS`. It is measured from sign-in, which is the same instant
+the app switches to the Schedule screen.
 
 ### 6. Anything else worth showing
 

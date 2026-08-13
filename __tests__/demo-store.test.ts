@@ -152,6 +152,19 @@ describe('query builder — filters', () => {
 
   it('.is(col, null) matches only SQL NULLs — useNotifications.markAllRead (R6)', async () => {
     const db = client();
+    // Insert the unread row rather than relying on one existing in the seed.
+    // This assertion is about the OPERATOR, and sourcing its subject from the
+    // fixtures coupled it to demo staging decisions — it broke the day the seed
+    // stopped shipping an unread notification, which told us nothing about `.is`.
+    await db.from('notifications').insert({
+      user_id: PRESENTER_ID,
+      type: 'message',
+      title: 'Unread probe',
+      body: 'Only this row has a NULL read_at.',
+      data: null,
+      read_at: null,
+    });
+
     const unread = rowsOf(await db.from('notifications').select('*').is('read_at', null));
     expect(unread).toHaveLength(1);
     expect(unread[0].type).toBe('message');
@@ -163,10 +176,12 @@ describe('query builder — filters', () => {
 
   it('.or() unions its terms — the swap board query (R5)', async () => {
     const db = client();
-    // Seeded: one OPEN request from Rachel. Add one FILLED request from the
-    // presenter (matches the second term only) and one FILLED from Marcus
-    // (matches neither, and must not appear).
+    // The board seeds EMPTY (the demo's only open request arrives live from the
+    // ambient beat), so this builds all three rows it needs: one OPEN from
+    // Rachel matching the first term, one FILLED from the presenter matching the
+    // second, and one FILLED from Marcus matching neither.
     await db.from('swaps').insert([
+      { requester_id: RACHEL_ID, day: '2026-09-14', status: 'open', accepted_by: null },
       { requester_id: PRESENTER_ID, day: '2026-09-15', status: 'filled', accepted_by: JENNA_ID },
       { requester_id: MARCUS_ID, day: '2026-09-16', status: 'filled', accepted_by: JENNA_ID },
     ]);
@@ -180,6 +195,12 @@ describe('query builder — filters', () => {
   it('.or() falls back to match-all rather than match-none on an unparseable term', async () => {
     const db = client();
     // A silently EMPTY swap board is far worse on stage than a too-full one.
+    await db.from('swaps').insert({
+      requester_id: RACHEL_ID,
+      day: '2026-09-14',
+      status: 'open',
+      accepted_by: null,
+    });
     const rows = rowsOf(await db.from('swaps').select('*').or('status=open'));
     expect(rows).toHaveLength(1);
   });
@@ -276,6 +297,14 @@ describe('embedded joins (R1 — an unmapped constraint silently blanks a screen
 
   it('Embed B: swaps → requester (useSwaps)', async () => {
     const db = client();
+    // The board seeds empty by design, so the row under test is created here.
+    await db.from('swaps').insert({
+      requester_id: RACHEL_ID,
+      day: '2026-09-14',
+      note: 'Dentist appointment — can anyone cover?',
+      status: 'open',
+      accepted_by: null,
+    });
     const rows = rowsOf(
       await db
         .from('swaps')
