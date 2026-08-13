@@ -54,6 +54,12 @@ interface Reply {
  * says nothing else. The clock rule sits above the "when/time" rule for the
  * same reason: "3:15?" is an offer to confirm, "what time?" is a question.
  *
+ * Two orderings here are load-bearing and were both got wrong first time:
+ *  - The scheduling rule outranks the carpool rule, or "when should we carpool?"
+ *    is answered with who drives instead of when.
+ *  - "How are you" outranks a bare greeting, or "hi" is answered "I'm good,
+ *    thanks" — a reply to a question nobody asked.
+ *
  * The copy is deliberately person-neutral. The responder is whoever the
  * conversation supplies (§ pickResponder), so a line that named a child or a car
  * would be wrong for two of the three possible group speakers.
@@ -70,6 +76,17 @@ const REPLIES: readonly { match: RegExp; reply: Reply }[] = [
     reply: { text: "That time works for me — I'll be at the front circle." },
   },
   {
+    // ABOVE the carpool rule, deliberately. "When should we carpool?" contains a
+    // carpool word, so with the old ordering it drew "Either way works — I can
+    // drive, or happily ride along": an answer about WHO drives, to a question
+    // about WHEN. A scheduling question outranks the subject it is about.
+    match: /\b(when|what time|time|pick ?up|dismissal|schedule)\b/i,
+    reply: {
+      text: 'Dismissal is 3:15 — does that work for you?',
+      followUp: 'We can push it ten minutes if that is easier.',
+    },
+  },
+  {
     match: /\b(driv\w+|carpool|carpooling|ride|rides|seat|seats|wheel)\b/i,
     reply: { text: "Either way works — I can drive, or happily ride along." },
   },
@@ -82,13 +99,6 @@ const REPLIES: readonly { match: RegExp; reply: Reply }[] = [
     reply: { text: 'No problem — I can cover that day.' },
   },
   {
-    match: /\b(when|what time|time|pick ?up|dismissal|schedule)\b/i,
-    reply: {
-      text: 'Dismissal is 3:15 — does that work for you?',
-      followUp: 'We can push it ten minutes if that is easier.',
-    },
-  },
-  {
     match:
       /\b(today|tonight|tomorrow|mon(day)?|tues?(day)?|wed(nesday)?|thur?s?(day)?|fri(day)?|this week|next week|weekend)\b/i,
     reply: { text: "That day works on our end. I'll mark it down." },
@@ -98,9 +108,20 @@ const REPLIES: readonly { match: RegExp; reply: Reply }[] = [
     reply: { text: 'Perfect — see you then.' },
   },
   {
+    // "How are you" is a QUESTION, so it is answered before a bare greeting is.
+    // This also keeps "hello how are you" — the canonical line this demo is
+    // built around — landing here rather than on the greeting below.
     match:
-      /\b(hi|hey|hello|yo|howdy|sup|morning|afternoon|evening|how are you|how'?s it going|how is it going|what'?s up)\b/i,
+      /\b(how are (you|ya|things)|how are you doing|how'?s it going|how is it going|how'?s things|how have you been|what'?s up|whats up|hows it going)\b/i,
     reply: { text: "I'm good, thanks — when should we carpool?" },
+  },
+  {
+    // A bare greeting, with no question attached. It gets a greeting back and an
+    // opening, NOT the line above: answering "hi" with "I'm good, thanks" is a
+    // reply to a question that was never asked, which is the tell that a bot is
+    // pattern-matching rather than reading.
+    match: /\b(hi|hii+|hey+|hello|yo|howdy|sup|good morning|morning|afternoon|evening)\b/i,
+    reply: { text: 'Hey! Are we still on for pickup this week?' },
   },
 ];
 
@@ -441,9 +462,12 @@ export function startDemoScript(): void {
   });
 
   // The swap beat is measured from SIGN-IN, not from module load: this module
-  // loads while the Welcome screen is still up, which could burn the whole 45 s
-  // before anyone is looking at the app. Signing out tears down the timers and
-  // the scheduled banners so nothing fires into the next run.
+  // loads while the Welcome screen is still up, so a launch-relative timer could
+  // burn its whole delay before anyone was looking at the app. Sign-in is also
+  // the exact moment `App.tsx` swaps to the tab navigator, so "armed on sign-in"
+  // and "armed on arriving at the Schedule screen" are the same instant.
+  // Signing out tears down the timers and the scheduled banners so nothing fires
+  // into the next run.
   onAuthChange((event) => {
     teardown();
     if (event === 'SIGNED_IN') armSwapBeat();

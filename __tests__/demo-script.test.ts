@@ -101,7 +101,8 @@ const KEYWORD_CASES: { input: string; reply: string }[] = [
   { input: 'when does dismissal happen', reply: 'Dismissal is 3:15 — does that work for you?' },
   { input: 'see you tomorrow', reply: "That day works on our end. I'll mark it down." },
   { input: 'sounds good', reply: 'Perfect — see you then.' },
-  { input: 'hey there', reply: "I'm good, thanks — when should we carpool?" },
+  { input: 'how are you doing', reply: "I'm good, thanks — when should we carpool?" },
+  { input: 'hey there', reply: 'Hey! Are we still on for pickup this week?' },
 ];
 
 describe('scripted replies', () => {
@@ -113,10 +114,40 @@ describe('scripted replies', () => {
   });
 
   it('every pattern is covered by a case above', () => {
-    // Nine entries in REPLIES (lib/demo/script.ts:61-105). If one is added
-    // without a case here it goes untested, so the count is pinned.
-    expect(KEYWORD_CASES).toHaveLength(9);
-    expect(new Set(KEYWORD_CASES.map((c) => c.reply)).size).toBe(9);
+    // Ten entries in REPLIES. If one is added without a case here it goes
+    // untested, so the count is pinned.
+    expect(KEYWORD_CASES).toHaveLength(10);
+    expect(new Set(KEYWORD_CASES.map((c) => c.reply)).size).toBe(10);
+  });
+
+  /**
+   * The two orderings that were wrong first time round, pinned as their own
+   * cases because both produced replies that were grammatical, on-topic, and
+   * answering the wrong question — the kind of wrong a green test suite misses
+   * and an audience notices.
+   */
+  it('answers WHEN, not who-drives, for "when should we carpool"', () => {
+    const { store } = armed();
+    const { replies } = exchange(store, DEMO_GROUP_CONVERSATION_ID, 'when should we carpool?');
+    // The carpool rule would say "Either way works — I can drive, or happily
+    // ride along", which answers a question about the roster, not the clock.
+    expect(texts(replies)[0]).toBe('Dismissal is 3:15 — does that work for you?');
+  });
+
+  it('greets back for a bare "hi" instead of answering an unasked question', () => {
+    const { store } = armed();
+    for (const input of ['hi', 'hey', 'hello']) {
+      const { replies } = exchange(store, DEMO_GROUP_CONVERSATION_ID, input);
+      expect(texts(replies)[0]).toBe('Hey! Are we still on for pickup this week?');
+    }
+  });
+
+  it('still answers "hello how are you" with the canonical line', () => {
+    // The line the whole demo is built around: greeting AND question together
+    // must land on the wellbeing rule, not the bare-greeting one below it.
+    const { store } = armed();
+    const { replies } = exchange(store, DEMO_GROUP_CONVERSATION_ID, 'hello how are you');
+    expect(texts(replies)[0]).toBe("I'm good, thanks — when should we carpool?");
   });
 
   it('the dismissal question sends a follow-up as a SECOND bubble', () => {
@@ -314,20 +345,26 @@ describe('typing indicator', () => {
     const off = script.onDemoTyping(DEMO_GROUP_CONVERSATION_ID, (t) => seen.push(t));
     expect(seen).toEqual([false]); // pushes the current value on subscribe
 
+    // Counted rather than matched on copy: this test is about WHEN the bubble
+    // lands relative to the indicator, and pinning it to one reply's wording
+    // made it fail the day that reply changed — which said nothing about timing.
+    const replyCount = (): number =>
+      store.readTable('messages').filter((m) => m.sender_id !== PRESENTER_ID).length;
+
+    const before = replyCount();
     store.insertRows('messages', [
       { conversation_id: DEMO_GROUP_CONVERSATION_ID, sender_id: PRESENTER_ID, content: 'hello' },
     ]);
+
+    // Mid-think: indicator up, nothing delivered yet.
     jest.advanceTimersByTime(DEMO_BOT_THINK_MS + 1);
     expect(seen[seen.length - 1]).toBe(true);
-    expect(store.readTable('messages').some((m) => m.content === "I'm good, thanks — when should we carpool?")).toBe(
-      false,
-    );
+    expect(replyCount()).toBe(before);
 
+    // After typing: indicator down, exactly one bubble delivered.
     jest.advanceTimersByTime(DEMO_BOT_TYPING_MS + 1);
     expect(seen[seen.length - 1]).toBe(false);
-    expect(store.readTable('messages').some((m) => m.content === "I'm good, thanks — when should we carpool?")).toBe(
-      true,
-    );
+    expect(replyCount()).toBe(before + 1);
 
     off();
   });
