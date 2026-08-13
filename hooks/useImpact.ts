@@ -87,7 +87,17 @@ export function useImpact(userId: string | null): UseImpactResult {
           .from('users')
           .select('id, latitude, longitude')
           .in('id', Array.from(riderIds));
-        if (uErr) Sentry.captureException(uErr);
+        // Bail rather than continue: miles and CO₂ are computed entirely from
+        // these coordinates, so a failed lookup does not make the totals
+        // slightly stale — it makes them silently too low, and a number that is
+        // quietly wrong is worse than one that is absent. Matches this hook's
+        // documented failure behaviour of leaving the totals empty, which hides
+        // the strip instead of publishing a figure nobody can trust.
+        if (uErr) {
+          Sentry.captureException(uErr);
+          if (isCurrent()) setTotals(EMPTY_IMPACT);
+          return;
+        }
         for (const u of (users ?? []) as HomeRow[]) {
           if (u.latitude === null || u.longitude === null) continue;
           homeById.set(u.id, { lat: u.latitude, lng: u.longitude });
