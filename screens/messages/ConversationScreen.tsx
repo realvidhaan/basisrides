@@ -3,6 +3,8 @@ import * as Sentry from '@sentry/react-native';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -28,6 +30,8 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/lib/supabase';
 import { blockUser, reportUser } from '@/lib/moderation';
 import { formatTime } from '@/lib/dateUtils';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { onDemoTyping } from '@/lib/demo/script';
 
 type ConversationNavigationProp = StackNavigationProp<
   MessagesStackParamList,
@@ -63,6 +67,53 @@ function timeOf(iso: string): string {
   );
 }
 
+/**
+ * The demo bot's "•••" bubble, in the other-sender bubble style.
+ *
+ * A list FOOTER rather than a row: it must sit below the last message and scroll
+ * with it, and modelling it as a fake message would put it in `messages`, where
+ * the block filter, the sender-grouping decoration and `keyExtractor` would all
+ * have to learn about something that is not a message.
+ *
+ * Demo-only — nothing schedules `typing` in a production build.
+ */
+function TypingBubble() {
+  const wave = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(wave, {
+        toValue: 1,
+        duration: 1100,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      wave.setValue(0);
+    };
+  }, [wave]);
+
+  // One driver, three phase-shifted opacities: the dots ripple left to right.
+  const opacityFor = (index: number) =>
+    wave.interpolate({
+      inputRange: [0, 0.2 + index * 0.15, 0.5 + index * 0.15, 1],
+      outputRange: [0.3, 1, 0.3, 0.3],
+    });
+
+  return (
+    <View style={[styles.msgWrap, { marginTop: 12 }]}>
+      <View style={[styles.bubble, styles.bubbleTheirs, styles.typingBubble]}>
+        {[0, 1, 2].map((i) => (
+          <Animated.View key={i} style={[styles.typingDot, { opacity: opacityFor(i) }]} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function ConversationScreen({ navigation, route }: Props) {
   const { conversationId, title } = route.params;
   const { messages, loading, error, sendMessage, refreshBlocks } =
@@ -78,6 +129,15 @@ export function ConversationScreen({ navigation, route }: Props) {
   const listRef = useRef<FlatList<DecoratedMessage>>(null);
   const sendingRef = useRef(false);
   const isFocused = useIsFocused();
+
+  // Demo only: the scripted bot's ••• state for this conversation. Unsubscribing
+  // on unmount is what stops an indicator outliving the screen — the footer goes
+  // with the component, and a remount is re-seeded with the current value.
+  const [botTyping, setBotTyping] = useState(false);
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    return onDemoTyping(conversationId, setBotTyping);
+  }, [conversationId]);
 
   // Determine whether this is a group chat (controls showing sender names).
   useEffect(() => {
@@ -287,6 +347,7 @@ export function ConversationScreen({ navigation, route }: Props) {
             onLayout={scrollToEnd}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={botTyping ? <TypingBubble /> : null}
             ListEmptyComponent={
               <View style={styles.emptyArea}>
                 <Text style={styles.emptyText}>No messages yet.</Text>
@@ -376,6 +437,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F8F9',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 2,
+  },
+  typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    // Matches a one-line bubble's height so the list does not jump when the
+    // indicator is replaced by the reply.
+    paddingVertical: 13,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#8391A1',
   },
   bubbleTextMine: { fontSize: 15, color: '#FFFFFF', lineHeight: 20 },
   bubbleTextTheirs: { fontSize: 15, color: '#1E232C', lineHeight: 20 },

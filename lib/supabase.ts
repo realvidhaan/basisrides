@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { authStorage } from '@/lib/storage';
 import { DEMO_MODE } from '@/lib/demoMode';
 import { createDemoClient } from '@/lib/demo/client';
+import { startDemoScript } from '@/lib/demo/script';
 
 // Exported so the embedded Leaflet map (which runs its own supabase-js inside a
 // webview/iframe and subscribes to the live-location broadcast) can reuse them.
@@ -33,6 +34,11 @@ export const supabase: SupabaseClient = DEMO_MODE
         detectSessionInUrl: false,
       },
     });
+
+// Arms the chat bot and the ambient beats against the fake store. It only
+// subscribes here — the beats themselves are measured from sign-in — and in a
+// normal build this whole statement folds away with the flag.
+if (DEMO_MODE) startDemoScript();
 
 // Deliberately NOT guarded on DEMO_MODE. This runs at module load, before any
 // demo code could guard it, so the fake auth object implements

@@ -110,6 +110,17 @@ function nextThursdayISO(from: Date): string {
 
 const RACHEL_SWAP_DAY = nextThursdayISO(new Date());
 
+/** The next Monday strictly after today — the day the ambient beat asks about. */
+function nextMondayISO(from: Date): string {
+  const cursor = startOfDay(from);
+  do {
+    cursor.setDate(cursor.getDate() + 1);
+  } while (cursor.getDay() !== 1);
+  return toISO(cursor);
+}
+
+const TOM_SWAP_DAY = nextMondayISO(new Date());
+
 /**
  * The `count` weekdays before `from` that school was open on.
  *
@@ -403,6 +414,33 @@ const swaps: Record<string, unknown>[] = [
     created_at: at(YESTERDAY_ISO, 11, 2),
   },
 ];
+
+/**
+ * The cover request that lands mid-demo (ambient beat 1, `lib/demo/script.ts`).
+ *
+ * Deliberately NOT Rachel, whom the plan names for this beat: she already holds
+ * the seeded open request above, and a second row from the same parent reads as
+ * a duplicate on the swap board rather than as news. Tom is the presenter's DM
+ * partner and has a car (`car_capacity: 5`), so a parent who normally drives
+ * asking for cover is the plausible version of this beat.
+ *
+ * Monday, so it cannot land on Rachel's Thursday and read as the same request.
+ */
+export const DEMO_AMBIENT_SWAP: {
+  requesterId: string;
+  requesterName: string;
+  day: string;
+  dayLabel: string;
+  note: string;
+} = {
+  requesterId: TOM_ID,
+  // Read off the user row rather than retyped, so a renamed fixture cannot make
+  // the banner and the swap board disagree about who is asking.
+  requesterName: DEMO_USERS.find((u) => u.id === TOM_ID)!.full_name,
+  day: TOM_SWAP_DAY,
+  dayLabel: formatMonthDay(parseISO(TOM_SWAP_DAY)),
+  note: 'Meeting runs late downtown — can anyone cover pickup?',
+};
 
 const notifications: Record<string, unknown>[] = [
   {
