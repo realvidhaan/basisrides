@@ -1,7 +1,9 @@
 import 'react-native-url-polyfill/auto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 import { authStorage } from '@/lib/storage';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { createDemoClient } from '@/lib/demo/client';
 
 // Exported so the embedded Leaflet map (which runs its own supabase-js inside a
 // webview/iframe and subscribes to the live-location broadcast) can reuse them.
@@ -9,17 +11,33 @@ import { authStorage } from '@/lib/storage';
 export const SUPABASE_URL = 'https://itfrksemudjaicksfucr.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_t3bdDWP4dOgcJWMDNit3Aw_UKBgeTps';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    // Native: encrypted device keychain via expo-secure-store. Web: AsyncStorage
-    // (localStorage). See lib/storage for the platform split.
-    storage: authStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+/**
+ * The single interception seam for demo mode.
+ *
+ * With EXPO_PUBLIC_DEMO_MODE unset, `DEMO_MODE` folds to the literal `false` at
+ * bundle time and this is byte-for-byte the production client. With it set, the
+ * whole app runs its ordinary code path against the in-memory fake in
+ * `lib/demo/` — see lib/demoMode.ts. The `unknown` hop is deliberate: the fake
+ * implements the parts of the client the app touches, not the full generic
+ * PostgrestQueryBuilder surface, so this is the one place the cast lives.
+ */
+export const supabase: SupabaseClient = DEMO_MODE
+  ? (createDemoClient() as SupabaseClient)
+  : createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        // Native: encrypted device keychain via expo-secure-store. Web: AsyncStorage
+        // (localStorage). See lib/storage for the platform split.
+        storage: authStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
 
+// Deliberately NOT guarded on DEMO_MODE. This runs at module load, before any
+// demo code could guard it, so the fake auth object implements
+// startAutoRefresh/stopAutoRefresh as no-ops instead. Guarding here as well
+// would add a second conditional for no benefit.
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh();

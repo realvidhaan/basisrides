@@ -55,8 +55,8 @@
   },
   "scripts": {
     "start": "expo start --clear",
-    "demo": "EXPO_PUBLIC_DEMO_MODE=1 expo start --dev-client --clear",
-    "go": "EXPO_GO=1 expo start --tunnel --go",
+    "demo": "EXPO_PUBLIC_DEMO_MODE=1 EXPO_GO=1 expo start --tunnel --go --clear",
+    "go": "EXPO_GO=1 expo start --tunnel --go --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
