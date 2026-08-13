@@ -1,4 +1,6 @@
 import type { GeoPoint } from '@/types';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { DEMO_SIGNUP_PREFILL } from '@/lib/demo/fixtures';
 
 export interface AddressSuggestion {
   /** Full human-readable address, e.g. "123 Main St, Sunnyvale, CA, USA". */
@@ -12,11 +14,16 @@ export interface AddressSuggestion {
  * `limit` real address matches for what the user has typed so far. No API key,
  * no billing. Nominatim asks for at most ~1 req/sec — callers MUST debounce.
  * Always returns [] on any failure so the field degrades to a plain text box.
+ *
+ * In demo mode this never leaves the device: the address field is prefilled from
+ * the fixtures, so a per-keystroke Nominatim call would only be a network leak on
+ * stage (risk R4). The autocomplete degrades to a plain text box.
  */
 export async function searchAddresses(
   query: string,
   limit = 5,
 ): Promise<AddressSuggestion[]> {
+  if (DEMO_MODE) return [];
   const q = query.trim();
   if (q.length < 4) return [];
   try {
@@ -56,8 +63,15 @@ export async function searchAddresses(
  * geocode at signup / when a parent edits their address. Always returns null on
  * any failure so the caller can store a null location and carry on (the map
  * simply won't pin that home).
+ *
+ * In demo mode this resolves to the presenter's fixture coordinates without
+ * touching the network (risk R4). Signup already prefills `addressCoords` so this
+ * call is normally short-circuited before it happens; this is the belt-and-braces
+ * half, and it also keeps Edit Profile's blocking geocode from failing the save
+ * when there is no network on stage.
  */
 export async function geocodeAddress(address: string): Promise<GeoPoint | null> {
+  if (DEMO_MODE) return { ...DEMO_SIGNUP_PREFILL.coords };
   const query = address.trim();
   if (!query) return null;
   try {
