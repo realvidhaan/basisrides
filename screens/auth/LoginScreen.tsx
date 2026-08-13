@@ -12,6 +12,8 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { BackButton } from '@/components/ui/BackButton';
 import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { impact } from '@/lib/haptics';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { DEMO_SIGNUP_PREFILL } from '@/lib/demo/fixtures';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -20,8 +22,10 @@ interface Props {
 }
 
 export function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Demo mode prefills the presenter's school address and password so signing in
+  // on stage is a single tap. The fake client accepts any credentials.
+  const [email, setEmail] = useState(DEMO_MODE ? DEMO_SIGNUP_PREFILL.acceptedEmail : '');
+  const [password, setPassword] = useState(DEMO_MODE ? DEMO_SIGNUP_PREFILL.password : '');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

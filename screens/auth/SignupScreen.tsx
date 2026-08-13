@@ -29,6 +29,8 @@ import { track } from '@/lib/analytics';
 import { geocodeAddress } from '@/lib/geocode';
 import { validatePlate } from '@/lib/licensePlate';
 import { impact } from '@/lib/haptics';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { DEMO_SCHOOL_EMAIL_DOMAIN, DEMO_SIGNUP_PREFILL } from '@/lib/demo/fixtures';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -38,27 +40,77 @@ interface Props {
 
 type FieldErrors = Partial<Record<keyof SignupFormValues, string>>;
 
+const EMPTY_FORM: SignupFormValues = {
+  inviteCode: '',
+  fullName: '',
+  childName: '',
+  grade: '6th',
+  neighborhood: '',
+  address: '',
+  carCapacity: '0',
+  carColor: 'silver',
+  carType: 'sedan',
+  carState: '',
+  licensePlate: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreedToTerms: false,
+};
+
+/**
+ * Demo mode substitutes an email-domain gate for the production invite code.
+ *
+ * This is a presentation affordance, not a claim about the product: nothing here
+ * verifies school enrolment, and the copy says only what is true — that signing
+ * up in this build requires a school-issued address. The domain lives in
+ * `lib/demo/fixtures.ts` so changing schools is a one-line edit.
+ */
+const DEMO_SCHOOL_EMAIL_ERROR =
+  `Use your school-issued email (name@${DEMO_SCHOOL_EMAIL_DOMAIN}). ` +
+  'Personal addresses aren’t accepted.';
+
+function isSchoolEmail(email: string): boolean {
+  return email.trim().toLowerCase().endsWith(`@${DEMO_SCHOOL_EMAIL_DOMAIN}`);
+}
+
+/**
+ * Every personal field the presenter would otherwise type on stage, straight from
+ * the fixtures so there is exactly one source of truth for Robert Calder.
+ *
+ * The email is the PERSONAL address on purpose — it is meant to be rejected on the
+ * first submit, and edited by hand to the school address. There is no car-model
+ * field on this form (`SignupFormValues`), so the fixture's 'Honda Odyssey'
+ * survives via the fake `create-account` merge instead of being prefilled here.
+ */
+const DEMO_FORM: SignupFormValues = {
+  ...EMPTY_FORM,
+  fullName: DEMO_SIGNUP_PREFILL.fullName,
+  childName: DEMO_SIGNUP_PREFILL.childName,
+  grade: DEMO_SIGNUP_PREFILL.grade as Grade,
+  neighborhood: DEMO_SIGNUP_PREFILL.neighborhood,
+  address: DEMO_SIGNUP_PREFILL.address,
+  carCapacity: DEMO_SIGNUP_PREFILL.carCapacity,
+  carColor: DEMO_SIGNUP_PREFILL.carColor,
+  carType: DEMO_SIGNUP_PREFILL.carType,
+  carState: DEMO_SIGNUP_PREFILL.carState,
+  licensePlate: DEMO_SIGNUP_PREFILL.licensePlate,
+  email: DEMO_SIGNUP_PREFILL.rejectedEmail,
+  password: DEMO_SIGNUP_PREFILL.password,
+  confirmPassword: DEMO_SIGNUP_PREFILL.password,
+  agreedToTerms: true,
+};
+
 export function SignupScreen({ navigation }: Props) {
-  const [form, setForm] = useState<SignupFormValues>({
-    inviteCode: '',
-    fullName: '',
-    childName: '',
-    grade: '6th',
-    neighborhood: '',
-    address: '',
-    carCapacity: '0',
-    carColor: 'silver',
-    carType: 'sedan',
-    carState: '',
-    licensePlate: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreedToTerms: false,
-  });
+  const [form, setForm] = useState<SignupFormValues>(
+    DEMO_MODE ? DEMO_FORM : EMPTY_FORM,
+  );
   // Exact coordinates when the parent picks a suggested address; null if they
   // typed a freeform address (we'll geocode it on submit instead).
-  const [addressCoords, setAddressCoords] = useState<GeoPoint | null>(null);
+  // Demo mode seeds them so the blocking geocode round-trip below never happens.
+  const [addressCoords, setAddressCoords] = useState<GeoPoint | null>(
+    DEMO_MODE ? { ...DEMO_SIGNUP_PREFILL.coords } : null,
+  );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -93,7 +145,9 @@ export function SignupScreen({ navigation }: Props) {
 
   function validate(): boolean {
     const errors: FieldErrors = {};
-    if (!normalizeCode(form.inviteCode)) {
+    // Demo mode has no invite-code field to fill in — the school-email rule below
+    // is the gate instead.
+    if (!DEMO_MODE && !normalizeCode(form.inviteCode)) {
       errors.inviteCode = 'Enter the invite code from your BISV ParentSquare post.';
     }
     if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
@@ -122,8 +176,15 @@ export function SignupScreen({ navigation }: Props) {
     // leading/trailing space (common from autofill) doesn't falsely reject a
     // valid address.
     const email = form.email.trim();
+    let schoolEmailRejected = false;
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'Enter a valid email address.';
+    } else if (DEMO_MODE && !isSchoolEmail(email)) {
+      // On SUBMIT only, never per keystroke: the presenter edits the address by
+      // hand after this fires, and a live-validating field would clear the error
+      // mid-edit.
+      errors.email = DEMO_SCHOOL_EMAIL_ERROR;
+      schoolEmailRejected = true;
     }
     if (form.password.length < 8) {
       errors.password = 'Password must be at least 8 characters.';
@@ -144,6 +205,8 @@ export function SignupScreen({ navigation }: Props) {
           ? 'Select the state your license plate is from, then re-check the plate. Fix the highlighted field and try again.'
           : "That license plate doesn't match a valid format for the selected state. Fix the highlighted field and try again.",
       );
+    } else if (schoolEmailRejected) {
+      setGlobalError(DEMO_SCHOOL_EMAIL_ERROR);
     }
     return Object.keys(errors).length === 0;
   }
@@ -158,7 +221,23 @@ export function SignupScreen({ navigation }: Props) {
     if (!validate()) return;
 
     setLoading(true);
+    try {
+      await runSignup();
+    } catch (e) {
+      // Every branch inside runSignup handles the errors it *expects* and
+      // returns. This catches the ones it does not: any of the five awaited
+      // calls can reject outright (offline, a Supabase 5xx, a thrown edge
+      // function), and before this the reset never ran and the submit button
+      // stayed disabled until the parent left the screen. `finally` is what
+      // guarantees the flag clears, so the resets inside runSignup are gone.
+      Sentry.captureException(e);
+      setGlobalError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  async function runSignup(): Promise<void> {
     const email = form.email.trim().toLowerCase();
     const inviteCode = normalizeCode(form.inviteCode);
 
@@ -167,21 +246,24 @@ export function SignupScreen({ navigation }: Props) {
     // form is submitted. The hard gate is a BEFORE INSERT trigger on auth.users
     // (migration 20260625090000) — this RPC is read-only UX. Fail open on a
     // transient RPC error: the trigger still blocks an invalid code server-side.
-    const { data: codeValid, error: codeCheckError } = await supabase.rpc(
-      'validate_invite_code',
-      { p_code: inviteCode },
-    );
-    if (codeCheckError) Sentry.captureException(codeCheckError);
-    if (!codeCheckError && !codeValid) {
-      setLoading(false);
-      setFieldErrors((prev) => ({
-        ...prev,
-        inviteCode: "That invite code isn't valid.",
-      }));
-      setGlobalError(
-        "That invite code isn't valid. Check the current code on your BISV ParentSquare post.",
+    //
+    // Demo mode has no invite-code field, so there is nothing to pre-check.
+    if (!DEMO_MODE) {
+      const { data: codeValid, error: codeCheckError } = await supabase.rpc(
+        'validate_invite_code',
+        { p_code: inviteCode },
       );
-      return;
+      if (codeCheckError) Sentry.captureException(codeCheckError);
+      if (!codeCheckError && !codeValid) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          inviteCode: "That invite code isn't valid.",
+        }));
+        setGlobalError(
+          "That invite code isn't valid. Check the current code on your BISV ParentSquare post.",
+        );
+        return;
+      }
     }
 
     // Pre-check: block signup if this email already belongs to an account.
@@ -197,7 +279,6 @@ export function SignupScreen({ navigation }: Props) {
     // Fail open on a transient lookup error (see above), but still report it.
     if (emailCheckError) Sentry.captureException(emailCheckError);
     if (!emailCheckError && emailTaken) {
-      setLoading(false);
       setFieldErrors((prev) => ({
         ...prev,
         email: 'An account with this email already exists. Log in instead.',
@@ -214,7 +295,6 @@ export function SignupScreen({ navigation }: Props) {
     // to choose one of the dropdown suggestions (so drivers get a valid pickup).
     const coords = addressCoords ?? (await geocodeAddress(form.address.trim()));
     if (!coords) {
-      setLoading(false);
       setFieldErrors((prev) => ({
         ...prev,
         address:
@@ -243,7 +323,6 @@ export function SignupScreen({ navigation }: Props) {
     });
 
     if (!ok) {
-      setLoading(false);
       // The invite-code trigger can reject server-side even after our pre-check
       // (e.g. the code was used by someone else in the meantime). Surface that
       // as an invite error rather than a generic failure.
@@ -268,7 +347,6 @@ export function SignupScreen({ navigation }: Props) {
       email,
       password: form.password,
     });
-    setLoading(false);
 
     if (signInError) {
       Sentry.captureException(signInError);
@@ -300,20 +378,24 @@ export function SignupScreen({ navigation }: Props) {
       <FormScroll style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <ErrorMessage message={globalError} />
 
-        <Input
-          label="Invite code"
-          value={form.inviteCode}
-          onChangeText={(t) => updateField('inviteCode', t)}
-          placeholder="From your BISV ParentSquare post"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          error={fieldErrors.inviteCode}
-          returnKeyType="next"
-        />
-        <Text style={styles.helperText}>
-          BasisRide is invite-only for verified BISV families. Enter the code
-          shared on ParentSquare.
-        </Text>
+        {DEMO_MODE ? null : (
+          <>
+            <Input
+              label="Invite code"
+              value={form.inviteCode}
+              onChangeText={(t) => updateField('inviteCode', t)}
+              placeholder="From your BISV ParentSquare post"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              error={fieldErrors.inviteCode}
+              returnKeyType="next"
+            />
+            <Text style={styles.helperText}>
+              BasisRide is invite-only for verified BISV families. Enter the code
+              shared on ParentSquare.
+            </Text>
+          </>
+        )}
 
         <Input
           label="Full name"
