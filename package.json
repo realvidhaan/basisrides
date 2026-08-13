@@ -60,7 +60,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --testPathPattern='(rls-mocked|scheduling-demo)\\.test\\.ts$'",
+    "test": "jest --testPathPattern='(rls-mocked|scheduling-demo|demo-store|demo-pairing|demo-script|impact)\\.test\\.ts$'",
     "test:mocked": "jest --testPathPattern='rls-mocked\\.test\\.ts$'",
     "test:live": "jest --testPathPattern='rls-live-probe\\.test\\.ts$' --env=node",
     "test:coverage": "jest --coverage --testPathPattern='rls-mocked\\.test\\.ts$'"
