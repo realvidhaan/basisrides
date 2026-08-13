@@ -32,6 +32,7 @@ import { SCHOOL } from '@/lib/places';
 import { tripLocChannel } from '@/lib/liveTrip';
 import { track } from '@/lib/analytics';
 import { formatDayLabel, formatTime, parseISO } from '@/lib/dateUtils';
+import { notifyDemoTripComplete } from '@/lib/demo/script';
 
 type Nav = StackNavigationProp<ScheduleStackParamList, 'LiveTrip'>;
 type Rt = RouteProp<ScheduleStackParamList, 'LiveTrip'>;
@@ -496,7 +497,14 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 // Ending the ride stops the drive; the map freezes on the
                 // completed picture rather than replaying it.
                 demoRun={demoRun && !tripEnded}
-                onDemoArrived={() => setDemoArrived(true)}
+                onDemoArrived={() => {
+                  setDemoArrived(true);
+                  // The demo's "trip complete" beat. The synthetic drive never
+                  // writes a status, so this arrival is the only signal the
+                  // script can hang the banner off. Inert in a normal build:
+                  // LiveMap only ever calls this behind DEMO_MODE.
+                  notifyDemoTripComplete(iso);
+                }}
               />
             </View>
           ) : null}

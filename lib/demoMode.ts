@@ -78,7 +78,13 @@ export const DEMO_BOT_TYPING_MS = 1_200;
 /** Gap before an optional second bot line. */
 export const DEMO_BOT_FOLLOWUP_MS = 2_400;
 
-/** "Rachel needs cover" ambient beat, measured from sign-in. */
+/**
+ * "A parent needs cover" ambient beat, measured from sign-in.
+ *
+ * From sign-in, not from launch: the app is on the Welcome screen for the first
+ * minute of the demo and the beat has to land while the presenter is inside it.
+ * Who asks, and for which day, is in `lib/demo/fixtures.DEMO_AMBIENT_SWAP`.
+ */
 export const DEMO_AMBIENT_SWAP_MS = 45_000;
 
 /** "Trip complete" ambient beat, measured from the demo arrival. */
