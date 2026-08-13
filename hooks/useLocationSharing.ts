@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { LOCATION_TASK, setActiveTripChannel } from '@/lib/locationTask';
+import { DEMO_MODE } from '@/lib/demoMode';
 
 interface UseLocationSharingResult {
   sharing: boolean;
@@ -24,7 +25,10 @@ export function useLocationSharing(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!active || !channelName || channelName === 'noop') {
+    // In demo mode the car is driven by useDemoDriverLocation, not by GPS, so
+    // there is nothing to share — and both permission requests below raise a
+    // system dialog right in the middle of the live-trip beat.
+    if (DEMO_MODE || !active || !channelName || channelName === 'noop') {
       setSharing(false);
       return;
     }

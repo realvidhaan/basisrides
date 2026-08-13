@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { registerForPushNotificationsAsync } from '@/lib/push';
 import { navigationRef } from '@/lib/navigation';
+import { DEMO_MODE } from '@/lib/demoMode';
 
 type NotifData = Record<string, unknown> | undefined;
 
@@ -54,6 +55,14 @@ export function usePushRegistration(userId: string | null): void {
     let cancelled = false;
 
     void (async () => {
+      if (DEMO_MODE) {
+        // getExpoPushTokenAsync has no APNs entitlement in Expo Go and throws,
+        // so the token step (and the RPC that consumes it) is skipped. The
+        // PERMISSION request is not: the demo's ambient beats are scheduled as
+        // local notifications, and those still need the user to have granted it.
+        await Notifications.requestPermissionsAsync().catch(() => undefined);
+        return;
+      }
       const token = await registerForPushNotificationsAsync();
       if (cancelled || !token) return;
       // SECURITY DEFINER RPC so a device's token row can be (re)claimed by the

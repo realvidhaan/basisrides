@@ -31,6 +31,8 @@ import { useSwaps } from '@/hooks/useSwaps';
 import { nextSchoolDay, schoolDayStatus } from '@/lib/schoolCalendar';
 import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUtils';
 import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
+import { DEMO_MODE } from '@/lib/demoMode';
+import { demoInitialDate } from '@/lib/demo/fixtures';
 
 // Composite so this screen can jump to the Messages tab's Conversation screen.
 type ScheduleNavigationProp = CompositeNavigationProp<
@@ -127,7 +129,14 @@ export function ScheduleScreen({ navigation }: Props) {
   // Open on the nearest day that actually has a carpool. Defaulting to "today"
   // lands on a weekend, a break, or (before the year opens) summer, and the
   // resulting empty state reads as if the app is broken.
-  const [selected, setSelected] = useState<Date>(() => nextSchoolDay(new Date()));
+  //
+  // The demo skips one step further, past early-dismissal days: lib/pairing.ts
+  // overrides every pickup time to 1:00 PM on those, so the time the presenter
+  // just set on stage would appear to have been ignored. The production path is
+  // unchanged.
+  const [selected, setSelected] = useState<Date>(() =>
+    DEMO_MODE ? demoInitialDate() : nextSchoolDay(new Date()),
+  );
   const [chatError, setChatError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const {

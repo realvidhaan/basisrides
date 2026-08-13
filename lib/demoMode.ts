@@ -1,15 +1,29 @@
 /**
- * Demo override for presenting the app without a real drive.
+ * Demo override for presenting the app with no backend and no real drive.
+ *
+ * Two problems this solves at once.
  *
  * Live trips are driven by GPS: the driver's device broadcasts fixes and every
  * rider's map animates the car from them. That is untestable on a simulator (no
  * GPS, no geofence events) and unimpressive on a stationary phone, so a demo
- * would show a car that never moves.
+ * would show a car that never moves. With this flag set the live map synthesises
+ * movement along the trip's REAL route instead of waiting for broadcasts.
  *
- * With this flag set the live map synthesises movement along the trip's REAL
- * route instead of waiting for broadcasts. Start the packager with:
+ * And a live demo cannot depend on a network, a seeded Supabase project or a
+ * second phone. With this flag set, `lib/supabase.ts` swaps the real client for
+ * the in-memory fake in `lib/demo/` — a fake that speaks enough PostgREST,
+ * Realtime, Auth and Edge Functions for every hook, query string and screen to
+ * run its ORDINARY production code path against it. Nothing in `hooks/`,
+ * `lib/pairing.ts` or `lib/schoolCalendar.ts` knows the demo exists.
  *
- *   npm run demo          # EXPO_PUBLIC_DEMO_MODE=1 expo start
+ * Start the packager with:
+ *
+ *   npm run demo    # EXPO_PUBLIC_DEMO_MODE=1 EXPO_GO=1 expo start --tunnel --go --clear
+ *
+ * Expo Go is the target: the demo deliberately avoids everything Expo Go cannot
+ * do (APNs push tokens, background location, geofences — see the short-circuits
+ * in hooks/usePushRegistration, hooks/useLocationSharing and
+ * hooks/useTripGeofencing).
  *
  * There is deliberately no in-app control for this — nothing in the UI reveals
  * or toggles it.
@@ -42,3 +56,30 @@ export const DEMO_TRIP_MS = 10_000;
  * animation is cut off mid-flight and the car lurches.
  */
 export const DEMO_TICK_MS = 100;
+
+// ---------------------------------------------------------------------------
+// Demo script timing. All of it lives here so a rehearsal can retune the pacing
+// in one file instead of hunting through lib/demo/.
+// ---------------------------------------------------------------------------
+
+/**
+ * Pickup time the fake community falls back to when the presenter has not set a
+ * day yet. Matches EditScheduleScreen's DEFAULT_TIME, so the very first screen
+ * of the demo already shows a populated, plausible community.
+ */
+export const DEMO_FALLBACK_PICKUP = '15:15';
+
+/** Silence after the presenter's message before the ••• indicator appears. */
+export const DEMO_BOT_THINK_MS = 900;
+
+/** How long ••• shows before the reply lands. */
+export const DEMO_BOT_TYPING_MS = 1_200;
+
+/** Gap before an optional second bot line. */
+export const DEMO_BOT_FOLLOWUP_MS = 2_400;
+
+/** "Rachel needs cover" ambient beat, measured from sign-in. */
+export const DEMO_AMBIENT_SWAP_MS = 45_000;
+
+/** "Trip complete" ambient beat, measured from the demo arrival. */
+export const DEMO_AMBIENT_TRIP_DONE_MS = 1_500;

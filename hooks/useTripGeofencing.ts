@@ -7,6 +7,7 @@ import {
   PICKUP_REGION_ID,
   setGeofenceContext,
 } from '@/lib/geofenceTask';
+import { DEMO_MODE } from '@/lib/demoMode';
 
 const PICKUP_RADIUS_M = 120;
 const HOME_RADIUS_M = 120;
@@ -59,6 +60,11 @@ export function useTripGeofencing({
   ].join('|');
 
   useEffect(() => {
+    // Geofences cannot fire indoors and the permission prompts land mid-demo, so
+    // the demo never registers them. "Start ride" on LiveTripScreen is the
+    // manual entry point and already exists — nothing else is lost.
+    if (DEMO_MODE) return;
+
     let cancelled = false;
 
     async function stop(): Promise<void> {
