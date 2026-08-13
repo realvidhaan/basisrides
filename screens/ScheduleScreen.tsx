@@ -23,9 +23,11 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { CarIllustration } from '@/components/CarIllustration';
+import { ImpactStrip } from '@/components/ui/ImpactStrip';
 import { carColorLabel, carTypeLabel } from '@/lib/carOptions';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
+import { useImpact } from '@/hooks/useImpact';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useSwaps } from '@/hooks/useSwaps';
 import { nextSchoolDay, schoolDayStatus } from '@/lib/schoolCalendar';
@@ -150,6 +152,7 @@ export function ScheduleScreen({ navigation }: Props) {
   } = useCarpool();
   const { unreadCount } = useNotifications();
   const { openCount, requestCover, error: swapError } = useSwaps();
+  const { totals: impact } = useImpact(currentUserId);
 
   async function askForCover(): Promise<void> {
     const ok = await requestCover(toISO(selected), '');
@@ -444,6 +447,11 @@ export function ScheduleScreen({ navigation }: Props) {
       >
         {error ? <ErrorMessage message={error} /> : null}
         {swapError ? <ErrorMessage message={swapError} /> : null}
+
+        {/* Above the calendar so the payoff for carpooling is the first thing on
+            screen. It hides itself until there's history, so a new account sees
+            the calendar exactly where it has always been. */}
+        <ImpactStrip totals={impact} />
 
         <CalendarPicker selected={selected} onSelect={setSelected} dayInfo={dayInfo} />
 
