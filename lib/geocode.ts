@@ -71,7 +71,22 @@ export async function searchAddresses(
  * when there is no network on stage.
  */
 export async function geocodeAddress(address: string): Promise<GeoPoint | null> {
-  if (DEMO_MODE) return { ...DEMO_SIGNUP_PREFILL.coords };
+  // Demo mode cannot geocode — Nominatim is a network call, and the whole point
+  // is that the demo runs without one. Every non-empty address therefore
+  // resolves to the demo home.
+  //
+  // The empty check still runs first, and deliberately so: returning coordinates
+  // for '' would let EditProfileScreen save a blank address (it only blocks when
+  // geocoding returns null), quietly destroying the one field the whole pairing
+  // engine depends on. Resolving a *wrong* address to the demo home is a
+  // cosmetic lie; resolving an *empty* one is a broken screen.
+  //
+  // Not narrowed to the exact fixture address on purpose: that would make any
+  // hand-edit of the address field a hard signup failure, and this runs on
+  // stage. Cosmetically wrong beats a dead submit button.
+  if (DEMO_MODE) {
+    return address.trim() ? { ...DEMO_SIGNUP_PREFILL.coords } : null;
+  }
   const query = address.trim();
   if (!query) return null;
   try {

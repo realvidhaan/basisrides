@@ -221,7 +221,23 @@ export function SignupScreen({ navigation }: Props) {
     if (!validate()) return;
 
     setLoading(true);
+    try {
+      await runSignup();
+    } catch (e) {
+      // Every branch inside runSignup handles the errors it *expects* and
+      // returns. This catches the ones it does not: any of the five awaited
+      // calls can reject outright (offline, a Supabase 5xx, a thrown edge
+      // function), and before this the reset never ran and the submit button
+      // stayed disabled until the parent left the screen. `finally` is what
+      // guarantees the flag clears, so the resets inside runSignup are gone.
+      Sentry.captureException(e);
+      setGlobalError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  async function runSignup(): Promise<void> {
     const email = form.email.trim().toLowerCase();
     const inviteCode = normalizeCode(form.inviteCode);
 
@@ -239,7 +255,6 @@ export function SignupScreen({ navigation }: Props) {
       );
       if (codeCheckError) Sentry.captureException(codeCheckError);
       if (!codeCheckError && !codeValid) {
-        setLoading(false);
         setFieldErrors((prev) => ({
           ...prev,
           inviteCode: "That invite code isn't valid.",
@@ -264,7 +279,6 @@ export function SignupScreen({ navigation }: Props) {
     // Fail open on a transient lookup error (see above), but still report it.
     if (emailCheckError) Sentry.captureException(emailCheckError);
     if (!emailCheckError && emailTaken) {
-      setLoading(false);
       setFieldErrors((prev) => ({
         ...prev,
         email: 'An account with this email already exists. Log in instead.',
@@ -281,7 +295,6 @@ export function SignupScreen({ navigation }: Props) {
     // to choose one of the dropdown suggestions (so drivers get a valid pickup).
     const coords = addressCoords ?? (await geocodeAddress(form.address.trim()));
     if (!coords) {
-      setLoading(false);
       setFieldErrors((prev) => ({
         ...prev,
         address:
@@ -310,7 +323,6 @@ export function SignupScreen({ navigation }: Props) {
     });
 
     if (!ok) {
-      setLoading(false);
       // The invite-code trigger can reject server-side even after our pre-check
       // (e.g. the code was used by someone else in the meantime). Surface that
       // as an invite error rather than a generic failure.
@@ -335,7 +347,6 @@ export function SignupScreen({ navigation }: Props) {
       email,
       password: form.password,
     });
-    setLoading(false);
 
     if (signInError) {
       Sentry.captureException(signInError);
