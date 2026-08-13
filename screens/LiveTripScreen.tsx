@@ -31,6 +31,7 @@ import { supabase } from '@/lib/supabase';
 import { SCHOOL } from '@/lib/places';
 import { tripLocChannel } from '@/lib/liveTrip';
 import { track } from '@/lib/analytics';
+import { impact } from '@/lib/haptics';
 import { formatDayLabel, formatTime, parseISO } from '@/lib/dateUtils';
 import { notifyDemoTripComplete } from '@/lib/demo/script';
 
@@ -73,7 +74,15 @@ export function LiveTripScreen({ navigation, route }: Props) {
   const isDriver = a?.role === 'drive';
   const driverId = isDriver ? currentUserId : (a?.driver?.userId ?? null);
 
-  const { trip, loading: tripLoading, error, setStatus, startTrip } = useTrip(driverId, iso);
+  const {
+    trip,
+    pickups,
+    loading: tripLoading,
+    error,
+    setStatus,
+    startTrip,
+    togglePickup,
+  } = useTrip(driverId, iso);
 
   // useTrip short-circuits to loading=false while driverId is still null, so on
   // its own it would let the "No live trip" card render for the whole duration
@@ -218,6 +227,16 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
   const riders = a?.riders ?? [];
   const status = trip?.status ?? null;
+  const pickedUpCount = riders.filter((r) => pickups.has(r.userId)).length;
+
+  // Check a rider off as the car pulls away from their pin. useTrip already
+  // applies the change optimistically and rolls back on failure, so the tap
+  // lands at once even on a slow curbside connection; the haptic is the same
+  // confirmation the rest of the app gives a committed tap.
+  function handleTogglePickup(riderId: string): void {
+    impact();
+    void togglePickup(riderId);
+  }
 
   // Activation funnel: fire trip_completed once per completed trip (per viewer).
   const trackedCompleteRef = useRef(false);
@@ -347,18 +366,53 @@ export function LiveTripScreen({ navigation, route }: Props) {
             </Text>
             {riders.length > 0 ? (
               <>
-                <Text style={styles.sectionLabel}>Riders ({riders.length})</Text>
-                {riders.map((r) => (
-                  <View key={r.userId} style={styles.memberRow}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{initials(r.name)}</Text>
-                    </View>
-                    <Text style={styles.memberName} numberOfLines={1}>
-                      {r.name}
-                    </Text>
-                    <Text style={styles.memberTime}>{formatTime(r.time)}</Text>
-                  </View>
-                ))}
+                {/* The count doubles as the progress read-out, so the driver can
+                    see how many stops are left without counting check marks. */}
+                <Text style={styles.sectionLabel}>
+                  Riders · {pickedUpCount} of {riders.length} picked up
+                </Text>
+                {riders.map((r) => {
+                  const isPickedUp = pickups.has(r.userId);
+                  return (
+                    <TouchableOpacity
+                      key={r.userId}
+                      style={[
+                        styles.memberRow,
+                        styles.pickupRow,
+                        isPickedUp && styles.pickupRowDone,
+                      ]}
+                      onPress={() => handleTogglePickup(r.userId)}
+                      activeOpacity={0.7}
+                      // Announced as a checkbox, not as text: this is the one
+                      // control on the screen a driver uses while the car is
+                      // moving, so it has to be findable by role.
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: isPickedUp }}
+                      accessibilityLabel={`${r.name}, picked up`}
+                      accessibilityHint={
+                        isPickedUp
+                          ? 'Marks this rider as not picked up'
+                          : 'Marks this rider as picked up'
+                      }
+                    >
+                      <View style={[styles.avatar, isPickedUp && styles.avatarDone]}>
+                        <Text style={styles.avatarText}>{initials(r.name)}</Text>
+                      </View>
+                      <Text style={styles.memberName} numberOfLines={1}>
+                        {r.name}
+                      </Text>
+                      <Text style={styles.memberTime}>{formatTime(r.time)}</Text>
+                      {/* Outline circle → filled check: the shape changes as well
+                          as the colour, so the state survives colour blindness
+                          and a sun-washed windscreen. */}
+                      <Ionicons
+                        name={isPickedUp ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={24}
+                        color={isPickedUp ? '#15803D' : '#8391A1'}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
               </>
             ) : null}
             {confirmingEnd ? (
@@ -657,6 +711,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  // Crimson would sit directly against the row's green tint once the rider is
+  // aboard; the darker green keeps white initials at 5:1 and stops the two
+  // near-complementary brand hues fighting inside a 34pt circle.
+  avatarDone: { backgroundColor: '#15803D' },
+  // Padding is always present and the inset margin cancels it, so checking a
+  // rider off paints a tint behind an unmoved row rather than nudging the list.
+  pickupRow: {
+    minHeight: 44,
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
+    borderRadius: 10,
+  },
+  pickupRowDone: { backgroundColor: '#EAF7EE' },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
   memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
   startBtnWrap: { marginTop: 18 },
