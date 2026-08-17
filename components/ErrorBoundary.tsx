@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Sentry from '@sentry/react-native';
+import { colors } from '@/constants/theme/colors';
 
 interface Props {
   children: React.ReactNode;
@@ -56,25 +57,25 @@ export class ErrorBoundary extends React.Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
   },
   emoji: { fontSize: 44, marginBottom: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: '#1E232C', marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.ink, marginBottom: 8 },
   message: {
     fontSize: 14,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     lineHeight: 20,
     textAlign: 'center',
     marginBottom: 24,
   },
   button: {
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     borderRadius: 10,
     paddingHorizontal: 28,
     paddingVertical: 14,
   },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  buttonText: { color: colors.surfaceWhite, fontSize: 15, fontWeight: '700' },
 });

@@ -22,6 +22,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { geocodeAddress } from '@/lib/geocode';
 import { impact } from '@/lib/haptics';
 import type { GeoPoint } from '@/types';
+import { colors } from '@/constants/theme/colors';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'EditProfile'>;
 
@@ -223,7 +224,7 @@ export function EditProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -232,13 +233,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
-  title: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1E232C' },
+  title: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.ink },
   headerSpacer: { width: 41 },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 48 },
-  muted: { fontSize: 14, color: '#8391A1' },
+  muted: { fontSize: 14, color: colors.textMuted },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',
@@ -250,34 +251,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginBottom: 24,
   },
-  stepperHint: { fontSize: 13, color: '#6A707C' },
+  stepperHint: { fontSize: 13, color: colors.inkSecondary },
   stepper: { flexDirection: 'row', alignItems: 'center' },
   stepperButton: {
     width: 36,
     height: 36,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperSymbol: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#DC143C',
+    color: colors.brandTeal,
     lineHeight: 22,
   },
   stepperDisabled: { color: '#C9CDD4' },
   stepperValue: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     minWidth: 40,
     textAlign: 'center',
   },

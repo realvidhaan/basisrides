@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
+import { colors } from '@/constants/theme/colors';
 
 interface TimePickerClockProps {
   visible: boolean;
@@ -167,11 +168,11 @@ export function TimePickerClock({
                 y1={CENTER}
                 x2={handPoint.x}
                 y2={handPoint.y}
-                stroke="#DC143C"
+                stroke={colors.brandTeal}
                 strokeWidth={2}
               />
-              <Circle cx={CENTER} cy={CENTER} r={4} fill="#DC143C" />
-              <Circle cx={handPoint.x} cy={handPoint.y} r={18} fill="#DC143C" />
+              <Circle cx={CENTER} cy={CENTER} r={4} fill={colors.brandTeal} />
+              <Circle cx={handPoint.x} cy={handPoint.y} r={18} fill={colors.brandTeal} />
             </Svg>
             {numbers.map((n) => {
               const p = pointForIndex(n.index);
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     fontSize: 12,
     fontWeight: '600',
-    color: '#6A707C',
+    color: colors.inkSecondary,
     letterSpacing: 0.5,
     marginBottom: 16,
   },
@@ -244,41 +245,41 @@ const styles = StyleSheet.create({
     minWidth: 78,
     height: 70,
     borderRadius: 10,
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
   },
   segmentActive: {
-    backgroundColor: '#FFF1F1',
+    backgroundColor: colors.brandTealLight,
   },
   segmentText: {
     fontSize: 44,
     fontWeight: '500',
-    color: '#1E232C',
+    color: colors.ink,
   },
   segmentTextActive: {
-    color: '#DC143C',
+    color: colors.brandTeal,
   },
   colon: {
     fontSize: 44,
     fontWeight: '500',
-    color: '#1E232C',
+    color: colors.ink,
     marginHorizontal: 6,
   },
   pmBox: {
     marginLeft: 12,
     borderWidth: 1.5,
-    borderColor: '#DC143C',
+    borderColor: colors.brandTeal,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FFF1F1',
+    backgroundColor: colors.brandTealLight,
   },
   pmText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#DC143C',
+    color: colors.brandTeal,
   },
   clockWrap: {
     width: CLOCK,
@@ -295,10 +296,10 @@ const styles = StyleSheet.create({
   numberText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E232C',
+    color: colors.ink,
   },
   numberSelected: {
-    color: '#FFFFFF',
+    color: colors.surfaceWhite,
     fontWeight: '700',
   },
   numberDisabled: {
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#DC143C',
+    color: colors.brandTeal,
     letterSpacing: 0.3,
   },
 });

@@ -1,13 +1,14 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { LOC_EVENT } from '@/lib/liveTrip';
 import { carColor } from '@/lib/carOptions';
+import { colors } from '@/constants/theme/colors';
 import type { MapStop } from '@/types';
 
 export interface MapHtmlOptions {
   channel: string; // Supabase broadcast channel to subscribe to for live GPS
   stops: MapStop[]; // school + rider/driver homes to pin
   start: { lat: number; lng: number } | null; // initial car position
-  carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
+  carColorKey?: string | null; // driver's chosen color; defaults to silver if unset
   destinations?: { lat: number; lng: number }[]; // keep car + these drop-off points framed live
 }
 
@@ -17,11 +18,12 @@ export interface MapHtmlOptions {
  * subscribes directly to the live-location broadcast channel, so the car moves
  * in real time without any bridge between React Native and the webview/iframe.
  *
- * Only the config object is interpolated; the rest is static so there are no
- * accidental template collisions. Everything inside <script> uses plain strings.
+ * Only the config object and the page background color are interpolated; the
+ * rest is static so there are no accidental template collisions. Everything
+ * inside <script> uses plain strings.
  */
 export function buildMapHtml(opts: MapHtmlOptions): string {
-  const col = carColor(opts.carColorKey || 'crimson');
+  const col = carColor(opts.carColorKey || 'silver');
   const config = {
     url: SUPABASE_URL,
     key: SUPABASE_ANON_KEY,
@@ -42,7 +44,7 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; background: #F7F8F9; }
+    html, body, #map { height: 100%; margin: 0; padding: 0; background: ${colors.surfaceSubtle}; }
     .pin { font-size: 20px; line-height: 20px; text-align: center; }
     .car-wrap { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
     .car-svg {

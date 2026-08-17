@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/constants/theme/colors';
 
 /**
  * In-app Terms / Privacy as a native iOS page-sheet (slides up, swipe to
@@ -33,10 +34,10 @@ const TITLES: Record<LegalDoc, string> = {
 
 const PRIVACY: Section[] = [
   {
-    body: 'BasisRide ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.',
+    body: 'Ridr ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.',
   },
   {
-    heading: 'Who uses BasisRide',
+    heading: 'Who uses Ridr',
     body: 'Accounts are created and used by parents and guardians (adults). It is not for use by children directly. Parents provide limited information about their child for carpool coordination.',
   },
   {
@@ -65,19 +66,19 @@ const PRIVACY: Section[] = [
   },
   {
     heading: "Children's privacy",
-    body: 'BasisRide is for parents/guardians, who provide limited child information solely for carpool coordination. We do not knowingly allow children to create accounts.',
+    body: 'Ridr is for parents/guardians, who provide limited child information solely for carpool coordination. We do not knowingly allow children to create accounts.',
   },
   {
     heading: 'Security',
     body: 'Data is encrypted in transit and access is restricted to authenticated, invited BISV families via database access controls.',
   },
-  { heading: 'Contact', body: 'support@basisride.app' },
+  { heading: 'Contact', body: 'support@ridr.app' },
 ];
 
 const TERMS: Section[] = [
   {
-    heading: '1. What BasisRide is',
-    body: 'BasisRide is a coordination tool for verified BISV families to arrange carpools among themselves. BasisRide is not a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out by parents/guardians at their own discretion and risk.',
+    heading: '1. What Ridr is',
+    body: 'Ridr is a coordination tool for verified BISV families to arrange carpools among themselves. Ridr is not a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out by parents/guardians at their own discretion and risk.',
   },
   {
     heading: '2. Eligibility',
@@ -102,11 +103,11 @@ const TERMS: Section[] = [
   },
   {
     heading: '6. Assumption of risk; limitation of liability',
-    body: 'To the fullest extent permitted by law, you participate in carpools at your own risk. BasisRide and its creators are not liable for any injury, loss, damage, or dispute arising from any carpool, ride, driver, rider, or interaction arranged through the app. BasisRide is provided "as is" without warranties. Our total liability is limited to the amount you paid us (which is $0 for a free app).',
+    body: 'To the fullest extent permitted by law, you participate in carpools at your own risk. Ridr and its creators are not liable for any injury, loss, damage, or dispute arising from any carpool, ride, driver, rider, or interaction arranged through the app. Ridr is provided "as is" without warranties. Our total liability is limited to the amount you paid us (which is $0 for a free app).',
   },
   {
     heading: '7. Indemnification',
-    body: 'You agree to indemnify and hold harmless BasisRide and its creators from claims arising out of your use of the app, your carpools, or your violation of these terms.',
+    body: 'You agree to indemnify and hold harmless Ridr and its creators from claims arising out of your use of the app, your carpools, or your violation of these terms.',
   },
   {
     heading: '8. Termination',
@@ -116,7 +117,7 @@ const TERMS: Section[] = [
     heading: '9. Changes',
     body: 'We may update these terms; continued use after an update means you accept the revised terms.',
   },
-  { heading: '10. Contact', body: 'support@basisride.app' },
+  { heading: '10. Contact', body: 'support@ridr.app' },
 ];
 
 const CONTENT: Record<LegalDoc, Section[]> = { terms: TERMS, privacy: PRIVACY };
@@ -169,7 +170,7 @@ export function LegalModal({ visible, doc, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,16 +179,16 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.borderSubtle,
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
-  done: { fontSize: 16, fontWeight: '600', color: '#DC143C' },
+  title: { fontSize: 18, fontWeight: '700', color: colors.ink },
+  done: { fontSize: 16, fontWeight: '600', color: colors.brandTeal },
   body: { padding: 24, paddingBottom: 48 },
-  updated: { fontSize: 13, color: '#8391A1', marginBottom: 16 },
+  updated: { fontSize: 13, color: colors.textMuted, marginBottom: 16 },
   section: { marginBottom: 4 },
-  h2: { fontSize: 16, fontWeight: '700', color: '#1E232C', marginTop: 20, marginBottom: 6 },
-  p: { fontSize: 14, color: '#3A4150', lineHeight: 21 },
+  h2: { fontSize: 16, fontWeight: '700', color: colors.ink, marginTop: 20, marginBottom: 6 },
+  p: { fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
   bulletRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  bulletDot: { fontSize: 14, color: '#8391A1', lineHeight: 21 },
-  bulletText: { flex: 1, fontSize: 14, color: '#3A4150', lineHeight: 21 },
+  bulletDot: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
+  bulletText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
 });

@@ -32,6 +32,7 @@ import { blockUser, reportUser } from '@/lib/moderation';
 import { formatTime } from '@/lib/dateUtils';
 import { DEMO_MODE } from '@/lib/demoMode';
 import { onDemoTyping } from '@/lib/demo/script';
+import { colors } from '@/constants/theme/colors';
 
 type ConversationNavigationProp = StackNavigationProp<
   MessagesStackParamList,
@@ -236,7 +237,7 @@ export function ConversationScreen({ navigation, route }: Props) {
   // Own messages are skipped — you can't report yourself.
   function onMessageLongPress(message: ChatMessage): void {
     if (message.sender_id === currentUserId) return;
-    Alert.alert(message.senderName, 'Keep BasisRide safe for every family.', [
+    Alert.alert(message.senderName, 'Keep Ridr safe for every family.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Report message', onPress: () => void handleReport(message) },
       {
@@ -334,7 +335,7 @@ export function ConversationScreen({ navigation, route }: Props) {
       >
         {loading ? (
           <View style={styles.loadingArea}>
-            <ActivityIndicator color="#DC143C" size="large" />
+            <ActivityIndicator color={colors.brandTeal} size="large" />
           </View>
         ) : (
           <FlatList
@@ -366,7 +367,7 @@ export function ConversationScreen({ navigation, route }: Props) {
               value={draft}
               onChangeText={setDraft}
               placeholder="Message…"
-              placeholderTextColor="#8391A1"
+              placeholderTextColor={colors.textMuted}
               multiline
               maxLength={2000}
             />
@@ -376,7 +377,7 @@ export function ConversationScreen({ navigation, route }: Props) {
               disabled={!draft.trim()}
               accessibilityLabel="Send message"
             >
-              <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+              <Ionicons name="arrow-up" size={20} color={colors.surfaceWhite} />
             </TouchableOpacity>
           </View>
         </View>
@@ -386,7 +387,7 @@ export function ConversationScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -396,13 +397,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
   title: {
     flex: 1,
     fontSize: 17,
     fontWeight: '600',
-    color: '#1E232C',
+    color: colors.ink,
     textAlign: 'center',
   },
   headerSpacer: { width: 41 }, // balances the BackButton so the title centers
@@ -414,12 +415,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 64,
   },
-  emptyText: { fontSize: 15, color: '#8391A1', marginBottom: 6 },
-  emptyHint: { fontSize: 13, color: '#8391A1' },
+  emptyText: { fontSize: 15, color: colors.textMuted, marginBottom: 6 },
+  emptyHint: { fontSize: 13, color: colors.textMuted },
   msgWrap: { maxWidth: '80%' },
   senderName: {
     fontSize: 11,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     marginBottom: 3,
     marginLeft: 4,
   },
@@ -429,12 +430,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   bubbleMine: {
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignSelf: 'flex-end',
     borderBottomRightRadius: 2,
   },
   bubbleTheirs: {
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 2,
   },
@@ -450,17 +451,17 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#8391A1',
+    backgroundColor: colors.textMuted,
   },
-  bubbleTextMine: { fontSize: 15, color: '#FFFFFF', lineHeight: 20 },
-  bubbleTextTheirs: { fontSize: 15, color: '#1E232C', lineHeight: 20 },
-  time: { fontSize: 11, color: '#8391A1', marginTop: 3 },
+  bubbleTextMine: { fontSize: 15, color: colors.surfaceWhite, lineHeight: 20 },
+  bubbleTextTheirs: { fontSize: 15, color: colors.ink, lineHeight: 20 },
+  time: { fontSize: 11, color: colors.textMuted, marginTop: 3 },
   timeMine: { alignSelf: 'flex-end', marginRight: 4 },
   timeTheirs: { alignSelf: 'flex-start', marginLeft: 4 },
   inputBar: {
     borderTopWidth: 1,
-    borderTopColor: '#DADADA',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.borderDefault,
+    backgroundColor: colors.surfaceWhite,
     paddingHorizontal: 16,
     paddingTop: 10,
   },
@@ -473,20 +474,20 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 10,
     fontSize: 15,
     fontWeight: '500',
-    color: '#1E232C',
+    color: colors.ink,
   },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '@/constants/theme/colors';
 import Svg, {
   Circle,
   Defs,
@@ -82,8 +83,8 @@ export function CarIllustration({ colorKey, type, size = 96 }: Props) {
       {/* Wheels (drawn first so the body tucks over their top halves) */}
       <Circle cx="54" cy="90" r="16" fill="#20242B" />
       <Circle cx="146" cy="90" r="16" fill="#20242B" />
-      <Circle cx="54" cy="90" r="8" fill="#D7DBE0" />
-      <Circle cx="146" cy="90" r="8" fill="#D7DBE0" />
+      <Circle cx="54" cy="90" r="8" fill={colors.borderDefault} />
+      <Circle cx="146" cy="90" r="8" fill={colors.borderDefault} />
       <Circle cx="54" cy="90" r="2.6" fill="#9AA0A8" />
       <Circle cx="146" cy="90" r="2.6" fill="#9AA0A8" />
 

@@ -16,6 +16,7 @@ import { webScreenFix } from '@/components/ui/FormScroll';
 import { useConversations } from '@/hooks/useConversations';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { formatMonthDay, formatTime, parseISO } from '@/lib/dateUtils';
+import { colors } from '@/constants/theme/colors';
 
 type MessagesListNavigationProp = StackNavigationProp<
   MessagesStackParamList,
@@ -152,7 +153,7 @@ export function MessagesListScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
+          <ActivityIndicator color={colors.brandTeal} size="large" />
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyArea}>
@@ -173,15 +174,15 @@ export function MessagesListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
-  title: { fontSize: 22, fontWeight: '700', color: '#1E232C' },
+  title: { fontSize: 22, fontWeight: '700', color: colors.ink },
   errorWrap: { paddingHorizontal: 24, paddingTop: 12 },
   loadingArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyArea: {
@@ -190,8 +191,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  emptyTitle: { fontSize: 15, color: '#8391A1', marginBottom: 6 },
-  emptyHint: { fontSize: 13, color: '#8391A1' },
+  emptyTitle: { fontSize: 15, color: colors.textMuted, marginBottom: 6 },
+  emptyHint: { fontSize: 13, color: colors.textMuted },
   listContent: { paddingBottom: 24 },
   row: {
     flexDirection: 'row',
@@ -204,31 +205,31 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarGroup: { backgroundColor: '#FFF1F1' },
-  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  avatarGroup: { backgroundColor: colors.brandTealLight },
+  avatarText: { color: colors.surfaceWhite, fontSize: 16, fontWeight: '700' },
   avatarEmoji: { fontSize: 22 },
   rowBody: { flex: 1 },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
-  rowPreview: { fontSize: 13, color: '#6A707C', marginTop: 3 },
+  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  rowPreview: { fontSize: 13, color: colors.inkSecondary, marginTop: 3 },
   rowEnd: { alignItems: 'flex-end', justifyContent: 'center', minWidth: 36 },
   unreadBadge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 5,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  unreadText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
-  stamp: { fontSize: 12, color: '#8391A1' },
+  unreadText: { color: colors.surfaceWhite, fontSize: 11, fontWeight: '700' },
+  stamp: { fontSize: 12, color: colors.textMuted },
   separator: {
     height: 1,
-    backgroundColor: '#E8ECF4',
+    backgroundColor: colors.borderSubtle,
     marginLeft: 82,
   },
 });

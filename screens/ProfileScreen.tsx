@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { deleteAccount } from '@/lib/account';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { cityZone } from '@/lib/zones';
+import { colors } from '@/constants/theme/colors';
 
 type ProfileNavigationProp = StackNavigationProp<ProfileStackParamList, 'Profile'>;
 
@@ -105,7 +106,7 @@ export function ProfileScreen({ navigation }: Props) {
 
       {loading && !user ? (
         <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
+          <ActivityIndicator color={colors.brandTeal} size="large" />
         </View>
       ) : !user ? (
         <View style={styles.loadingArea}>
@@ -160,9 +161,9 @@ export function ProfileScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('EditProfile')}
             activeOpacity={0.7}
           >
-            <Ionicons name="create-outline" size={20} color="#DC143C" />
+            <Ionicons name="create-outline" size={20} color={colors.brandTeal} />
             <Text style={styles.actionText}>Edit information</Text>
-            <Ionicons name="chevron-forward" size={18} color="#8391A1" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
           <View style={styles.logoutRow}>
@@ -183,7 +184,7 @@ export function ProfileScreen({ navigation }: Props) {
             accessibilityLabel="Delete account"
           >
             {deleting ? (
-              <ActivityIndicator color="#DC143C" />
+              <ActivityIndicator color={colors.error} />
             ) : (
               <Text style={styles.deleteText}>Delete account</Text>
             )}
@@ -195,15 +196,15 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8ECF4',
+    borderBottomColor: colors.borderSubtle,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#1E232C' },
+  title: { fontSize: 24, fontWeight: '700', color: colors.ink },
   loadingArea: {
     flex: 1,
     alignItems: 'center',
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     marginBottom: 20,
   },
@@ -224,52 +225,52 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  avatarText: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-  name: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
-  email: { fontSize: 13, color: '#8391A1', marginTop: 2 },
-  detail: { fontSize: 14, color: '#6A707C', marginTop: 8 },
+  avatarText: { color: colors.surfaceWhite, fontSize: 22, fontWeight: '700' },
+  name: { fontSize: 18, fontWeight: '700', color: colors.ink },
+  email: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  detail: { fontSize: 14, color: colors.inkSecondary, marginTop: 8 },
   zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  detailMuted: { fontSize: 14, color: '#8391A1' },
+  detailMuted: { fontSize: 14, color: colors.textMuted },
   zoneBadge: {
-    backgroundColor: '#FFF1F1',
+    backgroundColor: colors.brandTealLight,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  zoneBadgeText: { fontSize: 12, fontWeight: '600', color: '#DC143C' },
+  zoneBadgeText: { fontSize: 12, fontWeight: '600', color: colors.brandTeal },
   factsCard: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   factRow: { paddingVertical: 14 },
-  factLabel: { fontSize: 12, color: '#8391A1', marginBottom: 4 },
-  factValue: { fontSize: 15, fontWeight: '500', color: '#1E232C', lineHeight: 20 },
-  factDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E8ECF4' },
+  factLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
+  factValue: { fontSize: 15, fontWeight: '500', color: colors.ink, lineHeight: 20 },
+  factDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSubtle },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 12,
   },
-  actionText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E232C' },
+  actionText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.ink },
   logoutRow: { marginTop: 8 },
   deleteRow: {
     marginTop: 20,
     alignItems: 'center',
     paddingVertical: 12,
   },
-  deleteText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
+  deleteText: { fontSize: 14, fontWeight: '600', color: colors.error },
 });

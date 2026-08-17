@@ -15,6 +15,7 @@ import { useLiveDriverLocation } from '@/hooks/useLiveDriverLocation';
 import { DEMO_MODE, DEMO_TICK_MS } from '@/lib/demoMode';
 import { DEMO_ROUTE, DEMO_STOPS } from '@/lib/demoRoute';
 import { useDemoDriverLocation } from '@/hooks/useDemoDriverLocation';
+import { colors } from '@/constants/theme/colors';
 
 // Route line treatment, mirroring how navigation maps draw a route: a wide
 // casing underneath so the line stays legible over any map tile, then the route
@@ -26,10 +27,10 @@ import { useDemoDriverLocation } from '@/hooks/useDemoDriverLocation';
 // saturated colours on one path is what looks amateurish.
 const ROUTE_CASING = 'rgba(17,24,39,0.30)';
 const ROUTE_REMAINING = '#A9B2C0';
-const ROUTE_TRAVELLED = '#DC143C';
+const ROUTE_TRAVELLED = colors.brandTeal;
 // On arrival the whole driven path flips to the app's success green, so the
 // finished trip reads as complete rather than as a ride still in progress.
-const ROUTE_ARRIVED = '#16A34A';
+const ROUTE_ARRIVED = colors.success;
 const CASING_WIDTH = 11;
 const ROUTE_WIDTH = 7;
 
@@ -37,7 +38,7 @@ export interface LiveMapProps {
   channel: string; // Supabase broadcast channel to subscribe to for live GPS
   stops: MapStop[]; // school + rider/driver homes to pin
   start: { lat: number; lng: number } | null; // initial car position
-  carColorKey?: string | null; // driver's chosen color; defaults to brand crimson
+  carColorKey?: string | null; // driver's chosen color; defaults to silver if unset
   destinations?: { lat: number; lng: number }[]; // keep car + these drop-offs framed live
   // Runs the DEMO_MODE drive. Deliberately NOT the trip's status: the demo is
   // armed by pressing "Start ride", so re-opening a trip that is already under
@@ -100,13 +101,13 @@ function regionFor(points: GeoPoint[]): Region {
 
 /** Compact top-down car badge in the driver's color (parity with the old marker). */
 function CarBadge({ colorKey }: { colorKey?: string | null }) {
-  const col = carColor(colorKey || 'crimson');
+  const col = carColor(colorKey || 'silver');
   return (
     <Svg width={34} height={34} viewBox="0 0 44 44">
       {/* Soft contact shadow, then a white ring — the same two tricks Apple and
           Google use to lift the vehicle off a dark route line. */}
       <Ellipse cx={22} cy={40} rx={13} ry={3} fill="#000000" opacity={0.16} />
-      <Rect x={8.5} y={3.5} width={27} height={37} rx={10.5} fill="#FFFFFF" opacity={0.95} />
+      <Rect x={8.5} y={3.5} width={27} height={37} rx={10.5} fill={colors.surfaceWhite} opacity={0.95} />
       <Rect x={10} y={5} width={24} height={34} rx={9} fill={col.base} />
       <Rect x={13} y={15} width={18} height={13} rx={5} fill={col.dark} />
       <Path d="M12 14 C16 10 28 10 32 14 L30 17 C26 14.5 18 14.5 14 17 Z" fill="#EAF2FF" />
@@ -467,7 +468,7 @@ export function LiveMap({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: 'hidden', backgroundColor: '#F7F8F9' },
+  container: { flex: 1, overflow: 'hidden', backgroundColor: colors.surfaceSubtle },
   map: { flex: 1 },
   pulseWrap: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center' },
   pulseRing: {
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#16A34A',
+    borderColor: colors.success,
     backgroundColor: 'rgba(22,163,74,0.12)',
   },
   emojiWrap: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },

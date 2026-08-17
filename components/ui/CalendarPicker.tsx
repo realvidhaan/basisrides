@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatMonthYear } from '@/lib/dateUtils';
 import type { DayWidget } from '@/types';
+import { colors } from '@/constants/theme/colors';
 
 interface CalendarPickerProps {
   selected: Date;
@@ -61,7 +62,7 @@ function Chip({ info }: { info: DayWidget }) {
 }
 
 /**
- * Material-style month calendar (Monday-first) in the BasisRide brand, with an
+ * Material-style month calendar (Monday-first) in the Ridr brand, with an
  * optional per-day status widget (Drive/Pickup chip, or a no-school label).
  */
 export function CalendarPicker({ selected, onSelect, dayInfo }: CalendarPickerProps) {
@@ -147,10 +148,10 @@ export function CalendarPicker({ selected, onSelect, dayInfo }: CalendarPickerPr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     padding: 10,
   },
   header: {
@@ -166,17 +167,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
   },
   navChevron: {
     fontSize: 24,
     lineHeight: 26,
-    color: '#1E232C',
+    color: colors.ink,
   },
   monthLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
   },
   weekRow: {
     flexDirection: 'row',
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#8391A1',
+    color: colors.textMuted,
   },
   cell: {
     flex: 1,
@@ -201,23 +202,23 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   cellSelected: {
-    borderColor: '#DC143C',
+    borderColor: colors.brandTeal,
     backgroundColor: '#FFF7F8',
   },
   dayText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1E232C',
+    color: colors.ink,
   },
   dayMuted: {
     color: '#C9CDD4',
   },
   dayToday: {
-    color: '#DC143C',
+    color: colors.brandTeal,
     fontWeight: '800',
   },
   daySelectedText: {
-    color: '#DC143C',
+    color: colors.brandTeal,
   },
   chip: {
     marginTop: 3,
@@ -227,10 +228,10 @@ const styles = StyleSheet.create({
     maxWidth: '96%',
   },
   chipDrive: {
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
   },
   chipRide: {
-    backgroundColor: '#16A34A',
+    backgroundColor: colors.success,
   },
   chipUnmatched: {
     backgroundColor: '#FEF3C7',
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: colors.surfaceWhite,
   },
   chipTextUnmatched: {
     color: '#B45309',
@@ -247,6 +248,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 8,
     fontWeight: '600',
-    color: '#A0A0A0',
+    color: colors.textDisabled,
   },
 });

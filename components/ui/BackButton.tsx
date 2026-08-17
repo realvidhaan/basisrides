@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { colors } from '@/constants/theme/colors';
 
 interface BackButtonProps {
   onPress: () => void;
@@ -24,16 +25,16 @@ const styles = StyleSheet.create({
     width: 41,
     height: 41,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderWidth: 1,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chevron: {
     fontSize: 26,
     lineHeight: 30,
-    color: '#1E232C',
+    color: colors.ink,
     marginTop: -2,
   },
 });

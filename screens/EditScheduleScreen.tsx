@@ -18,6 +18,7 @@ import { TimePickerClock } from '@/components/ui/TimePickerClock';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useMySchedule } from '@/hooks/useMySchedule';
 import { WEEKDAYS, formatTime } from '@/lib/dateUtils';
+import { colors } from '@/constants/theme/colors';
 
 type EditScheduleNavigationProp = StackNavigationProp<
   ScheduleStackParamList,
@@ -88,7 +89,7 @@ export function EditScheduleScreen({ navigation }: Props) {
 
         {loading ? (
           <View style={styles.loadingArea}>
-            <ActivityIndicator color="#DC143C" size="large" />
+            <ActivityIndicator color={colors.brandTeal} size="large" />
           </View>
         ) : (
           WEEKDAYS.map(({ key, label }) => {
@@ -100,9 +101,9 @@ export function EditScheduleScreen({ navigation }: Props) {
                   <Switch
                     value={day.participating}
                     onValueChange={(v) => handleToggle(key, v)}
-                    trackColor={{ false: '#E8ECF4', true: '#DC143C' }}
-                    thumbColor="#FFFFFF"
-                    ios_backgroundColor="#E8ECF4"
+                    trackColor={{ false: colors.borderSubtle, true: colors.brandTeal }}
+                    thumbColor={colors.surfaceWhite}
+                    ios_backgroundColor={colors.borderSubtle}
                   />
                 </View>
                 {day.participating ? (
@@ -128,9 +129,9 @@ export function EditScheduleScreen({ navigation }: Props) {
                         <Switch
                           value={day.canDrive}
                           onValueChange={(v) => handleDriveToggle(key, v)}
-                          trackColor={{ false: '#E8ECF4', true: '#16A34A' }}
-                          thumbColor="#FFFFFF"
-                          ios_backgroundColor="#E8ECF4"
+                          trackColor={{ false: colors.borderSubtle, true: colors.success }}
+                          thumbColor={colors.surfaceWhite}
+                          ios_backgroundColor={colors.borderSubtle}
                         />
                       </View>
                     ) : null}
@@ -153,7 +154,7 @@ export function EditScheduleScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,14 +163,14 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8ECF4',
+    borderBottomColor: colors.borderSubtle,
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#1E232C' },
+  title: { fontSize: 20, fontWeight: '700', color: colors.ink },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
   note: {
     fontSize: 13,
-    color: '#1E232C',
+    color: colors.ink,
     fontWeight: '500',
     marginBottom: 16,
   },
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   loadingArea: { paddingVertical: 32, alignItems: 'center' },
   dayCard: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  dayLabel: { fontSize: 16, fontWeight: '700', color: '#1E232C' },
+  dayLabel: { fontSize: 16, fontWeight: '700', color: colors.ink },
   timeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,10 +200,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
   },
-  timeLabel: { fontSize: 14, fontWeight: '500', color: '#1E232C' },
-  timeValue: { fontSize: 15, fontWeight: '700', color: '#DC143C' },
+  timeLabel: { fontSize: 14, fontWeight: '500', color: colors.ink },
+  timeValue: { fontSize: 15, fontWeight: '700', color: colors.brandTeal },
   driveRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,9 +211,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF4',
+    borderTopColor: colors.borderSubtle,
   },
   driveLabelWrap: { flex: 1 },
-  driveLabel: { fontSize: 14, fontWeight: '600', color: '#16A34A' },
-  driveHint: { fontSize: 12, color: '#8391A1', marginTop: 2 },
+  driveLabel: { fontSize: 14, fontWeight: '600', color: colors.success },
+  driveHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 });
