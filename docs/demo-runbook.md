@@ -1,6 +1,6 @@
 # Demo runbook
 
-Everything needed to give the BasisRides demo, in order. Written from an actual
+Everything needed to give the Ridr demo, in order. Written from an actual
 end-to-end run on an iPhone 17 Pro simulator, so the surprises below are ones
 that really happened, not ones that might.
 

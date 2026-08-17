@@ -1,5 +1,5 @@
 /**
- * BasisRide — Mocked RLS + Behavior Test Suite
+ * Ridr — Mocked RLS + Behavior Test Suite
  *
  * Stack: Jest + jest-expo preset. No network calls. All Supabase interactions
  * are intercepted via the automatic mock at __mocks__/@supabase/supabase-js.ts.

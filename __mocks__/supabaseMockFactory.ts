@@ -1,5 +1,5 @@
 /**
- * Reusable Supabase mock harness for BasisRide Jest tests.
+ * Reusable Supabase mock harness for Ridr Jest tests.
  *
  * Creates a fully chainable mock client that mirrors the supabase-js v2 API
  * shape: from(table).select(...).eq(...).single() etc., all returning

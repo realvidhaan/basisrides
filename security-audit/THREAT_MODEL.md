@@ -1,8 +1,8 @@
-# BasisRide Security Audit — Threat Model
+# Ridr Security Audit — Threat Model
 
 **Date:** 2026-06-22  
 **Auditor:** Automated security audit (Claude Sonnet 4.6)  
-**Project:** BasisRides — carpooling app for BISV students  
+**Project:** Ridr — carpooling app for BISV students  
 **Supabase project:** `itfrksemudjaicksfucr`  
 **Stack:** React Native 0.81 · Expo SDK 54 · Supabase (Postgres + RLS + Auth) · NativeWind
 

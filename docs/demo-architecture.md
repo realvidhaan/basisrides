@@ -138,7 +138,7 @@ export const DEMO_SIGNUP_PREFILL: {
   carState: string; licensePlate: string;
   rejectedEmail: string;   // 'robert.calder@gmail.com'
   acceptedEmail: string;   // 'robert.calder@basisindependent.com'
-  password: string;        // 'basisrides'
+  password: string;        // 'ridrdemo'
 };
 
 /** Domain the demo signup gate accepts. */

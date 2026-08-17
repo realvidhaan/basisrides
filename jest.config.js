@@ -1,5 +1,5 @@
 /**
- * Jest configuration for BasisRide — Expo SDK 54 + jest-expo preset.
+ * Jest configuration for Ridr — Expo SDK 54 + jest-expo preset.
  *
  * References:
  *   https://docs.expo.dev/develop/unit-testing/ (Expo SDK 54)
