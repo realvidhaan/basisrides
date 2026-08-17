@@ -22,8 +22,15 @@ export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked'
         source={require('../../assets/logo-mark.png')}
         style={{ width: markSize, height: markSize }}
         resizeMode="contain"
-        accessibilityElementsHidden
-        importantForAccessibility="no"
+        // The wordmark carries the "Ridr" label when it's shown, so the mark
+        // itself must stay silent to VoiceOver/TalkBack — otherwise the two
+        // sit side by side and get announced as "Ridr, Ridr". When the
+        // wordmark is hidden (e.g. a cramped header row), the mark becomes
+        // the only element and has to speak for itself instead.
+        accessibilityElementsHidden={showWordmark}
+        importantForAccessibility={showWordmark ? 'no' : 'yes'}
+        accessibilityRole={showWordmark ? undefined : 'image'}
+        accessibilityLabel={showWordmark ? undefined : 'Ridr'}
       />
       {showWordmark && (
         <Text

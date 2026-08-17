@@ -35,13 +35,17 @@ Threshold notes (measured with Pillow/numpy against the actual source):
   glyph's outer edge.
 """
 
+import argparse
 import os
+import sys
 import numpy as np
 from PIL import Image
 
-REPO = "/Users/vidhaan/Developer/BasisRide"
-SRC = os.path.expanduser("~/Downloads/design_handoff_ridr_app/assets/logo.jpg")
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_SRC = os.path.expanduser("~/Downloads/design_handoff_ridr_app/assets/logo.jpg")
 ASSETS = os.path.join(REPO, "assets")
+
+SRC = DEFAULT_SRC
 
 BRAND_TEAL_LIGHT = (0xE6, 0xF5, 0xF5)  # #E6F5F5
 MONO_COLOR = (0x00, 0x00, 0x00)  # #000000, alpha-only silhouette
@@ -179,4 +183,15 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "source",
+        nargs="?",
+        default=DEFAULT_SRC,
+        help=f"Path to the handoff logo image (default: {DEFAULT_SRC})",
+    )
+    args = parser.parse_args()
+    SRC = os.path.expanduser(args.source)
+    if not os.path.isfile(SRC):
+        sys.exit(f"Source image not found: {SRC}")
     main()

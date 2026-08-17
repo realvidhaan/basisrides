@@ -398,7 +398,12 @@ export function ScheduleScreen({ navigation }: Props) {
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Logo size="home" layout="inline" />
+        {/* Mark-only: the header row already carries 2 icon buttons + an
+            "Edit Schedule" link, so a full mark+wordmark lockup (sized for a
+            standalone screen, per the design handoff) risks overflowing on
+            narrow phones. The wordmark lives on Welcome; the tab bar already
+            labels this screen "Schedule". */}
+        <Logo size="home" layout="inline" showWordmark={false} />
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Swaps')}
