@@ -403,7 +403,7 @@ export function ScheduleScreen({ navigation }: Props) {
             standalone screen, per the design handoff) risks overflowing on
             narrow phones. The wordmark lives on Welcome; the tab bar already
             labels this screen "Schedule". */}
-        <Logo size="home" layout="inline" showWordmark={false} />
+        <Logo size="header" layout="inline" showWordmark={false} />
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Swaps')}

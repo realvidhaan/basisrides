@@ -6,6 +6,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import type { AuthStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/brand/Logo';
+import { colors } from '@/constants/theme/colors';
 
 type WelcomeNavigationProp = StackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -37,7 +38,7 @@ export function WelcomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
   },
   inner: {
     flex: 1,

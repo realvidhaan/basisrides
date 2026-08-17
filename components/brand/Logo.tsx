@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/constants/theme/colors';
 import { typography } from '@/constants/theme/typography';
 
-type LogoSize = 'welcome' | 'home';
+type LogoSize = 'welcome' | 'home' | 'header';
 type LogoLayout = 'stacked' | 'inline';
 
 interface LogoProps {
@@ -12,7 +12,11 @@ interface LogoProps {
   layout?: LogoLayout;
 }
 
-const MARK_SIZE: Record<LogoSize, number> = { welcome: 92, home: 56 };
+// 'header' is sized for a compact row alongside other controls (e.g. the
+// Schedule screen's header, which also carries icon buttons and a text
+// link) — 'home' (56px) is the design handoff's standalone-screen size and
+// would grow that row well past a text wordmark's line height.
+const MARK_SIZE: Record<LogoSize, number> = { welcome: 92, home: 56, header: 28 };
 
 export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked' }: LogoProps) {
   const markSize = MARK_SIZE[size];

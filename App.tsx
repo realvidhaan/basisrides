@@ -203,7 +203,7 @@ function App() {
                 <ActivityIndicator
                   color={colors.brandTeal}
                   size="small"
-                  accessibilityLabel="Restoring your session"
+                  accessibilityLabel="Getting Ridr ready"
                 />
               </View>
             </SafeAreaView>
