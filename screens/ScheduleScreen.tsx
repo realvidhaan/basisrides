@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { CarIllustration } from '@/components/CarIllustration';
 import { ImpactStrip } from '@/components/ui/ImpactStrip';
+import { Logo } from '@/components/brand/Logo';
 import { carColorLabel, carTypeLabel } from '@/lib/carOptions';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useCarpool } from '@/hooks/useCarpool';
@@ -35,6 +36,7 @@ import { formatDayLabel, formatMonthDay, formatTime, toISO } from '@/lib/dateUti
 import { getOrCreateDM, getOrCreateGroupChat } from '@/lib/conversationUtils';
 import { DEMO_MODE } from '@/lib/demoMode';
 import { demoInitialDate } from '@/lib/demo/fixtures';
+import { colors } from '@/constants/theme/colors';
 
 // Composite so this screen can jump to the Messages tab's Conversation screen.
 type ScheduleNavigationProp = CompositeNavigationProp<
@@ -120,7 +122,7 @@ function MemberRow({
           accessibilityLabel={`Message ${member.name}`}
           style={styles.dmIcon}
         >
-          <Ionicons name="chatbubble-outline" size={18} color="#8391A1" />
+          <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -353,7 +355,7 @@ export function ScheduleScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('LiveTrip', { date: toISO(selected) })}
             activeOpacity={0.85}
           >
-            <Ionicons name="navigate" size={16} color="#FFFFFF" />
+            <Ionicons name="navigate" size={16} color={colors.surfaceWhite} />
             <Text style={styles.tripBtnText}>
               {a.role === 'drive' ? 'Open live trip' : 'Track ride'}
             </Text>
@@ -368,7 +370,7 @@ export function ScheduleScreen({ navigation }: Props) {
             disabled={opening}
             activeOpacity={0.7}
           >
-            <Ionicons name="chatbubble-outline" size={16} color="#DC143C" />
+            <Ionicons name="chatbubble-outline" size={16} color={colors.brandTeal} />
             <Text style={styles.groupChatText}>Group chat</Text>
           </TouchableOpacity>
         ) : null}
@@ -396,7 +398,7 @@ export function ScheduleScreen({ navigation }: Props) {
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Text style={styles.wordmark}>BasisRide</Text>
+        <Logo size="home" layout="inline" />
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Swaps')}
@@ -405,7 +407,7 @@ export function ScheduleScreen({ navigation }: Props) {
             style={styles.bell}
             activeOpacity={0.6}
           >
-            <Ionicons name="swap-horizontal" size={22} color="#1E232C" />
+            <Ionicons name="swap-horizontal" size={22} color={colors.ink} />
             {openCount > 0 ? (
               <View style={styles.bellBadge}>
                 <Text style={styles.bellBadgeText}>
@@ -421,7 +423,7 @@ export function ScheduleScreen({ navigation }: Props) {
             style={styles.bell}
             activeOpacity={0.6}
           >
-            <Ionicons name="notifications-outline" size={22} color="#1E232C" />
+            <Ionicons name="notifications-outline" size={22} color={colors.ink} />
             {unreadCount > 0 ? (
               <View style={styles.bellBadge}>
                 <Text style={styles.bellBadgeText}>
@@ -459,7 +461,7 @@ export function ScheduleScreen({ navigation }: Props) {
 
         {loading ? (
           <View style={styles.loadingArea}>
-            <ActivityIndicator color="#DC143C" size="large" />
+            <ActivityIndicator color={colors.brandTeal} size="large" />
           </View>
         ) : (
           renderDetail()
@@ -470,7 +472,7 @@ export function ScheduleScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -479,21 +481,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8ECF4',
+    borderBottomColor: colors.borderSubtle,
   },
-  wordmark: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#DC143C',
-    letterSpacing: -0.5,
-  },
-  editLink: { fontSize: 15, fontWeight: '700', color: '#DC143C' },
+  editLink: { fontSize: 15, fontWeight: '700', color: colors.brandTeal },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   dayHeading: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     marginTop: 20,
     marginBottom: 12,
     paddingHorizontal: 8,
@@ -501,7 +497,7 @@ const styles = StyleSheet.create({
   loadingArea: { paddingVertical: 32, alignItems: 'center' },
   groupCard: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 8,
@@ -512,25 +508,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  statusGood: { fontSize: 16, fontWeight: '700', color: '#16A34A' },
-  statusDrive: { fontSize: 16, fontWeight: '700', color: '#DC143C' },
-  statusWarn: { fontSize: 16, fontWeight: '700', color: '#FF9500' },
+  statusGood: { fontSize: 16, fontWeight: '700', color: colors.success },
+  statusDrive: { fontSize: 16, fontWeight: '700', color: colors.brandTeal },
+  statusWarn: { fontSize: 16, fontWeight: '700', color: colors.warning },
   zoneBadge: {
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
-    borderColor: '#DADADA',
+    borderColor: colors.borderDefault,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  zoneBadgeText: { fontSize: 12, fontWeight: '600', color: '#6A707C' },
-  subtle: { fontSize: 13, color: '#6A707C', marginBottom: 8 },
-  note: { fontSize: 12, fontWeight: '600', color: '#FF9500', marginBottom: 8 },
+  zoneBadgeText: { fontSize: 12, fontWeight: '600', color: colors.inkSecondary },
+  subtle: { fontSize: 13, color: colors.inkSecondary, marginBottom: 8 },
+  note: { fontSize: 12, fontWeight: '600', color: colors.warning, marginBottom: 8 },
   carCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     borderRadius: 12,
     padding: 12,
     marginTop: 10,
@@ -540,19 +536,19 @@ const styles = StyleSheet.create({
   carLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#8391A1',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 2,
   },
-  carModel: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
-  carMeta: { fontSize: 13, color: '#6A707C', marginTop: 1 },
+  carModel: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  carMeta: { fontSize: 13, color: colors.inkSecondary, marginTop: 1 },
   plateBadge: {
     alignSelf: 'flex-start',
     marginTop: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderWidth: 1.5,
-    borderColor: '#D7DBE0',
+    borderColor: colors.borderDefault,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -560,13 +556,13 @@ const styles = StyleSheet.create({
   plateText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     letterSpacing: 1.5,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8391A1',
+    color: colors.textMuted,
     marginTop: 12,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -582,16 +578,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarDark: { backgroundColor: '#1E232C' },
-  avatarText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  avatarDark: { backgroundColor: colors.ink },
+  avatarText: { color: colors.surfaceWhite, fontSize: 13, fontWeight: '700' },
   memberInfo: { flex: 1 },
-  memberName: { fontSize: 15, fontWeight: '500', color: '#1E232C' },
-  memberAddress: { fontSize: 13, fontWeight: '500', color: '#8391A1', marginTop: 1 },
-  memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  memberName: { fontSize: 15, fontWeight: '500', color: colors.ink },
+  memberAddress: { fontSize: 13, fontWeight: '500', color: colors.textMuted, marginTop: 1 },
+  memberTime: { fontSize: 13, fontWeight: '600', color: colors.inkSecondary },
   dmIcon: { marginLeft: 12, padding: 2 },
   groupChatBtn: {
     flexDirection: 'row',
@@ -600,9 +596,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF4',
+    borderTopColor: colors.borderSubtle,
   },
-  groupChatText: { fontSize: 14, fontWeight: '700', color: '#DC143C' },
+  groupChatText: { fontSize: 14, fontWeight: '700', color: colors.brandTeal },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   bell: { position: 'relative' },
   bellBadge: {
@@ -613,11 +609,11 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bellBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  bellBadgeText: { color: colors.surfaceWhite, fontSize: 10, fontWeight: '700' },
   tripBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -626,21 +622,21 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 13,
     borderRadius: 10,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
   },
-  tripBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  tripBtnText: { fontSize: 15, fontWeight: '700', color: colors.surfaceWhite },
   coverBtn: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF4',
+    borderTopColor: colors.borderSubtle,
   },
-  coverBtnText: { fontSize: 14, fontWeight: '600', color: '#DC143C' },
+  coverBtnText: { fontSize: 14, fontWeight: '600', color: colors.brandTeal },
   skipBtn: { marginTop: 14, alignItems: 'center' },
-  skipText: { fontSize: 13, fontWeight: '600', color: '#8391A1' },
+  skipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   infoCard: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 8,
@@ -648,9 +644,9 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     marginBottom: 6,
   },
-  infoText: { fontSize: 14, color: '#6A707C', lineHeight: 20 },
+  infoText: { fontSize: 14, color: colors.inkSecondary, lineHeight: 20 },
   infoButton: { marginTop: 16 },
 });
