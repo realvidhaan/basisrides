@@ -1,41 +1,43 @@
-/* BasisRides — Color tokens
-   Source: codebase (Button.tsx, Input.tsx, tailwind.config.js) + Figma design */
-
 :root {
-  /* ── Brand ── */
-  --color-brand-red:       #DC143C;   /* primary crimson; buttons, links, accents */
-  --color-brand-red-light: #FFF1F1;   /* tint for error/alert backgrounds */
-  --color-brand-red-dark:  #B01030;   /* hover/pressed state */
+  /* Brand */
+  --color-brand-teal: #0F8B8D;
+  --color-brand-teal-dark: #0B6B6D;
+  --color-brand-teal-light: #E6F5F5;
+  --color-brand-orange: #F2994A;
+  --color-brand-orange-dark: #D97F2E;
+  --color-brand-orange-light: #FEF1E4;
 
-  /* ── Neutrals ── */
-  --color-ink:             #1E232C;   /* headings, near-black (rgb 30,35,44) */
-  --color-ink-secondary:   #6A707C;   /* secondary labels (rgb 106,112,124) */
-  --color-text-muted:      #8391A1;   /* placeholder / body muted (rgb 131,145,161) */
-  --color-text-disabled:   #A0A0A0;   /* disabled input placeholder */
+  /* Neutrals */
+  --color-ink: #1B2523;
+  --color-ink-secondary: #55635F;
+  --color-text-muted: #7C8C8B;
+  --color-text-disabled: #AAB5B2;
 
-  /* ── Surfaces ── */
-  --color-surface-white:   #FFFFFF;
-  --color-surface-subtle:  #F7F8F9;   /* input backgrounds (rgb 247,248,249) */
-  --color-surface-overlay: rgba(30,35,44,0.04);
+  /* Surfaces */
+  --color-surface-white: #FFFFFF;
+  --color-surface-subtle: #F4F9F9;
+  --color-surface-overlay: rgba(27,37,35,0.04);
 
-  /* ── Borders ── */
-  --color-border-default:  #DADADA;   /* standard border (rgb 218,218,218) */
-  --color-border-subtle:   #E8ECF4;   /* subtle border / back-button ring (rgb 232,236,244) */
-  --color-border-focus:    #DC143C;   /* focused input border */
-  --color-border-error:    #DC143C;
+  /* Borders */
+  --color-border-default: #D8E4E3;
+  --color-border-subtle: #E3ECEA;
+  --color-border-focus: #0F8B8D;
+  --color-border-error: #E5484D;
 
-  /* ── Semantic ── */
-  --color-success:         #16A34A;   /* from tailwind config */
-  --color-success-light:   #F0FDF4;
-  --color-warning:         #FF9500;   /* amber/orange (rgb 255,149,0) */
-  --color-positive:        #18C07A;   /* green accent (rgb 24,192,122) */
-  --color-error:           #DC143C;
+  /* Semantic */
+  --color-success: #1E9E6B;
+  --color-success-light: #EAFBF3;
+  --color-warning: #F2994A;
+  --color-warning-light: #FEF1E4;
+  --color-error: #E5484D;
+  --color-error-light: #FDEEEE;
 
-  /* ── Semantic aliases ── */
-  --color-text-primary:    var(--color-ink);
-  --color-text-secondary:  var(--color-ink-secondary);
-  --color-text-placeholder:var(--color-text-muted);
-  --color-bg-page:         var(--color-surface-white);
-  --color-bg-input:        var(--color-surface-subtle);
-  --color-accent:          var(--color-brand-red);
+  /* Aliases */
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: var(--color-ink-secondary);
+  --color-text-placeholder: var(--color-text-muted);
+  --color-bg-page: var(--color-surface-white);
+  --color-bg-input: var(--color-surface-subtle);
+  --color-accent: var(--color-brand-teal);
+  --color-accent-secondary: var(--color-brand-orange);
 }

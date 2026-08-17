@@ -1,8 +1,8 @@
-/* @ds-bundle: {"format":3,"namespace":"BasisRidesDesignSystem_e37a2c","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"ErrorBanner","sourcePath":"components/core/ErrorBanner.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"Badge","sourcePath":"components/feedback/Badge.jsx"}],"sourceHashes":{"components/core/Button.jsx":"6838ed739dc4","components/core/ErrorBanner.jsx":"93834b862757","components/core/Input.jsx":"77a7619620b7","components/feedback/Badge.jsx":"e0dc03ccb48b"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"RidrDesignSystem_e37a2c","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"ErrorBanner","sourcePath":"components/core/ErrorBanner.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"Badge","sourcePath":"components/feedback/Badge.jsx"}],"sourceHashes":{"components/core/Button.jsx":"6838ed739dc4","components/core/ErrorBanner.jsx":"93834b862757","components/core/Input.jsx":"77a7619620b7","components/feedback/Badge.jsx":"e0dc03ccb48b"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
-const __ds_ns = (window.BasisRidesDesignSystem_e37a2c = window.BasisRidesDesignSystem_e37a2c || {});
+const __ds_ns = (window.RidrDesignSystem_e37a2c = window.RidrDesignSystem_e37a2c || {});
 
 const __ds_scope = {};
 
