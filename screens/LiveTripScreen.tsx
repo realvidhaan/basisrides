@@ -588,7 +588,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                 arrived
                   ? styles.dotGreen
                   : status === 'on_my_way'
-                    ? styles.dotCrimson
+                    ? styles.dotActive
                     : styles.dotGrey,
               ]}
             />
@@ -674,12 +674,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
-  dotCrimson: { backgroundColor: colors.brandTeal },
+  dotActive: { backgroundColor: colors.brandTeal },
   dotGreen: { backgroundColor: colors.success },
   dotGrey: { backgroundColor: '#C9CDD4' },
   // Arrival tints the whole banner rather than just the dot — at a glance the
   // green field is what reads as "done", not a 10pt circle.
-  statusBannerDone: { backgroundColor: '#EAF7EE' },
+  statusBannerDone: { backgroundColor: colors.successLight },
   statusText: { fontSize: 15, fontWeight: '700', color: colors.ink },
   statusTextDone: { color: '#15803D' },
   card: {
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -10,
     borderRadius: 10,
   },
-  pickupRowDone: { backgroundColor: '#EAF7EE' },
+  pickupRowDone: { backgroundColor: colors.successLight },
   memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.ink },
   memberTime: { fontSize: 13, fontWeight: '600', color: colors.inkSecondary },
   startBtnWrap: { marginTop: 18 },

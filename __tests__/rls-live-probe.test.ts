@@ -1,5 +1,5 @@
 /**
- * BasisRide — Live RLS Probe Suite
+ * Ridr — Live RLS Probe Suite
  *
  * SAFETY: This suite SKIPS automatically when SUPABASE_TEST_URL and
  * SUPABASE_TEST_ANON_KEY are not present in the environment. It must NEVER run

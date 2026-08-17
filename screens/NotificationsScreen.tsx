@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 14,
   },
-  rowUnread: { backgroundColor: '#FFF6F6' },
+  rowUnread: { backgroundColor: colors.brandTealLight },
   icon: { fontSize: 22 },
   body: { flex: 1 },
   rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },

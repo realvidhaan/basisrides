@@ -1,6 +1,6 @@
-# BasisRide Launch Checklist
+# Ridr Launch Checklist
 
-Tracks the steps to get BasisRide onto TestFlight and then the App Store. Code
+Tracks the steps to get Ridr onto TestFlight and then the App Store. Code
 items shipped on `master` are checked; the rest need your accounts/credentials.
 
 ## Gate 1 — before TestFlight goes to real BISV families

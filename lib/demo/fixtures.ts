@@ -545,5 +545,5 @@ export const DEMO_SIGNUP_PREFILL: {
   licensePlate: '7XKR482',
   rejectedEmail: 'robert.calder@gmail.com',
   acceptedEmail: `robert.calder@${DEMO_SCHOOL_EMAIL_DOMAIN}`,
-  password: 'basisrides',
+  password: 'ridrdemo',
 };

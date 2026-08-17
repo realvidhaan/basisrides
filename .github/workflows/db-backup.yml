@@ -12,7 +12,7 @@
 #      named SUPABASE_DB_URL with that URI as the value.
 #
 # Restore (when you need it): download the artifact, then
-#   psql "$SUPABASE_DB_URL" < basisride-backup.sql
+#   psql "$SUPABASE_DB_URL" < ridr-backup.sql
 
 name: DB Backup
 
@@ -66,16 +66,16 @@ jobs:
                 --schema=public \
                 --no-owner \
                 --no-privileges \
-                -f /work/basisride-backup.sql
+                -f /work/ridr-backup.sql
             '
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
-          name: basisride-db-backup
-          path: basisride-backup.sql
+          name: ridr-db-backup
+          path: ridr-backup.sql
           # Retention tradeoff: GitHub artifacts expire (max 90 days). For
-          # permanent history, push the dump to a private "basisride-backups"
+          # permanent history, push the dump to a private "ridr-backups"
           # repo or an object store instead. 30 days is plenty for "oops, restore
           # last night" recovery.
           retention-days: 30

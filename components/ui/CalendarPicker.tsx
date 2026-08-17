@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   cellSelected: {
     borderColor: colors.brandTeal,
-    backgroundColor: '#FFF7F8',
+    backgroundColor: colors.brandTealLight,
   },
   dayText: {
     fontSize: 13,
