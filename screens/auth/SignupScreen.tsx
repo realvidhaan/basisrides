@@ -31,6 +31,7 @@ import { validatePlate } from '@/lib/licensePlate';
 import { impact } from '@/lib/haptics';
 import { DEMO_MODE } from '@/lib/demoMode';
 import { DEMO_SCHOOL_EMAIL_DOMAIN, DEMO_SIGNUP_PREFILL } from '@/lib/demo/fixtures';
+import { colors } from '@/constants/theme/colors';
 
 type SignupNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -391,7 +392,7 @@ export function SignupScreen({ navigation }: Props) {
               returnKeyType="next"
             />
             <Text style={styles.helperText}>
-              BasisRide is invite-only for verified BISV families. Enter the code
+              Ridr is invite-only for verified BISV families. Enter the code
               shared on ParentSquare.
             </Text>
           </>
@@ -552,7 +553,7 @@ export function SignupScreen({ navigation }: Props) {
           <Ionicons
             name={form.agreedToTerms ? 'checkbox' : 'square-outline'}
             size={22}
-            color={form.agreedToTerms ? '#DC143C' : '#8391A1'}
+            color={form.agreedToTerms ? colors.brandTeal : colors.textMuted}
           />
           <Text style={styles.consentText}>
             I&apos;m a BISV parent/guardian and I agree to the{' '}
@@ -587,7 +588,7 @@ export function SignupScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
   },
   header: {
     flexDirection: 'row',
@@ -595,7 +596,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.borderSubtle,
   },
   backButton: {
     marginRight: 12,
@@ -629,19 +630,19 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     overflow: 'hidden',
     height: Platform.OS === 'ios' ? 160 : 52,
     justifyContent: 'center',
   },
   pickerContainerError: {
-    borderColor: '#DC143C',
+    borderColor: colors.error,
   },
   fieldError: {
     fontSize: 12,
-    color: '#DC143C',
+    color: colors.error,
     marginTop: 4,
   },
   picker: {
@@ -658,12 +659,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   carSection: {
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
-  carSectionTitle: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
+  carSectionTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
   carSectionHint: {
     fontSize: 12,
     color: '#6B6B6B',
@@ -672,7 +673,7 @@ const styles = StyleSheet.create({
   },
   showHide: {
     fontSize: 13,
-    color: '#DC143C',
+    color: colors.brandTeal,
     fontWeight: '500',
     paddingLeft: 8,
   },
@@ -686,11 +687,11 @@ const styles = StyleSheet.create({
   consentText: {
     flex: 1,
     fontSize: 13,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     lineHeight: 19,
   },
   consentLink: {
-    color: '#DC143C',
+    color: colors.brandTeal,
     fontWeight: '600',
   },
   submitRow: {
@@ -706,19 +707,19 @@ const styles = StyleSheet.create({
   confirmTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     marginBottom: 12,
   },
   confirmText: {
     fontSize: 15,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     lineHeight: 22,
     textAlign: 'center',
   },
-  confirmEmail: { fontWeight: '700', color: '#1E232C' },
+  confirmEmail: { fontWeight: '700', color: colors.ink },
   resentText: {
     fontSize: 14,
-    color: '#16A34A',
+    color: colors.success,
     fontWeight: '600',
     marginTop: 20,
   },

@@ -17,6 +17,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { webScreenFix } from '@/components/ui/FormScroll';
 import { useSwaps } from '@/hooks/useSwaps';
 import { formatDayLabel, parseISO } from '@/lib/dateUtils';
+import { colors } from '@/constants/theme/colors';
 
 type Nav = StackNavigationProp<ScheduleStackParamList, 'Swaps'>;
 
@@ -72,7 +73,7 @@ export function SwapsScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
+          <ActivityIndicator color={colors.brandTeal} size="large" />
         </View>
       ) : (
         <ScrollView
@@ -170,7 +171,7 @@ export function SwapsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,59 +180,59 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
-  title: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1E232C' },
+  title: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.ink },
   headerSpacer: { width: 41 },
   loadingArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  intro: { fontSize: 14, color: '#6A707C', lineHeight: 20, marginBottom: 20 },
+  intro: { fontSize: 14, color: colors.inkSecondary, lineHeight: 20, marginBottom: 20 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     marginBottom: 12,
   },
   sectionGap: { marginTop: 24 },
-  empty: { fontSize: 14, color: '#8391A1', marginBottom: 8 },
+  empty: { fontSize: 14, color: colors.textMuted, marginBottom: 8 },
   card: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
-  cardName: { fontSize: 16, fontWeight: '700', color: '#1E232C' },
-  cardDay: { fontSize: 14, fontWeight: '600', color: '#1E232C', marginTop: 2 },
-  cardZone: { fontSize: 13, color: '#8391A1', marginTop: 2 },
-  cardNote: { fontSize: 14, color: '#6A707C', marginTop: 8, fontStyle: 'italic' },
+  cardName: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  cardDay: { fontSize: 14, fontWeight: '600', color: colors.ink, marginTop: 2 },
+  cardZone: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  cardNote: { fontSize: 14, color: colors.inkSecondary, marginTop: 8, fontStyle: 'italic' },
   coverBtn: {
     marginTop: 14,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
   },
   coverBtnDisabled: { opacity: 0.5 },
-  coverBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  coverBtnText: { fontSize: 14, fontWeight: '700', color: colors.surfaceWhite },
   myTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   badge: { borderRadius: 9999, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeOpen: { backgroundColor: '#FFF1F1' },
+  badgeOpen: { backgroundColor: colors.brandTealLight },
   badgeFilled: { backgroundColor: '#F0FDF4' },
   badgeCancelled: { backgroundColor: '#F1F3F5' },
   badgeText: { fontSize: 12, fontWeight: '700' },
-  badgeTextOpen: { color: '#DC143C' },
-  badgeTextFilled: { color: '#16A34A' },
-  badgeTextCancelled: { color: '#8391A1' },
+  badgeTextOpen: { color: colors.brandTeal },
+  badgeTextFilled: { color: colors.success },
+  badgeTextCancelled: { color: colors.textMuted },
   cancelText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#DC143C',
+    color: colors.brandTeal,
     marginTop: 12,
   },
 });

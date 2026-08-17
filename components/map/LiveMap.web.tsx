@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { buildMapHtml, type MapHtmlOptions } from '@/lib/mapHtml';
+import { colors } from '@/constants/theme/colors';
 
 /**
  * Web live map: the same Leaflet HTML rendered in a plain <iframe> (react-native
@@ -26,5 +27,5 @@ export function LiveMap({ channel, stops, start, carColorKey, destinations }: Ma
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: 'hidden', backgroundColor: '#F7F8F9' },
+  container: { flex: 1, overflow: 'hidden', backgroundColor: colors.surfaceSubtle },
 });

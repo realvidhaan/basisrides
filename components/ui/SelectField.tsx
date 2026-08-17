@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/constants/theme/colors';
 
 export interface SelectOption {
   label: string;
@@ -60,7 +61,7 @@ export function SelectField({
         <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1}>
           {selected?.label ?? placeholder}
         </Text>
-        <Ionicons name="chevron-down" size={18} color="#8391A1" />
+        <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
       </TouchableOpacity>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -98,7 +99,7 @@ export function SelectField({
                       {o.label}
                     </Text>
                     {active ? (
-                      <Ionicons name="checkmark" size={20} color="#DC143C" />
+                      <Ionicons name="checkmark" size={20} color={colors.brandTeal} />
                     ) : null}
                   </TouchableOpacity>
                 );
@@ -118,17 +119,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     height: 52,
     paddingHorizontal: 14,
   },
-  fieldError: { borderColor: '#DC143C' },
+  fieldError: { borderColor: colors.error },
   value: { flex: 1, fontSize: 15, color: '#0A0A0A', marginRight: 8 },
-  placeholder: { color: '#A0A0A0' },
-  errorText: { fontSize: 12, color: '#DC143C', marginTop: 4 },
-  modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  placeholder: { color: colors.textDisabled },
+  errorText: { fontSize: 12, color: colors.error, marginTop: 4 },
+  modalContainer: { flex: 1, backgroundColor: colors.surfaceWhite },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,10 +138,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.borderSubtle,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
-  done: { fontSize: 16, fontWeight: '600', color: '#DC143C' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.ink },
+  done: { fontSize: 16, fontWeight: '600', color: colors.brandTeal },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -150,6 +151,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F0F0F0',
   },
-  rowText: { fontSize: 16, color: '#1E232C' },
-  rowTextActive: { color: '#DC143C', fontWeight: '600' },
+  rowText: { fontSize: 16, color: colors.ink },
+  rowTextActive: { color: colors.brandTeal, fontWeight: '600' },
 });

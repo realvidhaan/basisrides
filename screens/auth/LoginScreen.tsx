@@ -14,6 +14,7 @@ import { supabase, mapSupabaseError } from '@/lib/supabase';
 import { impact } from '@/lib/haptics';
 import { DEMO_MODE } from '@/lib/demoMode';
 import { DEMO_SIGNUP_PREFILL } from '@/lib/demo/fixtures';
+import { colors } from '@/constants/theme/colors';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -73,7 +74,7 @@ export function LoginScreen({ navigation }: Props) {
         extraScrollHeight={16}
       >
         <Text style={styles.heading}>
-          Welcome back to BasisRides. Glad to see you again!
+          Welcome back to Ridr. Glad to see you again!
         </Text>
 
         <ErrorMessage message={error} />
@@ -139,7 +140,7 @@ export function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
   },
   backRow: {
     paddingHorizontal: 20,
@@ -157,14 +158,14 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     lineHeight: 39,
     letterSpacing: -0.3,
     marginBottom: 32,
   },
   showHide: {
     fontSize: 13,
-    color: '#DC143C',
+    color: colors.brandTeal,
     fontWeight: '500',
     paddingLeft: 8,
   },
@@ -179,9 +180,9 @@ const styles = StyleSheet.create({
   registerText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
   },
   registerLink: {
-    color: '#DC143C',
+    color: colors.brandTeal,
   },
 });

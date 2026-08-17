@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { colors } from '@/constants/theme/colors';
 
 /**
  * Push-notification setup. Foreground notifications still surface a banner so a
@@ -33,7 +34,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Carpool alerts',
         importance: Notifications.AndroidImportance.MAX,
-        lightColor: '#DC143C',
+        lightColor: colors.brandTeal,
       });
     }
 

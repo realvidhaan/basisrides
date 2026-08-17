@@ -42,7 +42,7 @@ export function buildMapHtml(opts: MapHtmlOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; background: #F7F8F9; }
+    html, body, #map { height: 100%; margin: 0; padding: 0; background: #F4F9F9; }
     .pin { font-size: 20px; line-height: 20px; text-align: center; }
     .car-wrap { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
     .car-svg {

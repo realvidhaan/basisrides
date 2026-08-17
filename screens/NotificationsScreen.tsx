@@ -20,6 +20,7 @@ import type {
 import { BackButton } from '@/components/ui/BackButton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { useNotifications } from '@/hooks/useNotifications';
+import { colors } from '@/constants/theme/colors';
 
 type Nav = CompositeNavigationProp<
   StackNavigationProp<ScheduleStackParamList, 'Notifications'>,
@@ -136,7 +137,7 @@ export function NotificationsScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
+          <ActivityIndicator color={colors.brandTeal} size="large" />
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyArea}>
@@ -159,7 +160,7 @@ export function NotificationsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,9 +169,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
-  title: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1E232C' },
+  title: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.ink },
   headerSpacer: { width: 41 },
   errorWrap: { paddingHorizontal: 20, paddingTop: 12 },
   loadingArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -180,8 +181,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  emptyTitle: { fontSize: 15, color: '#8391A1', marginBottom: 6 },
-  emptyHint: { fontSize: 13, color: '#8391A1', textAlign: 'center' },
+  emptyTitle: { fontSize: 15, color: colors.textMuted, marginBottom: 6 },
+  emptyHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
   listContent: { paddingBottom: 24 },
   row: {
     flexDirection: 'row',
@@ -193,8 +194,8 @@ const styles = StyleSheet.create({
   rowUnread: { backgroundColor: '#FFF6F6' },
   icon: { fontSize: 22 },
   body: { flex: 1 },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
-  rowBody: { fontSize: 13, color: '#6A707C', marginTop: 3 },
-  time: { fontSize: 12, color: '#8391A1' },
-  separator: { height: 1, backgroundColor: '#E8ECF4', marginLeft: 56 },
+  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  rowBody: { fontSize: 13, color: colors.inkSecondary, marginTop: 3 },
+  time: { fontSize: 12, color: colors.textMuted },
+  separator: { height: 1, backgroundColor: colors.borderSubtle, marginLeft: 56 },
 });

@@ -34,6 +34,7 @@ import { track } from '@/lib/analytics';
 import { impact } from '@/lib/haptics';
 import { formatDayLabel, formatTime, parseISO } from '@/lib/dateUtils';
 import { notifyDemoTripComplete } from '@/lib/demo/script';
+import { colors } from '@/constants/theme/colors';
 
 type Nav = StackNavigationProp<ScheduleStackParamList, 'LiveTrip'>;
 type Rt = RouteProp<ScheduleStackParamList, 'LiveTrip'>;
@@ -300,10 +301,10 @@ export function LiveTripScreen({ navigation, route }: Props) {
       status === 'completed'
         ? `${driverName} ${verb} done — everyone's dropped off.`
         : status === 'on_my_way'
-          ? `${driverName} ${verb} en route on the BasisRide carpool right now.`
-          : `${driverName} ${verb} getting ready for the BasisRide carpool (pickup ${a ? formatTime(a.time) : 'soon'}).`;
+          ? `${driverName} ${verb} en route on the Ridr carpool right now.`
+          : `${driverName} ${verb} getting ready for the Ridr carpool (pickup ${a ? formatTime(a.time) : 'soon'}).`;
     try {
-      await Share.share({ message: `BasisRide trip update: ${phase}` });
+      await Share.share({ message: `Ridr trip update: ${phase}` });
     } catch (e) {
       Sentry.captureException(e);
     }
@@ -322,7 +323,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Emergency — call 911"
         >
-          <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+          <Ionicons name="alert-circle" size={20} color={colors.surfaceWhite} />
           <Text style={styles.sosText}>Emergency</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -332,7 +333,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Share trip status"
         >
-          <Ionicons name="share-outline" size={20} color="#DC143C" />
+          <Ionicons name="share-outline" size={20} color={colors.brandTeal} />
           <Text style={styles.shareText}>Share status</Text>
         </TouchableOpacity>
       </View>
@@ -425,7 +426,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
                       <Ionicons
                         name={isPickedUp ? 'checkmark-circle' : 'ellipse-outline'}
                         size={24}
-                        color={isPickedUp ? '#15803D' : '#8391A1'}
+                        color={isPickedUp ? '#15803D' : colors.textMuted}
                       />
                     </TouchableOpacity>
                   );
@@ -547,7 +548,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
 
       {loading ? (
         <View style={styles.loadingArea}>
-          <ActivityIndicator color="#DC143C" size="large" />
+          <ActivityIndicator color={colors.brandTeal} size="large" />
         </View>
       ) : (
         <ScrollView
@@ -615,7 +616,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.surfaceWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -624,11 +625,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: colors.borderDefault,
   },
   headerTitleWrap: { flex: 1 },
-  title: { fontSize: 18, fontWeight: '700', color: '#1E232C' },
-  subtitle: { fontSize: 13, color: '#8391A1', marginTop: 1 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.ink },
+  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   safetyRow: {
     flexDirection: 'row',
     gap: 12,
@@ -643,14 +644,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
-  sosBtn: { backgroundColor: '#DC143C' },
-  sosText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  sosBtn: { backgroundColor: colors.error },
+  sosText: { fontSize: 15, fontWeight: '700', color: colors.surfaceWhite },
   shareBtn: {
     borderWidth: 1.5,
-    borderColor: '#DC143C',
-    backgroundColor: '#FFF1F1',
+    borderColor: colors.brandTeal,
+    backgroundColor: colors.brandTealLight,
   },
-  shareText: { fontSize: 15, fontWeight: '700', color: '#DC143C' },
+  shareText: { fontSize: 15, fontWeight: '700', color: colors.brandTeal },
   headerSpacer: { width: 41 },
   loadingArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
@@ -659,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     marginBottom: 16,
   },
   statusBanner: {
@@ -668,46 +669,46 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#F7F8F9',
+    backgroundColor: colors.surfaceSubtle,
     borderRadius: 12,
     marginBottom: 16,
   },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
-  dotCrimson: { backgroundColor: '#DC143C' },
-  dotGreen: { backgroundColor: '#16A34A' },
+  dotCrimson: { backgroundColor: colors.brandTeal },
+  dotGreen: { backgroundColor: colors.success },
   dotGrey: { backgroundColor: '#C9CDD4' },
   // Arrival tints the whole banner rather than just the dot — at a glance the
   // green field is what reads as "done", not a 10pt circle.
   statusBannerDone: { backgroundColor: '#EAF7EE' },
-  statusText: { fontSize: 15, fontWeight: '700', color: '#1E232C' },
+  statusText: { fontSize: 15, fontWeight: '700', color: colors.ink },
   statusTextDone: { color: '#15803D' },
   card: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   // The card frame carries the trip's state in the same three colours as the
-  // status dot above it: crimson while the card is asking the driver for
+  // status dot above it: teal while the card is asking the driver for
   // something, green once the ride is done, neutral while it only reports. The
   // border is the whole signal — no second badge competing with the banner.
-  cardPrimary: { borderColor: '#DC143C', padding: 20 },
-  cardDone: { borderColor: '#16A34A' },
+  cardPrimary: { borderColor: colors.brandTeal, padding: 20 },
+  cardDone: { borderColor: colors.success },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E232C',
+    color: colors.ink,
     marginBottom: 6,
   },
   // One clear step up from the reporting cards; matches the screen title's size
   // so the acting card sits at the top of the page's type scale, not beside it.
   cardTitlePrimary: { fontSize: 18, marginBottom: 8 },
-  cardText: { fontSize: 14, color: '#6A707C', lineHeight: 20 },
+  cardText: { fontSize: 14, color: colors.inkSecondary, lineHeight: 20 },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8391A1',
+    color: colors.textMuted,
     marginTop: 14,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -723,11 +724,11 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  avatarText: { color: colors.surfaceWhite, fontSize: 12, fontWeight: '700' },
   // Crimson would sit directly against the row's green tint once the rider is
   // aboard; the darker green keeps white initials at 5:1 and stops the two
   // near-complementary brand hues fighting inside a 34pt circle.
@@ -741,14 +742,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   pickupRowDone: { backgroundColor: '#EAF7EE' },
-  memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1E232C' },
-  memberTime: { fontSize: 13, fontWeight: '600', color: '#6A707C' },
+  memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.ink },
+  memberTime: { fontSize: 13, fontWeight: '600', color: colors.inkSecondary },
   startBtnWrap: { marginTop: 18 },
   // Reassurance, not instruction: sits under the button as fine print so the
   // geofence is discoverable without competing with the tap it makes optional.
   startHint: {
     fontSize: 13,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     lineHeight: 18,
     textAlign: 'center',
     marginTop: 12,
@@ -757,7 +758,7 @@ const styles = StyleSheet.create({
   endConfirm: { marginTop: 18 },
   endConfirmText: {
     fontSize: 14,
-    color: '#6A707C',
+    color: colors.inkSecondary,
     lineHeight: 20,
     marginBottom: 12,
     textAlign: 'center',

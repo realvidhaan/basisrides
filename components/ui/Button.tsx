@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '@/constants/theme/colors';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -45,7 +46,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isOutline ? '#1E232C' : '#FFFFFF'} size="small" />
+        <ActivityIndicator color={isOutline ? colors.ink : colors.surfaceWhite} size="small" />
       ) : (
         <Text style={[styles.label, isOutline ? styles.labelOutline : styles.labelPrimary]}>
           {title}
@@ -64,12 +65,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonPrimary: {
-    backgroundColor: '#DC143C',
+    backgroundColor: colors.brandTeal,
   },
   buttonOutline: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderWidth: 1.5,
-    borderColor: '#1E232C',
+    borderColor: colors.ink,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -80,9 +81,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   labelPrimary: {
-    color: '#FFFFFF',
+    color: colors.surfaceWhite,
   },
   labelOutline: {
-    color: '#1E232C',
+    color: colors.ink,
   },
 });

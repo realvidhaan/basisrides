@@ -11,6 +11,7 @@ import {
   type CarTypeKey,
 } from '@/lib/carOptions';
 import { US_STATES, normalizePlate, plateMaxFor } from '@/lib/licensePlate';
+import { colors } from '@/constants/theme/colors';
 
 export interface CarPickerValues {
   colorKey: CarColorKey;
@@ -66,7 +67,7 @@ export function CarPicker({ values, onChange, stateError, plateError }: Props) {
                 <Ionicons
                   name="checkmark"
                   size={16}
-                  color={c.key === 'white' ? '#1E232C' : '#FFFFFF'}
+                  color={c.key === 'white' ? colors.ink : colors.surfaceWhite}
                 />
               ) : null}
             </TouchableOpacity>
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
   },
   swatchActive: {
     borderColor: '#0A0A0A',
@@ -167,8 +168,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   segmentItemActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
   },
-  segmentText: { fontSize: 14, fontWeight: '500', color: '#6A707C' },
+  segmentText: { fontSize: 14, fontWeight: '500', color: colors.inkSecondary },
   segmentTextActive: { color: '#0A0A0A' },
 });

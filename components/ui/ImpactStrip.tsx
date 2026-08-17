@@ -55,12 +55,12 @@ function Metric({
  * What this family's carpooling has added up to, in one line above the
  * calendar.
  *
- * Green, not crimson: BasisRide already speaks green for "this went well" (the
- * arrival banner and the "you're being picked up" status both use #16A34A /
- * #EAF7EE), and this strip reports exactly that — completed rides. It stays a
- * pale tint field with deep-green type rather than a saturated block, so a
- * near-complementary hue never competes with the crimson wordmark a few
- * points above it.
+ * Green, not teal: Ridr already speaks green for "this went well" (the
+ * arrival banner and the "you're being picked up" status both use
+ * colors.success / colors.successLight), and this strip reports exactly
+ * that — completed rides. It stays a pale tint field with deep-green type
+ * rather than a saturated block, so a near-complementary hue never competes
+ * with the teal wordmark a few points above it.
  *
  * Renders nothing until the first ride is shared. A row of zeros on a new
  * account is a promise the app hasn't kept yet, and it would push the calendar

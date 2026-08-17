@@ -10,6 +10,7 @@ import {
 import { Input } from '@/components/ui/Input';
 import { searchAddresses, type AddressSuggestion } from '@/lib/geocode';
 import { impact } from '@/lib/haptics';
+import { colors } from '@/constants/theme/colors';
 
 interface Props {
   label?: string;
@@ -128,7 +129,7 @@ export function AddressAutocomplete({
         </View>
       ) : loading ? (
         <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color="#8391A1" />
+          <ActivityIndicator size="small" color={colors.textMuted} />
           <Text style={styles.loadingText}>Searching addresses…</Text>
         </View>
       ) : null}
@@ -139,12 +140,12 @@ export function AddressAutocomplete({
 const styles = StyleSheet.create({
   // High zIndex so the dropdown floats above fields rendered after it.
   wrapper: { position: 'relative', zIndex: 20 },
-  helper: { fontSize: 12, color: '#8391A1', marginTop: -10, marginBottom: 8 },
+  helper: { fontSize: 12, color: colors.textMuted, marginTop: -10, marginBottom: 8 },
   dropdown: {
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     marginTop: -8,
     marginBottom: 12,
     overflow: 'hidden',
@@ -157,9 +158,9 @@ const styles = StyleSheet.create({
   },
   dropdownScroll: { maxHeight: 220 },
   row: { paddingVertical: 12, paddingHorizontal: 14 },
-  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E8ECF4' },
-  rowPressed: { backgroundColor: '#F7F8F9' },
-  rowText: { fontSize: 14, color: '#1E232C', lineHeight: 19 },
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSubtle },
+  rowPressed: { backgroundColor: colors.surfaceSubtle },
+  rowText: { fontSize: 14, color: colors.ink, lineHeight: 19 },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,5 +169,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 2,
   },
-  loadingText: { fontSize: 12, color: '#8391A1' },
+  loadingText: { fontSize: 12, color: colors.textMuted },
 });

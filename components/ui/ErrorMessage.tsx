@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '@/constants/theme/colors';
 
 interface ErrorMessageProps {
   message: string | null;
@@ -20,7 +21,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF1F1',
+    backgroundColor: colors.errorLight,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -33,7 +34,7 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: 14,
-    color: '#DC143C',
+    color: colors.error,
     lineHeight: 20,
     fontWeight: '500',
   },

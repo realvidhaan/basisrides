@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { CarIllustration } from '@/components/CarIllustration';
 import { carColor, carType, carColorLabel, carTypeLabel } from '@/lib/carOptions';
+import { colors } from '@/constants/theme/colors';
 
 interface Vehicle {
   color: string | null;
@@ -64,7 +65,7 @@ export function DriverVehicleCard({ driverName, car }: Props) {
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1.5,
-    borderColor: '#E8ECF4',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -74,28 +75,28 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8391A1',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 2,
   },
-  descriptor: { fontSize: 16, fontWeight: '700', color: '#1E232C' },
-  meta: { fontSize: 13, color: '#6A707C', marginTop: 1 },
+  descriptor: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  meta: { fontSize: 13, color: colors.inkSecondary, marginTop: 1 },
   // A bordered, plate-like chip that reads clearly from a few feet away.
   plateWrap: { alignItems: 'center', marginTop: 16 },
   plateCaption: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#8391A1',
+    color: colors.textMuted,
     letterSpacing: 1,
     marginBottom: 6,
   },
   plate: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderWidth: 2.5,
-    borderColor: '#1E232C',
+    borderColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
   plateText: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#1E232C',
+    color: colors.ink,
     letterSpacing: 4,
     // Monospace so every character is evenly spaced and easy to read aloud.
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

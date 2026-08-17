@@ -1,4 +1,5 @@
 import React, { forwardRef, useState } from 'react';
+import { colors } from '@/constants/theme/colors';
 import {
   StyleSheet,
   Text,
@@ -61,7 +62,7 @@ export const Input = forwardRef<TextInput, InputProps>(
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor="#A0A0A0"
+            placeholderTextColor={colors.textDisabled}
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
@@ -96,17 +97,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 52,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 16,
   },
   inputContainerFocused: {
-    borderColor: '#DC143C',
+    borderColor: colors.brandTeal,
   },
   inputContainerError: {
-    borderColor: '#DC143C',
+    borderColor: colors.error,
   },
   input: {
     flex: 1,
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#DC143C',
+    color: colors.error,
     marginTop: 4,
   },
 });
