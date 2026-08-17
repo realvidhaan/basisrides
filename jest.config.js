@@ -36,6 +36,7 @@ module.exports = {
       '@react-navigation',
       'expo',
       '@expo',
+      '@expo-google-fonts',
       'expo-modules-core',
       'expo-constants',
       'expo-secure-store',
