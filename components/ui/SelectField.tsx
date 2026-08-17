@@ -113,7 +113,7 @@ export function SelectField({
 
 const styles = StyleSheet.create({
   wrapper: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '500', color: '#0A0A0A', marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '500', color: colors.ink, marginBottom: 6 },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   fieldError: { borderColor: colors.error },
-  value: { flex: 1, fontSize: 15, color: '#0A0A0A', marginRight: 8 },
+  value: { flex: 1, fontSize: 15, color: colors.ink, marginRight: 8 },
   placeholder: { color: colors.textDisabled },
   errorText: { fontSize: 12, color: colors.error, marginTop: 4 },
   modalContainer: { flex: 1, backgroundColor: colors.surfaceWhite },

@@ -30,6 +30,14 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   // rejection surfaces as a red LogBox warning over the app at launch.
   try {
     // Android needs a channel before the OS will surface the permission prompt.
+    // Once a channel exists on-device, Android ignores updates to most of its
+    // visual properties (lightColor included) — a real device wouldn't just
+    // pick up this teal value by re-running the app. It's still correct here
+    // because the Ridr rebrand also changed the Android package name
+    // (com.vidhaan.basisride -> com.vidhaan.ridr), which Android treats as a
+    // different app: no prior 'default' channel exists to collide with, so
+    // this creates it fresh with the new color. A future channel-property
+    // change *without* a package rename would need a new channel id instead.
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Carpool alerts',

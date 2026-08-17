@@ -187,8 +187,8 @@ const styles = StyleSheet.create({
   updated: { fontSize: 13, color: colors.textMuted, marginBottom: 16 },
   section: { marginBottom: 4 },
   h2: { fontSize: 16, fontWeight: '700', color: colors.ink, marginTop: 20, marginBottom: 6 },
-  p: { fontSize: 14, color: '#3A4150', lineHeight: 21 },
+  p: { fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
   bulletRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
   bulletDot: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
-  bulletText: { flex: 1, fontSize: 14, color: '#3A4150', lineHeight: 21 },
+  bulletText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
 });
