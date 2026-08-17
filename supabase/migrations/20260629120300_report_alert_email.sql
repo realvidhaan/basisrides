@@ -33,11 +33,11 @@ begin
       'Content-Type', 'application/json'
     ),
     body := jsonb_build_object(
-      'from', 'BasisRide Safety <alerts@send.vidhaan.info>',
+      'from', 'Ridr Safety <alerts@send.vidhaan.info>',
       'to', jsonb_build_array(v_to),
-      'subject', 'New abuse report on BasisRide — review needed',
+      'subject', 'New abuse report on Ridr — review needed',
       'text',
-        'A new abuse report was filed on BasisRide and needs review.' || E'\n\n'
+        'A new abuse report was filed on Ridr and needs review.' || E'\n\n'
         || 'Report id: ' || new.id::text || E'\n'
         || 'Filed at: '  || new.created_at::text || E'\n\n'
         || 'Open the operator console (service role) to see details. No report '

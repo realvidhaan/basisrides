@@ -10,29 +10,29 @@ const UPDATED = 'June 25, 2026';
 const css = `
   :root { color-scheme: light; }
   body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #1E232C; max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+    color: #1B2523; max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
   h1 { font-size: 26px; } h2 { font-size: 19px; margin-top: 32px; }
-  a { color: #DC143C; } .muted { color: #6A707C; font-size: 14px; }
-  .note { background: #FFF1F1; border: 1px solid #F3C2CA; border-radius: 10px;
+  a { color: #0F8B8D; } .muted { color: #55635F; font-size: 14px; }
+  .note { background: #E6F5F5; border: 1px solid #D8E4E3; border-radius: 10px;
     padding: 12px 16px; font-size: 14px; }
   nav a { margin-right: 16px; font-weight: 600; }
-  footer { margin-top: 48px; border-top: 1px solid #E8ECF4; padding-top: 16px; }
+  footer { margin-top: 48px; border-top: 1px solid #E3ECEA; padding-top: 16px; }
 `;
 
 function page(title: string, bodyHtml: string): Response {
   const html = `<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BasisRide — ${title}</title><style>${css}</style></head>
+<title>Ridr — ${title}</title><style>${css}</style></head>
 <body><nav><a href="/functions/v1/legal/terms">Terms</a><a href="/functions/v1/legal/privacy">Privacy</a></nav>
 <h1>${title}</h1><p class="muted">Last updated: ${UPDATED}</p>${bodyHtml}
-<footer class="muted">BasisRide — carpool coordination for verified BISV families. Contact: support@basisride.app</footer>
+<footer class="muted">Ridr — carpool coordination for verified BISV families. Contact: support@ridr.app</footer>
 </body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
 const privacy = `
-<p>BasisRide ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.</p>
-<h2>Who uses BasisRide</h2>
+<p>Ridr ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.</p>
+<h2>Who uses Ridr</h2>
 <p>Accounts are created and used by <strong>parents and guardians</strong> (adults). It is not for use by children directly. Parents provide limited information about their child for carpool coordination.</p>
 <h2>Information we collect</h2>
 <ul>
@@ -51,15 +51,15 @@ const privacy = `
 <h2>Retention &amp; deletion</h2>
 <p>We keep your information while your account is active. You can <strong>delete your account at any time</strong> in the app (Profile → Delete account), which permanently removes your profile and associated data, or email us to request deletion.</p>
 <h2>Children's privacy</h2>
-<p>BasisRide is for parents/guardians, who provide limited child information solely for carpool coordination. We do not knowingly allow children to create accounts.</p>
+<p>Ridr is for parents/guardians, who provide limited child information solely for carpool coordination. We do not knowingly allow children to create accounts.</p>
 <h2>Security</h2>
 <p>Data is encrypted in transit and access is restricted to authenticated, invited BISV families via database access controls.</p>
 <h2>Contact</h2>
-<p><a href="mailto:support@basisride.app">support@basisride.app</a></p>`;
+<p><a href="mailto:support@ridr.app">support@ridr.app</a></p>`;
 
 const terms = `
-<h2>1. What BasisRide is</h2>
-<p>BasisRide is a <strong>coordination tool</strong> for verified BISV families to arrange carpools among themselves. BasisRide is <strong>not</strong> a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out <strong>by parents/guardians at their own discretion and risk.</strong></p>
+<h2>1. What Ridr is</h2>
+<p>Ridr is a <strong>coordination tool</strong> for verified BISV families to arrange carpools among themselves. Ridr is <strong>not</strong> a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out <strong>by parents/guardians at their own discretion and risk.</strong></p>
 <h2>2. Eligibility</h2>
 <p>You must be a parent or legal guardian of a BISV student and have a valid invite code from BISV or another BISV family. Accounts are for adults.</p>
 <h2>3. Your responsibilities</h2>
@@ -74,18 +74,18 @@ const terms = `
 <h2>5. Content &amp; conduct</h2>
 <p>You are responsible for the content you share. Abusive, harassing, or objectionable content is prohibited. You can <strong>report</strong> content and <strong>block</strong> users in the app. We may review reports and remove content or suspend accounts, typically within 24 hours of a report.</p>
 <h2>6. Assumption of risk; limitation of liability</h2>
-<p>To the fullest extent permitted by law, you participate in carpools <strong>at your own risk</strong>. BasisRide and its creators are <strong>not liable</strong> for any injury, loss, damage, or dispute arising from any carpool, ride, driver, rider, or interaction arranged through the app. BasisRide is provided <strong>"as is"</strong> without warranties. Our total liability is limited to the amount you paid us (which is $0 for a free app).</p>
+<p>To the fullest extent permitted by law, you participate in carpools <strong>at your own risk</strong>. Ridr and its creators are <strong>not liable</strong> for any injury, loss, damage, or dispute arising from any carpool, ride, driver, rider, or interaction arranged through the app. Ridr is provided <strong>"as is"</strong> without warranties. Our total liability is limited to the amount you paid us (which is $0 for a free app).</p>
 <h2>7. Indemnification</h2>
-<p>You agree to indemnify and hold harmless BasisRide and its creators from claims arising out of your use of the app, your carpools, or your violation of these terms.</p>
+<p>You agree to indemnify and hold harmless Ridr and its creators from claims arising out of your use of the app, your carpools, or your violation of these terms.</p>
 <h2>8. Termination</h2>
 <p>You may delete your account at any time (Profile → Delete account). We may suspend or terminate accounts that violate these terms.</p>
 <h2>9. Changes</h2>
 <p>We may update these terms; continued use after an update means you accept the revised terms.</p>
 <h2>10. Contact</h2>
-<p><a href="mailto:support@basisride.app">support@basisride.app</a></p>`;
+<p><a href="mailto:support@ridr.app">support@ridr.app</a></p>`;
 
 const index = `
-<p class="note">These are launch drafts pending attorney review. They describe how BasisRide handles your data and the terms of use.</p>
+<p class="note">These are launch drafts pending attorney review. They describe how Ridr handles your data and the terms of use.</p>
 <p><a href="/functions/v1/legal/terms">Terms of Service</a> · <a href="/functions/v1/legal/privacy">Privacy Policy</a></p>`;
 
 Deno.serve((req: Request) => {
