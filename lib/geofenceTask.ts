@@ -15,17 +15,17 @@ import { supabase } from '@/lib/supabase';
  * writes mirror `useTrip.startTrip` / `setStatus` exactly and are idempotent, so
  * a foreground watcher and this task firing for the same event is harmless.
  */
-export const GEOFENCE_TASK = 'basisride-trip-geofence';
+export const GEOFENCE_TASK = 'ridr-trip-geofence';
 export const PICKUP_REGION_ID = 'bsr-pickup';
 export const HOME_REGION_ID = 'bsr-home';
 
-const CONTEXT_KEY = 'basisride.geofenceContext';
+const CONTEXT_KEY = 'ridr.geofenceContext';
 // Once the driver is confirmed away from home for a given trip, this holds that
 // trip's `${driverId}|${iso}` key. The home geofence only auto-ends a trip whose
 // key is armed here, so iOS's initial-state Enter (delivered when geofencing
 // (re)starts while the device is already inside the home region — e.g. after an
 // app restart) can't complete a trip the driver hasn't actually run yet.
-const ARMED_KEY = 'basisride.geofenceArmed';
+const ARMED_KEY = 'ridr.geofenceArmed';
 
 export interface GeofenceContext {
   driverId: string;
