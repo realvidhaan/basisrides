@@ -1,10 +1,12 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { AuthStackParamList } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/brand/Logo';
+import { colors } from '@/constants/theme/colors';
 
 type WelcomeNavigationProp = StackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -17,12 +19,9 @@ export function WelcomeScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.inner}>
-        <Image
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-          accessibilityLabel="BasisRides"
-        />
+        <View style={styles.logo}>
+          <Logo size="welcome" />
+        </View>
         <View style={styles.buttons}>
           <Button title="Login" onPress={() => navigation.navigate('Login')} />
           <Button
@@ -39,7 +38,7 @@ export function WelcomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceWhite,
   },
   inner: {
     flex: 1,
@@ -48,8 +47,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 27,
   },
   logo: {
-    width: 240,
-    height: 80,
     marginBottom: 56,
   },
   buttons: {
