@@ -60,7 +60,8 @@ function Metric({
  * colors.success / colors.successLight), and this strip reports exactly
  * that — completed rides. It stays a pale tint field with deep-green type
  * rather than a saturated block, so a near-complementary hue never competes
- * with the teal wordmark a few points above it.
+ * with the teal brand mark a few points above it (the header shows the mark
+ * only, not the full wordmark — see components/brand/Logo.tsx).
  *
  * Renders nothing until the first ride is shared. A row of zeros on a new
  * account is a promise the app hasn't kept yet, and it would push the calendar
