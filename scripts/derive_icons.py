@@ -102,26 +102,26 @@ def load_master():
     return master
 
 
-def matte_onto(master_rgba, size, fill_rgb, glyph_fill_frac):
+def _composite_onto(master_rgba, size, glyph_fill_frac, canvas_rgba):
     """Resize the glyph (preserving aspect, alpha) to occupy `glyph_fill_frac`
-    of `size`, center it, and matte onto an opaque `fill_rgb` background."""
-    bg = Image.new("RGBA", (size, size), fill_rgb + (255,))
+    of `size`, center it, and alpha-composite onto `canvas_rgba`."""
     glyph_size = int(round(size * glyph_fill_frac))
     glyph = master_rgba.resize((glyph_size, glyph_size), Image.LANCZOS)
     off = (size - glyph_size) // 2
-    bg.alpha_composite(glyph, (off, off))
-    return bg.convert("RGB")
+    canvas_rgba.alpha_composite(glyph, (off, off))
+    return canvas_rgba
+
+
+def matte_onto(master_rgba, size, fill_rgb, glyph_fill_frac):
+    """Composite the glyph onto an opaque `fill_rgb` background."""
+    bg = Image.new("RGBA", (size, size), fill_rgb + (255,))
+    return _composite_onto(master_rgba, size, glyph_fill_frac, bg).convert("RGB")
 
 
 def transparent_canvas(master_rgba, size, glyph_fill_frac):
-    """Place the glyph on a fully transparent canvas, centered, at the given
-    fill fraction of the canvas size."""
+    """Composite the glyph onto a fully transparent canvas."""
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    glyph_size = int(round(size * glyph_fill_frac))
-    glyph = master_rgba.resize((glyph_size, glyph_size), Image.LANCZOS)
-    off = (size - glyph_size) // 2
-    canvas.alpha_composite(glyph, (off, off))
-    return canvas
+    return _composite_onto(master_rgba, size, glyph_fill_frac, canvas)
 
 
 def to_monochrome(rgba_canvas, color_rgb):
@@ -147,17 +147,17 @@ def main():
     print("corner (margin) pixel:", master.getpixel((2, 2)))
 
     # --- icon.png: 1024x1024, teal-light bg, ~70% fill ---
+    # splash-icon.png is unreferenced in app code today but kept identical to
+    # icon.png for hygiene, so it's saved from the same composited image
+    # rather than a second matte_onto() call that could drift from this one.
     icon = matte_onto(master, 1024, BRAND_TEAL_LIGHT, 0.70)
     icon.save(os.path.join(ASSETS, "icon.png"))
+    icon.save(os.path.join(ASSETS, "splash-icon.png"))
 
     # --- favicon.png: same composition, downsampled to existing size (48x48) ---
     favicon_size = 48
     favicon = icon.resize((favicon_size, favicon_size), Image.LANCZOS)
     favicon.save(os.path.join(ASSETS, "favicon.png"))
-
-    # --- splash-icon.png: identical composition to icon.png ---
-    splash = matte_onto(master, 1024, BRAND_TEAL_LIGHT, 0.70)
-    splash.save(os.path.join(ASSETS, "splash-icon.png"))
 
     # --- android-icon-foreground.png: 512x512, transparent bg, glyph in center ~66% ---
     fg = transparent_canvas(master, 512, 0.66)

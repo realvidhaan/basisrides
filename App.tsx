@@ -136,9 +136,16 @@ function MainNavigator() {
   );
 }
 
+// expo-font's loadAsync has no built-in timeout — a stalled font download
+// (flaky network, especially on web) would otherwise leave `fontsLoaded`
+// false and `fontError` null forever. This bounds the wait so a hung
+// download degrades to the system font instead of stranding the splash.
+const FONT_LOAD_TIMEOUT_MS = 8000;
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Sora_600SemiBold,
     Sora_700Bold,
@@ -148,6 +155,12 @@ function App() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) return;
+    const timer = setTimeout(() => setFontLoadTimedOut(true), FONT_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
     supabase.auth
@@ -173,9 +186,10 @@ function App() {
   }, []);
 
   const showMain = session !== null;
-  // Font load failure falls back to the system font rather than blocking the
-  // app — nothing here may strand the user on the splash screen.
-  const stillLoading = initializing || (!fontsLoaded && !fontError);
+  // Font load failure OR a stalled load past the timeout both fall back to
+  // the system font rather than blocking the app — nothing here may strand
+  // the user on the splash screen.
+  const stillLoading = initializing || (!fontsLoaded && !fontError && !fontLoadTimedOut);
 
   // Register push + tap-to-navigate only once the user is in the main app.
   usePushRegistration(showMain ? (session?.user.id ?? null) : null);
