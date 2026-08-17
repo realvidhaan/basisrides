@@ -2,7 +2,7 @@
 // the Ridr design handoff (tokens/colors.css). Plain CommonJS so
 // tailwind.config.js (require()'d by Metro at boot, no TS transform) and
 // app code can both read the exact same values.
-module.exports = {
+const canonical = {
   // Brand
   brandTeal: '#0F8B8D',
   brandTealDark: '#0B6B6D',
@@ -35,13 +35,18 @@ module.exports = {
   warningLight: '#FEF1E4',
   error: '#E5484D',
   errorLight: '#FDEEEE',
+};
 
-  // Aliases
-  textPrimary: '#1B2523',
-  textSecondary: '#55635F',
-  textPlaceholder: '#7C8C8B',
-  bgPage: '#FFFFFF',
-  bgInput: '#F4F9F9',
-  accent: '#0F8B8D',
-  accentSecondary: '#F2994A',
+module.exports = {
+  ...canonical,
+
+  // Aliases — derived from canonical tokens, not repeated literals, so a
+  // future change to `ink`/`surfaceWhite`/`brandTeal` can't leave these stale.
+  textPrimary: canonical.ink,
+  textSecondary: canonical.inkSecondary,
+  textPlaceholder: canonical.textMuted,
+  bgPage: canonical.surfaceWhite,
+  bgInput: canonical.surfaceSubtle,
+  accent: canonical.brandTeal,
+  accentSecondary: canonical.brandOrange,
 };
