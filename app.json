@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "BasisRide",
-    "slug": "basisrides",
+    "name": "Ridr",
+    "slug": "ridr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "basisrides",
+    "scheme": "ridr",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.vidhaan.basisride",
+      "bundleIdentifier": "com.vidhaan.ridr",
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.vidhaan.basisride",
+      "package": "com.vidhaan.ridr",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#E6F5F5",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -37,8 +37,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "BasisRide uses your location during an active carpool trip so riders can see the driver's car move in real time and pickups happen at the right spot. Your location is shared only with parents in your carpool, and only while a trip is in progress.",
-          "locationAlwaysAndWhenInUsePermission": "BasisRide shares your live location with your carpool riders only while you're driving a trip.",
+          "locationWhenInUsePermission": "Ridr uses your location during an active carpool trip so riders can see the driver's car move in real time and pickups happen at the right spot. Your location is shared only with parents in your carpool, and only while a trip is in progress.",
+          "locationAlwaysAndWhenInUsePermission": "Ridr shares your live location with your carpool riders only while you're driving a trip.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
@@ -47,7 +47,7 @@
       [
         "expo-notifications",
         {
-          "color": "#DC143C",
+          "color": "#0F8B8D",
           "defaultChannel": "default"
         }
       ],

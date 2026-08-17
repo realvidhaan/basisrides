@@ -16,8 +16,8 @@ import { LOC_EVENT, type LocPayload } from '@/lib/liveTrip';
  * back on each invocation. Broadcast stays ephemeral — nothing is written to
  * the DB.
  */
-export const LOCATION_TASK = 'basisride-live-location';
-const ACTIVE_CHANNEL_KEY = 'basisride.activeTripChannel';
+export const LOCATION_TASK = 'ridr-live-location';
+const ACTIVE_CHANNEL_KEY = 'ridr.activeTripChannel';
 
 // Cache one subscribed channel across task invocations to avoid re-subscribing
 // on every GPS fix.

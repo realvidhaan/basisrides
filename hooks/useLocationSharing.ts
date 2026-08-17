@@ -98,8 +98,9 @@ export function useLocationSharing(
             activityType: Location.ActivityType.AutomotiveNavigation,
             pausesUpdatesAutomatically: false,
             foregroundService: {
-              notificationTitle: 'BasisRide live trip',
+              notificationTitle: 'Ridr live trip',
               notificationBody: 'Sharing your live location with your carpool.',
+              notificationColor: '#0F8B8D',
             },
           });
         }
