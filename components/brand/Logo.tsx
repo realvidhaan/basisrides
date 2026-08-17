@@ -58,6 +58,11 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: colors.ink,
     marginTop: 8,
+    // Sora ExtraBold's glyphs visually overhang their measured advance
+    // width enough that Yoga's tight intrinsic-width sizing clips the
+    // last character on iOS (confirmed on-device: "ridr" rendered as
+    // "rid"). A little trailing room fixes it without touching layout.
+    paddingRight: 4,
   },
   wordmarkInline: { marginTop: 0 },
 });
