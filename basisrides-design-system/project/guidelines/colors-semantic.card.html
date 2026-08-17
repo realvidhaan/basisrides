@@ -1,26 +1,20 @@
-<!-- @dsCard group="Colors" viewport="700x200" name="Semantic Colors" subtitle="Status and feedback colors" -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<link rel="stylesheet" href="../styles.css">
-<style>
-  body { margin: 0; font-family: var(--font-primary); background: #fff; }
-  .swatches { display: flex; gap: 0; height: 200px; }
-  .swatch { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px 12px; }
-  .swatch span { font-size: 11px; font-weight: 600; line-height: 1.4; }
-  .label { color: #fff; }
-  .label-dark { color: #1E232C; }
-</style>
-</head>
-<body>
-<div class="swatches">
-  <div class="swatch" style="background:#DC143C"><span class="label">Error<br>#DC143C</span></div>
-  <div class="swatch" style="background:#16A34A"><span class="label">Success<br>#16A34A</span></div>
-  <div class="swatch" style="background:#18C07A"><span class="label">Positive<br>#18C07A</span></div>
-  <div class="swatch" style="background:#FF9500"><span class="label">Warning<br>#FF9500</span></div>
-  <div class="swatch" style="background:#F0FDF4"><span class="label-dark">Success Tint<br>#F0FDF4</span></div>
-  <div class="swatch" style="background:#FFF1F1"><span class="label-dark">Error Tint<br>#FFF1F1</span></div>
-</div>
-</body>
-</html>
+<!-- @dsCard group="Colors" viewport="700x140" name="Semantic" subtitle="Success, warning, error" -->
+<!doctype html><html><head><link rel="stylesheet" href="../styles.css"></head>
+<body style="margin:0;padding:20px;background:#fff;font-family:Inter,sans-serif">
+<div style="display:flex;gap:16;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:6px;width:110px">
+      <div style="width:100%;height:56px;border-radius:8px;background:var(--color-success);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)"></div>
+      <div style="font:600 11px Inter,sans-serif;color:#1B2523">Success</div>
+      <div style="font:400 10px monospace;color:#7C8C8B">#1E9E6B</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;width:110px">
+      <div style="width:100%;height:56px;border-radius:8px;background:var(--color-warning);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)"></div>
+      <div style="font:600 11px Inter,sans-serif;color:#1B2523">Warning</div>
+      <div style="font:400 10px monospace;color:#7C8C8B">#F2994A</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;width:110px">
+      <div style="width:100%;height:56px;border-radius:8px;background:var(--color-error);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)"></div>
+      <div style="font:600 11px Inter,sans-serif;color:#1B2523">Error</div>
+      <div style="font:400 10px monospace;color:#7C8C8B">#E5484D</div>
+    </div></div>
+</body></html>

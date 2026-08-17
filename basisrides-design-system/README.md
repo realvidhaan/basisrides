@@ -19,4 +19,4 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 ## Bundle contents
 
 - `basisrides-design-system/README.md` — this file
-- `basisrides-design-system/project/` — the `BasisRides Design System` project files (HTML prototypes, assets, components)
+- `basisrides-design-system/project/` — the `Ridr Design System` project files (HTML prototypes, assets, components)

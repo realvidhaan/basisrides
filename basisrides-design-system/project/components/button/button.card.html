@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="700x180" name="Button" subtitle="Primary, outline, ghost × sizes" -->
+<!doctype html><html><head><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head>
+<body style="margin:0;padding:24px;background:#fff;font-family:sans-serif">
+<div id="root"></div>
+<script type="text/babel">
+const { Button } = window.RidrDesignSystem || {};
+function Demo(){
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:12}}>
+        <div style={{width:140}}><Button label="Log in" variant="primary" /></div>
+        <div style={{width:140}}><Button label="Cancel" variant="outline" /></div>
+        <div style={{width:140}}><Button label="Skip" variant="ghost" /></div>
+        <div style={{width:140}}><Button label="Disabled" variant="primary" disabled /></div>
+      </div>
+      <div style={{display:'flex',gap:12,alignItems:'center'}}>
+        <div style={{width:100}}><Button label="Sm" size="sm" /></div>
+        <div style={{width:140}}><Button label="Md" size="md" /></div>
+        <div style={{width:160}}><Button label="Lg" size="lg" /></div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body></html>

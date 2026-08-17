@@ -1,6 +1,6 @@
 ---
-name: basisrides-design
-description: Use this skill to generate well-branded interfaces and assets for BasisRides, a carpooling app for parents of BASIS Independent Silicon Valley (BISV) students. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
+name: ridr-design
+description: Use this skill to generate well-branded interfaces and assets for Ridr, a carpooling app for parents of BASIS Independent Silicon Valley (BISV) students. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
 user-invocable: true
 ---
 
