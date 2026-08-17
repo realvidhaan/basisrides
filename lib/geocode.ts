@@ -35,7 +35,7 @@ export async function searchAddresses(
     const res = await fetch(url, {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'BasisRide/1.0 (carpool app)',
+        'User-Agent': 'Ridr/1.0 (carpool app)',
       },
     });
     if (!res.ok) return [];
@@ -97,7 +97,7 @@ export async function geocodeAddress(address: string): Promise<GeoPoint | null> 
       headers: {
         Accept: 'application/json',
         // Identify the app per Nominatim policy.
-        'User-Agent': 'BasisRide/1.0 (carpool app)',
+        'User-Agent': 'Ridr/1.0 (carpool app)',
       },
     });
     if (!res.ok) return null;

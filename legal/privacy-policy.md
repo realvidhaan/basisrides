@@ -1,23 +1,23 @@
-# BasisRide Privacy Policy
+# Ridr Privacy Policy
 
 > **DRAFT — review with a qualified attorney before publishing.** This covers
 > the collection of children's information and must be accurate before launch.
-> Host this at a public URL (e.g. https://basisride.app/privacy) and link it
+> Host this at a public URL (e.g. https://ridr.app/privacy) and link it
 > from the App Store listing and the in-app signup consent.
 
 **Last updated:** _[date]_
 
-BasisRide ("we", "us") helps verified families at Basis Independent Silicon
+Ridr ("we", "us") helps verified families at Basis Independent Silicon
 Valley (BISV) coordinate carpools. This policy explains what we collect, why,
 and your choices. By creating an account you agree to this policy.
 
-## Who can use BasisRide
-BasisRide accounts are created and used by **parents and guardians** (adults).
+## Who can use Ridr
+Ridr accounts are created and used by **parents and guardians** (adults).
 It is not intended for use by children directly. Parents provide limited
 information about their child for carpool coordination (see below).
 
 ## Information we collect
-When a parent signs up and uses BasisRide, we collect:
+When a parent signs up and uses Ridr, we collect:
 
 - **Account & contact:** parent/guardian full name, email address, password
   (stored hashed by our auth provider).
@@ -61,7 +61,7 @@ removes your profile and associated data. You may also email us to request
 deletion or a copy of your data.
 
 ## Children's privacy
-BasisRide is for parents/guardians, who provide limited information about their
+Ridr is for parents/guardians, who provide limited information about their
 child solely for carpool coordination. We do not knowingly allow children to
 create accounts. If you believe a child has created an account, contact us and
 we will remove it.
@@ -72,4 +72,4 @@ authenticated, invited BISV families through database access controls. No system
 is perfectly secure, but we work to protect your information.
 
 ## Contact
-Questions or requests: **_[support@basisride.app]_**
+Questions or requests: **_[support@ridr.app]_**

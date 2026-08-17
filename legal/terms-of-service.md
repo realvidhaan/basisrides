@@ -1,15 +1,15 @@
-# BasisRide Terms of Service
+# Ridr Terms of Service
 
 > **DRAFT — review with a qualified attorney before publishing.** The liability
 > and "coordination tool, not a transportation provider" framing below is your
 > primary liability shield and must be reviewed by counsel. Host at a public URL
-> (e.g. https://basisride.app/terms) and link from signup + the App Store.
+> (e.g. https://ridr.app/terms) and link from signup + the App Store.
 
 **Last updated:** _[date]_
 
-## 1. What BasisRide is
-BasisRide is a **coordination tool** for verified Basis Independent Silicon
-Valley (BISV) families to arrange carpools among themselves. BasisRide is **not**
+## 1. What Ridr is
+Ridr is a **coordination tool** for verified Basis Independent Silicon
+Valley (BISV) families to arrange carpools among themselves. Ridr is **not**
 a transportation provider, rideshare company, or carrier. We **do not** provide
 transportation, employ or contract drivers, vet or background-check drivers or
 riders, or supervise any trip. All carpools are arranged and carried out **by
@@ -20,7 +20,7 @@ You must be a parent or legal guardian of a BISV student and have received a
 valid invite code from BISV or another BISV family. Accounts are for adults.
 
 ## 3. Your responsibilities
-By using BasisRide you agree that:
+By using Ridr you agree that:
 - You will provide accurate information about yourself and your child.
 - If you drive, you hold a **valid driver's license and current auto insurance**,
   your vehicle is legal and roadworthy, and you comply with all traffic and
@@ -46,14 +46,14 @@ report.
 
 ## 6. Assumption of risk; release; limitation of liability
 To the fullest extent permitted by law, you participate in carpools **at your
-own risk**. BasisRide and its creators are **not liable** for any injury, loss,
+own risk**. Ridr and its creators are **not liable** for any injury, loss,
 damage, or dispute arising from any carpool, ride, driver, rider, or interaction
-arranged through the app. BasisRide is provided **"as is"** without warranties of
+arranged through the app. Ridr is provided **"as is"** without warranties of
 any kind. Our total liability is limited to the amount you paid us (which is
 $0 for a free app).
 
 ## 7. Indemnification
-You agree to indemnify and hold harmless BasisRide and its creators from claims
+You agree to indemnify and hold harmless Ridr and its creators from claims
 arising out of your use of the app, your carpools, or your violation of these
 terms.
 
@@ -66,4 +66,4 @@ We may update these terms; continued use after an update means you accept the
 revised terms.
 
 ## 10. Contact
-**_[support@basisride.app]_**
+**_[support@ridr.app]_**
