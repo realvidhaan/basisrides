@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/constants/theme/colors';
 import { typography } from '@/constants/theme/typography';
@@ -26,6 +26,26 @@ export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked'
   // hidden (e.g. a cramped header row), the mark becomes the only element
   // and has to speak for itself instead.
   const markIsAccessible = !showWordmark;
+
+  // On iOS, App.tsx's useFonts() resolving `true` doesn't guarantee CoreText
+  // can measure Sora_800ExtraBold correctly yet — the very first Text laid
+  // out with it can still clip the last glyph (confirmed on-device across
+  // repeated cold launches: "ridr" -> "rid", even with the padding fix
+  // above, which only reduces how often it happens). Forcing one extra
+  // remount two frames after mount gives CoreText time to catch up, and a
+  // fresh Yoga layout pass then measures correctly.
+  const [remeasureKey, setRemeasureKey] = useState(0);
+  useEffect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setRemeasureKey((k) => k + 1));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+
   return (
     <View style={layout === 'stacked' ? styles.stacked : styles.inline}>
       <Image
@@ -39,6 +59,7 @@ export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked'
       />
       {showWordmark && (
         <Text
+          key={remeasureKey}
           style={[styles.wordmark, layout === 'inline' && styles.wordmarkInline]}
           accessibilityRole="header"
           accessibilityLabel="Ridr"
