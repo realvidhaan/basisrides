@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import { colors } from '@/constants/theme/colors';
 import { typography } from '@/constants/theme/typography';
 
@@ -26,6 +28,33 @@ export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked'
   // hidden (e.g. a cramped header row), the mark becomes the only element
   // and has to speak for itself instead.
   const markIsAccessible = !showWordmark;
+
+  // On iOS, App.tsx's useFonts() resolving `true` doesn't guarantee CoreText
+  // can measure Sora_800ExtraBold correctly yet — the very first Text laid
+  // out with it can still clip the last glyph (confirmed on-device across
+  // repeated cold launches: "ridr" -> "rid", even with the padding fix
+  // above, which only reduces how often it happens). A blind post-mount
+  // timer isn't reliable either: this component also mounts in App.tsx's
+  // splash *before* fontsLoaded is true, so "2 frames after mount" doesn't
+  // mean "2 frames after the font is ready" there. Calling useFonts again
+  // for just this one weight gives an accurate, per-instance readiness
+  // signal (expo-font resolves an already-loaded font immediately, so this
+  // doesn't re-trigger a real load) — the remeasure now waits for that
+  // signal instead of guessing from mount time.
+  const [wordmarkFontReady] = useFonts({ Sora_800ExtraBold });
+  const [remeasureKey, setRemeasureKey] = useState(0);
+  useEffect(() => {
+    if (!wordmarkFontReady) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setRemeasureKey((k) => k + 1));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [wordmarkFontReady]);
+
   return (
     <View style={layout === 'stacked' ? styles.stacked : styles.inline}>
       <Image
@@ -39,6 +68,7 @@ export function Logo({ size = 'welcome', showWordmark = true, layout = 'stacked'
       />
       {showWordmark && (
         <Text
+          key={remeasureKey}
           style={[styles.wordmark, layout === 'inline' && styles.wordmarkInline]}
           accessibilityRole="header"
           accessibilityLabel="Ridr"
