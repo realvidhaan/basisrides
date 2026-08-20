@@ -137,12 +137,12 @@ export const DEMO_SIGNUP_PREFILL: {
   carCapacity: string; carColor: string; carType: string;
   carState: string; licensePlate: string;
   rejectedEmail: string;   // 'robert.calder@gmail.com'
-  acceptedEmail: string;   // 'robert.calder@basisindependent.com'
+  acceptedEmail: string;   // 'robert.calder@district.school.edu'
   password: string;        // 'ridrdemo'
 };
 
 /** Domain the demo signup gate accepts. */
-export const DEMO_SCHOOL_EMAIL_DOMAIN: string; // 'basisindependent.com'
+export const DEMO_SCHOOL_EMAIL_DOMAIN: string; // 'district.school.edu'
 ```
 
 ### 1.2 `lib/demo/store.ts` — tables, filters, pub/sub
@@ -810,7 +810,7 @@ Car colour keys are from `CAR_COLORS` (`lib/carOptions.ts:36-45`:
 | `child_name` | Ava Calder | Diego Delgado | Anika Raghavan | Ellie Whitfield | Femi Okafor | Soo-jin Kim |
 | `grade` | `9th` | `7th` | `10th` | `8th` | `11th` | `6th` |
 | `neighborhood` | San Jose | San Jose | San Jose | San Jose | San Jose | San Jose |
-| `email` | robert.calder@basisindependent.com | marcus.delgado@basisindependent.com | priya.raghavan@basisindependent.com | jenna.whitfield@basisindependent.com | tom.okafor@basisindependent.com | rachel.kim@basisindependent.com |
+| `email` | robert.calder@district.school.edu | marcus.delgado@district.school.edu | priya.raghavan@district.school.edu | jenna.whitfield@district.school.edu | tom.okafor@district.school.edu | rachel.kim@district.school.edu |
 | `address` | 5412 Alvarado Ct, San Jose, CA 95123 | 2115 Meridian Ave, San Jose, CA 95125 | 1480 La Mirada Dr, San Jose, CA 95124 | 3260 Dellwood Way, San Jose, CA 95123 | 1032 Foxworthy Ave, San Jose, CA 95118 | 877 Hillsdale Ave, San Jose, CA 95136 |
 | route index | **462** | **120** | **205** | **365** | — | — |
 | `latitude` | `37.22825` | `37.29572` | `37.27598` | `37.24701` | `37.27620` | `37.26980` |
@@ -1136,7 +1136,7 @@ All of this is `DEMO_MODE`-gated inside `screens/auth/SignupScreen.tsx` and
   implemented in the fake client as a safety net.
 - A demo-only rule in `validate()`: if the trimmed email does not end with
   `@${DEMO_SCHOOL_EMAIL_DOMAIN}`, set
-  `errors.email = 'Use your school-issued email (name@basisindependent.com). Personal addresses aren’t accepted.'`
+  `errors.email = 'Use your school-issued email (name@district.school.edu). Personal addresses aren’t accepted.'`
   and mirror it into `globalError`, exactly like the plate branch at `:141-147`.
 - `LoginScreen` (`:23-24`) prefills `acceptedEmail` and
   `DEMO_SIGNUP_PREFILL.password`; the fake `signInWithPassword` accepts anything.

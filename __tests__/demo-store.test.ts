@@ -100,7 +100,7 @@ function rowsOf(res: DemoResult<Row[] | null>): Row[] {
 }
 
 async function signIn(db: DemoClient): Promise<void> {
-  await db.auth.signInWithPassword({ email: 'robert.calder@basisindependent.com', password: 'x' });
+  await db.auth.signInWithPassword({ email: 'robert.calder@district.school.edu', password: 'x' });
 }
 
 beforeEach(() => {

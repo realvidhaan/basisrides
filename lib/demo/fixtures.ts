@@ -44,7 +44,7 @@ export const CLUSTER_IDS: readonly string[] = [
 ];
 
 /** Domain the demo signup gate accepts. */
-export const DEMO_SCHOOL_EMAIL_DOMAIN = 'basisindependent.com';
+export const DEMO_SCHOOL_EMAIL_DOMAIN = 'district.school.edu';
 
 // ---------------------------------------------------------------------------
 // Dates

@@ -46,10 +46,10 @@ grade, San Jose, a real address, a silver Honda Odyssey with plate `7XKR482`.
 
 Scroll to the bottom and tap **Create account**. It is **rejected**:
 
-> Use your school-issued email (name@basisindependent.com). Personal addresses
+> Use your school-issued email (name@district.school.edu). Personal addresses
 > aren't accepted.
 
-Edit the email to `robert.calder@basisindependent.com` and submit again.
+Edit the email to `robert.calder@district.school.edu` and submit again.
 
 - **The error banner scrolls the form back to the top**, so you have to scroll
   down again before the second tap. Expect it.
