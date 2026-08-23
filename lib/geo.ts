@@ -2,7 +2,8 @@ import type { GeoPoint } from '@/types';
 
 /**
  * Great-circle (haversine) distance between two lat/lng points, in meters.
- * Shared by the trip geofence hooks (useAutoStartTrip / useAutoEndTrip).
+ * Shared by the trip geofencing (useTripGeofencing / lib/geofenceTask) and the
+ * carpool impact calculation.
  */
 export function haversineMeters(a: GeoPoint, b: GeoPoint): number {
   const R = 6_371_000;

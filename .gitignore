@@ -43,3 +43,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Claude Design handoff bundle — design reference, not app code
+ridr-design-system/

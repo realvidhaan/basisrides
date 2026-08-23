@@ -653,7 +653,8 @@ describe('GLITCH / UX SCENARIOS', () => {
     const daysSince =
       (FIXED_NOW.getTime() - new Date(staleDate).getTime()) / (1000 * 60 * 60 * 24);
     expect(daysSince).toBeGreaterThan(2);
-    // There is a useAutoEndTrip hook (untracked in git) — verify it handles this case.
+    // Auto-end is handled by the home geofence (hooks/useTripGeofencing +
+    // lib/geofenceTask) — verify it handles this stale-trip case.
   });
 
   it('user with no availability rows: carpool query returns empty participant list without error', async () => {
