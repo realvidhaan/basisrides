@@ -4,9 +4,9 @@
 -- Closes the account-gating hole: previously ANY email could create an account
 -- and immediately read every family's home address, child name, grade and plate.
 -- This is a PARENT app (parents sign up with personal Gmail/Outlook addresses),
--- so an `@bisv.org` domain check would lock out real users. Instead we gate on
--- single-use INVITE CODES distributed through ParentSquare / a PTA champion —
--- only verified BISV families receive a code.
+-- so a school-domain email check would lock out real users. Instead we gate on
+-- single-use INVITE CODES distributed through the school's parent portal / a PTA
+-- champion — only verified school families receive a code.
 --
 -- Enforcement is a BEFORE INSERT trigger on auth.users, kept SEPARATE from the
 -- existing handle_new_user profile trigger so it cannot break profile creation.
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.invite_codes (
 );
 
 COMMENT ON TABLE public.invite_codes
-  IS 'Single-use signup gate for verified BISV families (CONFIRMED-1). A row with used_at IS NULL is redeemable.';
+  IS 'Single-use signup gate for verified school families (CONFIRMED-1). A row with used_at IS NULL is redeemable.';
 
 -- Lock the table down: no client (anon or authenticated) may read or write it
 -- directly. RLS with no policies = deny-all; access is only via the SECURITY

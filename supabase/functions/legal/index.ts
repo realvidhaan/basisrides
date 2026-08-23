@@ -25,13 +25,13 @@ function page(title: string, bodyHtml: string): Response {
 <title>Ridr — ${title}</title><style>${css}</style></head>
 <body><nav><a href="/functions/v1/legal/terms">Terms</a><a href="/functions/v1/legal/privacy">Privacy</a></nav>
 <h1>${title}</h1><p class="muted">Last updated: ${UPDATED}</p>${bodyHtml}
-<footer class="muted">Ridr — carpool coordination for verified BISV families. Contact: support@ridr.app</footer>
+<footer class="muted">Ridr — carpool coordination for verified school families. Contact: support@ridr.app</footer>
 </body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
 const privacy = `
-<p>Ridr ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.</p>
+<p>Ridr ("we", "us") helps verified families at a participating school coordinate carpools. By creating an account you agree to this policy.</p>
 <h2>Who uses Ridr</h2>
 <p>Accounts are created and used by <strong>parents and guardians</strong> (adults). It is not for use by children directly. Parents provide limited information about their child for carpool coordination.</p>
 <h2>Information we collect</h2>
@@ -45,7 +45,7 @@ const privacy = `
 <li><strong>Device &amp; diagnostics:</strong> a push token, and crash/error diagnostics (via Sentry).</li>
 </ul>
 <h2>How we use it</h2>
-<p>To create and verify your account (invited BISV families only), match carpools, coordinate schedules and pickups, deliver notifications, investigate abuse reports, and improve reliability. We <strong>do not sell</strong> your information and <strong>do not use it for advertising</strong>.</p>
+<p>To create and verify your account (invited school families only), match carpools, coordinate schedules and pickups, deliver notifications, investigate abuse reports, and improve reliability. We <strong>do not sell</strong> your information and <strong>do not use it for advertising</strong>.</p>
 <h2>Who can see your information</h2>
 <p>Other parents in your carpool can see your name, your child's name and grade, your pickup area, your vehicle details (if you drive), and messages you send them. Service providers (Supabase for backend/auth, Sentry for error monitoring) process data on our behalf. We may disclose information if required by law or to protect someone's safety.</p>
 <h2>Retention &amp; deletion</h2>
@@ -53,15 +53,15 @@ const privacy = `
 <h2>Children's privacy</h2>
 <p>Ridr is for parents/guardians, who provide limited child information solely for carpool coordination. We do not knowingly allow children to create accounts.</p>
 <h2>Security</h2>
-<p>Data is encrypted in transit and access is restricted to authenticated, invited BISV families via database access controls.</p>
+<p>Data is encrypted in transit and access is restricted to authenticated, invited school families via database access controls.</p>
 <h2>Contact</h2>
 <p><a href="mailto:support@ridr.app">support@ridr.app</a></p>`;
 
 const terms = `
 <h2>1. What Ridr is</h2>
-<p>Ridr is a <strong>coordination tool</strong> for verified BISV families to arrange carpools among themselves. Ridr is <strong>not</strong> a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out <strong>by parents/guardians at their own discretion and risk.</strong></p>
+<p>Ridr is a <strong>coordination tool</strong> for verified school families to arrange carpools among themselves. Ridr is <strong>not</strong> a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out <strong>by parents/guardians at their own discretion and risk.</strong></p>
 <h2>2. Eligibility</h2>
-<p>You must be a parent or legal guardian of a BISV student and have a valid invite code from BISV or another BISV family. Accounts are for adults.</p>
+<p>You must be a parent or legal guardian of a student at a participating school and have a valid invite code from your school or another family there. Accounts are for adults.</p>
 <h2>3. Your responsibilities</h2>
 <ul>
 <li>Provide accurate information about yourself and your child.</li>
@@ -70,7 +70,7 @@ const terms = `
 <li>Treat other members respectfully and post no abusive or objectionable content.</li>
 </ul>
 <h2>4. Safety &amp; no vetting</h2>
-<p><strong>We do not perform background checks</strong> and do not verify driving records, insurance, or vehicle condition. You are responsible for satisfying yourself about any driver before entrusting your child to a carpool. Invite-only access limits the community to BISV families but is not a guarantee of any individual's trustworthiness.</p>
+<p><strong>We do not perform background checks</strong> and do not verify driving records, insurance, or vehicle condition. You are responsible for satisfying yourself about any driver before entrusting your child to a carpool. Invite-only access limits the community to your school&#39;s families but is not a guarantee of any individual's trustworthiness.</p>
 <h2>5. Content &amp; conduct</h2>
 <p>You are responsible for the content you share. Abusive, harassing, or objectionable content is prohibited. You can <strong>report</strong> content and <strong>block</strong> users in the app. We may review reports and remove content or suspend accounts, typically within 24 hours of a report.</p>
 <h2>6. Assumption of risk; limitation of liability</h2>

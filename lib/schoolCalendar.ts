@@ -1,5 +1,5 @@
 /**
- * BISV school calendar — no-school days are blocked from carpooling.
+ * School calendar — no-school days are blocked from carpooling.
  *
  * The 2026-27 Upper School (Grades 6–12) calendar is encoded EXACTLY from the
  * official PDF (B2602_011, rev 050826). That is the only year the app actually
@@ -7,7 +7,7 @@
  *
  * For any OTHER year (e.g. if the calendar is scrolled far out) we fall back to
  * a rule-based approximation that floats the usual holidays from the date. Those
- * dates are best-effort only — replace them with the official PDF when BISV
+ * dates are best-effort only — replace them with the official PDF when the school
  * publishes the next year's calendar.
  */
 import { parseISO, toISO } from '@/lib/dateUtils';
@@ -36,7 +36,7 @@ export interface SchoolDayStatus {
  */
 export const EARLY_DISMISSAL_PICKUP = '13:00'; // 1:00 PM
 
-// ---- exact 2026-27 calendar (from the official BISV PDF) --------------------
+// ---- exact 2026-27 calendar (from the school's official PDF) --------------------
 
 const SCHOOL_YEAR_2026_27: SchoolYear = {
   firstDay: '2026-08-12', // First Day of School (early dismissal)
@@ -129,7 +129,7 @@ function getSchoolYear(startYear: number): SchoolYear {
 }
 
 /**
- * Best-effort approximation for years BISV hasn't published yet: floats the
+ * Best-effort approximation for years the school hasn't published yet: floats the
  * usual holidays from the date so a far-future date still gets sensible breaks
  * instead of everything falling into "Summer". Not authoritative.
  */

@@ -65,7 +65,7 @@ REVOKE EXECUTE ON FUNCTION public.enforce_invite_code() FROM PUBLIC, anon, authe
 
 -- Admin: set THE active code to a chosen (memorable) value — deactivates all
 -- others so exactly one code is live. Returns the normalized code.
---   SELECT public.set_invite_code('BISVFALL2026', 'ParentSquare post');
+--   SELECT public.set_invite_code('FALL2026', 'parent portal post');
 CREATE OR REPLACE FUNCTION public.set_invite_code(p_code text, p_note text DEFAULT NULL)
 RETURNS text
 LANGUAGE plpgsql

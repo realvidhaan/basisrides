@@ -175,7 +175,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
   );
 
   // Geofencing runs even when the app is backgrounded or killed: the trip goes
-  // live when the driver reaches BISV to collect riders, and auto-ends once
+  // live when the driver reaches school to collect riders, and auto-ends once
   // they're home after the drop-offs. It is the convenient path, not the only
   // one — the driver can always start manually (see startRide), which is what
   // makes the feature usable away from campus and testable on a simulator.
@@ -471,7 +471,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
         );
       }
       // No trip yet → en route to the first pickup. The geofence arms tracking
-      // on arrival at BISV, but the driver can start now — leaving early, or
+      // on arrival at school, but the driver can start now — leaving early, or
       // anywhere the geofence can't reach them.
       return (
         <View style={[styles.card, styles.cardPrimary]}>
@@ -494,7 +494,7 @@ export function LiveTripScreen({ navigation, route }: Props) {
             />
           </View>
           <Text style={styles.startHint}>
-            It also starts on its own at {SCHOOL.name}.
+            It also starts on its own when you reach school.
           </Text>
         </View>
       );

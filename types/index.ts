@@ -52,7 +52,7 @@ export const GRADES: Grade[] = [
   '12th',
 ];
 
-// Silicon Valley cities served by the BISV carpool community.
+// Cities served by this deployment's carpool community.
 export const NEIGHBORHOODS: string[] = [
   'San Jose',
   'Santa Clara',

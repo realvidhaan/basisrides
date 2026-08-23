@@ -149,7 +149,7 @@ export function SignupScreen({ navigation }: Props) {
     // Demo mode has no invite-code field to fill in — the school-email rule below
     // is the gate instead.
     if (!DEMO_MODE && !normalizeCode(form.inviteCode)) {
-      errors.inviteCode = 'Enter the invite code from your BISV ParentSquare post.';
+      errors.inviteCode = "Enter the invite code from your school's parent portal.";
     }
     if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
     if (!form.childName.trim()) errors.childName = "Child's name is required.";
@@ -195,7 +195,7 @@ export function SignupScreen({ navigation }: Props) {
     }
     if (!form.agreedToTerms) {
       errors.agreedToTerms =
-        'Please confirm you are a BISV parent/guardian and agree to the Terms and Privacy Policy.';
+        'Please confirm you are a parent/guardian at this school and agree to the Terms and Privacy Policy.';
     }
     setFieldErrors(errors);
     // Mirror the address flow: surface a top banner when the plate/state is the
@@ -261,7 +261,7 @@ export function SignupScreen({ navigation }: Props) {
           inviteCode: "That invite code isn't valid.",
         }));
         setGlobalError(
-          "That invite code isn't valid. Check the current code on your BISV ParentSquare post.",
+          "That invite code isn't valid. Check the current code on your school's parent portal.",
         );
         return;
       }
@@ -385,15 +385,15 @@ export function SignupScreen({ navigation }: Props) {
               label="Invite code"
               value={form.inviteCode}
               onChangeText={(t) => updateField('inviteCode', t)}
-              placeholder="From your BISV ParentSquare post"
+              placeholder="From your school's parent portal"
               autoCapitalize="characters"
               autoCorrect={false}
               error={fieldErrors.inviteCode}
               returnKeyType="next"
             />
             <Text style={styles.helperText}>
-              Ridr is invite-only for verified BISV families. Enter the code
-              shared on ParentSquare.
+              Ridr is invite-only for verified families at your school. Enter
+              the code your school shared.
             </Text>
           </>
         )}
@@ -556,7 +556,7 @@ export function SignupScreen({ navigation }: Props) {
             color={form.agreedToTerms ? colors.brandTeal : colors.textMuted}
           />
           <Text style={styles.consentText}>
-            I&apos;m a BISV parent/guardian and I agree to the{' '}
+            I&apos;m a parent/guardian at this school and I agree to the{' '}
             <Text style={styles.consentLink} onPress={() => setLegalDoc('terms')}>
               Terms
             </Text>{' '}
