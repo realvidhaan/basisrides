@@ -7,8 +7,8 @@
 
 **Last updated:** _[date]_
 
-Ridr ("we", "us") helps verified families at Basis Independent Silicon
-Valley (BISV) coordinate carpools. This policy explains what we collect, why,
+Ridr ("we", "us") helps verified families at a participating school
+coordinate carpools. This policy explains what we collect, why,
 and your choices. By creating an account you agree to this policy.
 
 ## Who can use Ridr
@@ -36,7 +36,7 @@ When a parent signs up and uses Ridr, we collect:
   diagnostics (via Sentry) to keep the app stable.
 
 ## How we use information
-- To create your account and verify you are an invited BISV family.
+- To create your account and verify you are an invited school family.
 - To match families into carpools and coordinate schedules and pickups.
 - To show drivers and riders the information they need to find each other.
 - To deliver notifications about messages, trips, and pickups.
@@ -68,7 +68,7 @@ we will remove it.
 
 ## Security
 Data is encrypted in transit. Access to family data is restricted to
-authenticated, invited BISV families through database access controls. No system
+authenticated, invited school families through database access controls. No system
 is perfectly secure, but we work to protect your information.
 
 ## Contact

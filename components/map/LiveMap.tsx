@@ -47,7 +47,7 @@ export interface LiveMapProps {
   onDemoArrived?: () => void; // fires once when the DEMO_MODE drive completes
 }
 
-// BISV-area fallback so the map always has somewhere to open (matches the old
+// Campus-area fallback so the map always has somewhere to open (matches the old
 // Leaflet default) when a trip has no pins yet.
 const FALLBACK: GeoPoint = { lat: 37.3197, lng: -121.912 };
 

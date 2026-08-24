@@ -1,8 +1,8 @@
 /**
  * Hardcoded demo route — the ONLY route the demo ever drives.
  *
- * Real driving geometry for the afternoon run from BASIS Independent Silicon
- * Valley to the carpool's homes, snapped to actual streets (Saddle Rack St →
+ * Real driving geometry for the afternoon run from the school to the
+ * carpool's homes, snapped to actual streets (Saddle Rack St →
  * La Mirada Dr → Dellwood Way → Alvarado Ct, 12.6 km).
  *
  * Why hardcoded: the app has no Directions API key, so a computed route can
@@ -494,7 +494,7 @@ export interface DemoStop {
 }
 
 export const DEMO_STOPS: DemoStop[] = [
-  { name: 'BASIS Independent Silicon Valley', kind: 'school', index: 0 },
+  { name: 'School', kind: 'school', index: 0 },
   { name: 'La Mirada Drive', kind: 'rider', index: 205 },
   { name: 'Dellwood Way', kind: 'rider', index: 365 },
   { name: 'Alvarado Court', kind: 'driver', index: 462 },

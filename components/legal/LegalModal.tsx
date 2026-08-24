@@ -34,7 +34,7 @@ const TITLES: Record<LegalDoc, string> = {
 
 const PRIVACY: Section[] = [
   {
-    body: 'Ridr ("we", "us") helps verified families at Basis Independent Silicon Valley (BISV) coordinate carpools. By creating an account you agree to this policy.',
+    body: 'Ridr ("we", "us") helps verified families at a participating school coordinate carpools. By creating an account you agree to this policy.',
   },
   {
     heading: 'Who uses Ridr',
@@ -54,7 +54,7 @@ const PRIVACY: Section[] = [
   },
   {
     heading: 'How we use it',
-    body: 'To create and verify your account (invited BISV families only), match carpools, coordinate schedules and pickups, deliver notifications, investigate abuse reports, and improve reliability. We do not sell your information and do not use it for advertising.',
+    body: 'To create and verify your account (invited school families only), match carpools, coordinate schedules and pickups, deliver notifications, investigate abuse reports, and improve reliability. We do not sell your information and do not use it for advertising.',
   },
   {
     heading: 'Who can see your information',
@@ -70,7 +70,7 @@ const PRIVACY: Section[] = [
   },
   {
     heading: 'Security',
-    body: 'Data is encrypted in transit and access is restricted to authenticated, invited BISV families via database access controls.',
+    body: 'Data is encrypted in transit and access is restricted to authenticated, invited school families via database access controls.',
   },
   { heading: 'Contact', body: 'support@ridr.app' },
 ];
@@ -78,11 +78,11 @@ const PRIVACY: Section[] = [
 const TERMS: Section[] = [
   {
     heading: '1. What Ridr is',
-    body: 'Ridr is a coordination tool for verified BISV families to arrange carpools among themselves. Ridr is not a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out by parents/guardians at their own discretion and risk.',
+    body: 'Ridr is a coordination tool for verified school families to arrange carpools among themselves. Ridr is not a transportation provider, rideshare company, or carrier. We do not provide transportation, employ or contract drivers, vet or background-check drivers or riders, or supervise any trip. All carpools are arranged and carried out by parents/guardians at their own discretion and risk.',
   },
   {
     heading: '2. Eligibility',
-    body: 'You must be a parent or legal guardian of a BISV student and have a valid invite code from BISV or another BISV family. Accounts are for adults.',
+    body: 'You must be a parent or legal guardian of a student at a participating school and have a valid invite code from your school or another family there. Accounts are for adults.',
   },
   {
     heading: '3. Your responsibilities',
@@ -95,7 +95,7 @@ const TERMS: Section[] = [
   },
   {
     heading: '4. Safety & no vetting',
-    body: 'We do not perform background checks and do not verify driving records, insurance, or vehicle condition. You are responsible for satisfying yourself about any driver before entrusting your child to a carpool. Invite-only access limits the community to BISV families but is not a guarantee of any individual’s trustworthiness.',
+    body: 'We do not perform background checks and do not verify driving records, insurance, or vehicle condition. You are responsible for satisfying yourself about any driver before entrusting your child to a carpool. Invite-only access limits the community to your school’s families but is not a guarantee of any individual’s trustworthiness.',
   },
   {
     heading: '5. Content & conduct',
