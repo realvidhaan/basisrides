@@ -66,10 +66,18 @@ export interface UserAssignment {
   driver: CarMember | null; // the car's driver (null when unmatched)
   riders: CarMember[]; // the car's riders (excludes the driver)
   // The driver's cumulative drive count this school year, AS OF this date
-  // (i.e. including it) — the number the fewest-drives-first rotation picked
-  // them on. Null when unmatched, since there is no driver to count for.
-  // Surfaced in the UI so the fairness rule is legible, not just asserted.
+  // (i.e. including it). Because it is post-increment, it is NOT proof the
+  // driver had the fewest drives among candidates at display time — e.g. two
+  // parents both at 0 drives before today: the chosen one now reads 1, the
+  // other still reads 0. Show it as a fact ("your Nth drive"), never as a
+  // comparative claim ("you drove the fewest"). Null when unmatched.
   driverDriveCount: number | null;
+  // Why this driver was chosen: 'cover' if they accepted a cover/swap request
+  // for this date (coverForce — takes priority over the fairness sort in
+  // computeSingleDay), 'fairness' if picked by the fewest-drives-first rule.
+  // Null when unmatched. Surfaced so the UI never mislabels a cover pickup as
+  // a fairness-rotation pick.
+  driverPickReason: 'fairness' | 'cover' | null;
 }
 
 function minutes(time: string): number {
@@ -203,6 +211,7 @@ function computeSingleDay(
             driver: null,
             riders: [],
             driverDriveCount: null,
+            driverPickReason: null,
           });
         }
         continue;
@@ -248,6 +257,9 @@ function computeSingleDay(
       for (const d of chosen) {
         const count = (driveCount.get(d.userId) ?? 0) + 1;
         driveCount.set(d.userId, count);
+        const pickReason: 'fairness' | 'cover' = coverForce.has(`${d.userId}|${iso}`)
+          ? 'cover'
+          : 'fairness';
         result.set(d.userId, {
           role: 'drive',
           zone: d.zone,
@@ -255,6 +267,7 @@ function computeSingleDay(
           driver: member(d),
           riders: (carRiders.get(d.userId) ?? []).map(member),
           driverDriveCount: count,
+          driverPickReason: pickReason,
         });
       }
 
@@ -263,6 +276,9 @@ function computeSingleDay(
       for (const d of chosen) {
         const list = carRiders.get(d.userId) ?? [];
         const driverCount = driveCount.get(d.userId) ?? null;
+        const driverPickReason: 'fairness' | 'cover' = coverForce.has(`${d.userId}|${iso}`)
+          ? 'cover'
+          : 'fairness';
         for (const r of list) {
           seatedRiderIds.add(r.userId);
           result.set(r.userId, {
@@ -272,6 +288,7 @@ function computeSingleDay(
             driver: member(d),
             riders: list.map(member),
             driverDriveCount: driverCount,
+            driverPickReason,
           });
         }
       }
@@ -286,6 +303,7 @@ function computeSingleDay(
             time: r.time,
             driver: null,
             riders: [],
+            driverPickReason: null,
             driverDriveCount: null,
           });
         }

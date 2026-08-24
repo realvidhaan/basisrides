@@ -72,21 +72,33 @@ function timesLabel(n: number): string {
  * One line explaining WHY this car formed — the zone clustering and
  * fewest-drives-first fairness rule from `lib/pairing.ts`, spelled out rather
  * than only asserted. Null for 'unmatched' — there is no match to explain.
+ *
+ * States the drive count as a FACT ("your Nth drive"), never as a comparative
+ * claim ("you drove the fewest"): `driverDriveCount` is post-increment, so a
+ * driver just picked from a tie can display a higher number than an untouched
+ * candidate who wasn't chosen — showing that number next to "fewest" would be
+ * telling the parent something the data doesn't actually prove. `cover`
+ * assignments are called out separately since they bypass the fairness sort
+ * entirely (a cover acceptor is prioritized ahead of it in `computeSingleDay`).
  */
 function matchReason(a: UserAssignment): string | null {
   if (a.role === 'drive') {
     const count = a.driverDriveCount ?? 1;
+    if (a.driverPickReason === 'cover') {
+      return `Zone match — you're covering this drive (${timesLabel(count)} this season).`;
+    }
     return count === 1
       ? `Zone match, fairness rotation — your first drive this season.`
-      : `Zone match, fairness rotation — you've driven the fewest among ` +
-          `available parents (${timesLabel(count)} this season).`;
+      : `Zone match, fairness rotation — you've now driven ${timesLabel(count)} this season.`;
   }
   if (a.role === 'ride' && a.driver) {
     const count = a.driverDriveCount;
-    return count === null
-      ? `Matched by zone and pickup time.`
-      : `Matched by zone and pickup time — ${firstName(a.driver.name)} has ` +
-          `driven ${timesLabel(count)} this season.`;
+    if (count === null) return `Matched by zone and pickup time.`;
+    if (a.driverPickReason === 'cover') {
+      return `Matched by zone and pickup time — ${firstName(a.driver.name)} is covering this drive.`;
+    }
+    return `Matched by zone and pickup time — ${firstName(a.driver.name)} has ` +
+      `driven ${timesLabel(count)} this season.`;
   }
   return null;
 }
