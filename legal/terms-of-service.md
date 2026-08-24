@@ -8,16 +8,17 @@
 **Last updated:** _[date]_
 
 ## 1. What Ridr is
-Ridr is a **coordination tool** for verified Basis Independent Silicon
-Valley (BISV) families to arrange carpools among themselves. Ridr is **not**
+Ridr is a **coordination tool** for verified school families to arrange
+carpools among themselves. Ridr is **not**
 a transportation provider, rideshare company, or carrier. We **do not** provide
 transportation, employ or contract drivers, vet or background-check drivers or
 riders, or supervise any trip. All carpools are arranged and carried out **by
 parents/guardians at their own discretion and risk.**
 
 ## 2. Eligibility
-You must be a parent or legal guardian of a BISV student and have received a
-valid invite code from BISV or another BISV family. Accounts are for adults.
+You must be a parent or legal guardian of a student at a participating
+school and have received a valid invite code from your school or another
+family there. Accounts are for adults.
 
 ## 3. Your responsibilities
 By using Ridr you agree that:
@@ -34,7 +35,7 @@ By using Ridr you agree that:
 **We do not perform background checks** and do not verify driving records,
 insurance, or vehicle condition. You are responsible for satisfying yourself
 about any driver before entrusting your child to a carpool. Invite-only access
-limits the community to BISV families but is not a guarantee of any individual's
+limits the community to your school's families but is not a guarantee of any individual's
 trustworthiness or safety.
 
 ## 5. Content & conduct

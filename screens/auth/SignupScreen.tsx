@@ -332,7 +332,9 @@ export function SignupScreen({ navigation }: Props) {
           ...prev,
           inviteCode: 'That invite code is no longer valid.',
         }));
-        setGlobalError('That invite code is no longer valid. Check ParentSquare for the current code.');
+        setGlobalError(
+          "That invite code is no longer valid. Check the current code on your school's parent portal.",
+        );
         return;
       }
       setGlobalError(
