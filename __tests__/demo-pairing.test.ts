@@ -255,6 +255,56 @@ describe('everyone in the cluster shares one car', () => {
   });
 });
 
+describe('driverDriveCount — the fairness rule made visible on screen', () => {
+  const SOLO_DRIVER_ID = 'e0000000-0000-4000-8000-000000000010';
+  const SOLO_RIDER_ID = 'e0000000-0000-4000-8000-000000000011';
+
+  function soloParticipant(
+    overrides: Pick<Participant, 'userId' | 'canDrive'>,
+  ): Participant {
+    return {
+      name: 'Test Parent',
+      weekday: 'mon',
+      time: '15:15',
+      zone: 'San Jose',
+      capacity: 4,
+      car: { color: 'silver', type: 'sedan', model: null, plate: null },
+      address: null,
+      ...overrides,
+    };
+  }
+
+  it("increments with each of the driver's own drives, and the rider on the same car sees the same count", () => {
+    const driver = soloParticipant({ userId: SOLO_DRIVER_ID, canDrive: true });
+    const rider = soloParticipant({ userId: SOLO_RIDER_ID, canDrive: false });
+    const engine = createRotationEngine([driver, rider]);
+
+    // DATES[0] and DATES[3] are both Mondays (see the DATES comment above),
+    // with DATES[3] ~100 school days later — many more Mondays counted by then.
+    const first = engine.assignmentsFor(DATES[0].date).get(SOLO_DRIVER_ID);
+    const later = engine.assignmentsFor(DATES[3].date).get(SOLO_DRIVER_ID);
+
+    expect(first?.role).toBe('drive');
+    expect(first?.driverDriveCount).toBe(1);
+    expect(later?.role).toBe('drive');
+    expect(later?.driverDriveCount).toBeGreaterThan(1);
+
+    // Same car, same instant — the rider's copy of the count must match the
+    // driver's own, or the UI would show two different numbers for one drive.
+    const riderAssignment = engine.assignmentsFor(DATES[0].date).get(SOLO_RIDER_ID);
+    expect(riderAssignment?.role).toBe('ride');
+    expect(riderAssignment?.driverDriveCount).toBe(first?.driverDriveCount);
+  });
+
+  it('is null when nobody volunteers to drive (unmatched)', () => {
+    const onlyRider = soloParticipant({ userId: SOLO_RIDER_ID, canDrive: false });
+    const engine = createRotationEngine([onlyRider]);
+    const a = engine.assignmentsFor(DATES[0].date).get(SOLO_RIDER_ID);
+    expect(a?.role).toBe('unmatched');
+    expect(a?.driverDriveCount).toBeNull();
+  });
+});
+
 describe('the presenter who has not set a schedule yet', () => {
   it('still sees a full car at the 15:15 fallback', async () => {
     __resetStore();

@@ -65,6 +65,11 @@ export interface UserAssignment {
   time: string; // the car's unified pickup time (latest in the group)
   driver: CarMember | null; // the car's driver (null when unmatched)
   riders: CarMember[]; // the car's riders (excludes the driver)
+  // The driver's cumulative drive count this school year, AS OF this date
+  // (i.e. including it) — the number the fewest-drives-first rotation picked
+  // them on. Null when unmatched, since there is no driver to count for.
+  // Surfaced in the UI so the fairness rule is legible, not just asserted.
+  driverDriveCount: number | null;
 }
 
 function minutes(time: string): number {
@@ -197,6 +202,7 @@ function computeSingleDay(
             time: p.time,
             driver: null,
             riders: [],
+            driverDriveCount: null,
           });
         }
         continue;
@@ -237,15 +243,18 @@ function computeSingleDay(
       }
       const carRiders = seating.carRiders;
 
-      // Emit drivers (and bump their season drive count).
+      // Emit drivers (and bump their season drive count). The post-increment
+      // value IS the count surfaced in the UI: "this is your Nth drive."
       for (const d of chosen) {
-        driveCount.set(d.userId, (driveCount.get(d.userId) ?? 0) + 1);
+        const count = (driveCount.get(d.userId) ?? 0) + 1;
+        driveCount.set(d.userId, count);
         result.set(d.userId, {
           role: 'drive',
           zone: d.zone,
           time: pickup,
           driver: member(d),
           riders: (carRiders.get(d.userId) ?? []).map(member),
+          driverDriveCount: count,
         });
       }
 
@@ -253,6 +262,7 @@ function computeSingleDay(
       const seatedRiderIds = new Set<string>();
       for (const d of chosen) {
         const list = carRiders.get(d.userId) ?? [];
+        const driverCount = driveCount.get(d.userId) ?? null;
         for (const r of list) {
           seatedRiderIds.add(r.userId);
           result.set(r.userId, {
@@ -261,6 +271,7 @@ function computeSingleDay(
             time: pickup,
             driver: member(d),
             riders: list.map(member),
+            driverDriveCount: driverCount,
           });
         }
       }
@@ -275,6 +286,7 @@ function computeSingleDay(
             time: r.time,
             driver: null,
             riders: [],
+            driverDriveCount: null,
           });
         }
       }

@@ -18,7 +18,7 @@ import type {
   MainTabParamList,
   ScheduleStackParamList,
 } from '@/types';
-import type { CarMember } from '@/lib/pairing';
+import type { CarMember, UserAssignment } from '@/lib/pairing';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Button } from '@/components/ui/Button';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
@@ -62,6 +62,33 @@ function shortTime(hhmm: string): string {
 
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
+}
+
+function timesLabel(n: number): string {
+  return `${n} time${n === 1 ? '' : 's'}`;
+}
+
+/**
+ * One line explaining WHY this car formed — the zone clustering and
+ * fewest-drives-first fairness rule from `lib/pairing.ts`, spelled out rather
+ * than only asserted. Null for 'unmatched' — there is no match to explain.
+ */
+function matchReason(a: UserAssignment): string | null {
+  if (a.role === 'drive') {
+    const count = a.driverDriveCount ?? 1;
+    return count === 1
+      ? `Zone match, fairness rotation — your first drive this season.`
+      : `Zone match, fairness rotation — you've driven the fewest among ` +
+          `available parents (${timesLabel(count)} this season).`;
+  }
+  if (a.role === 'ride' && a.driver) {
+    const count = a.driverDriveCount;
+    return count === null
+      ? `Matched by zone and pickup time.`
+      : `Matched by zone and pickup time — ${firstName(a.driver.name)} has ` +
+          `driven ${timesLabel(count)} this season.`;
+  }
+  return null;
 }
 
 // The driver's vehicle, so a waiting parent can spot the right car at pickup.
@@ -295,6 +322,17 @@ export function ScheduleScreen({ navigation }: Props) {
           </View>
         </View>
 
+        {matchReason(a) ? (
+          <View style={styles.reasonRow}>
+            <Ionicons
+              name="information-circle-outline"
+              size={13}
+              color={colors.textMuted}
+            />
+            <Text style={styles.reasonText}>{matchReason(a)}</Text>
+          </View>
+        ) : null}
+
         {status.label ? <Text style={styles.note}>{status.label}</Text> : null}
 
         {chatError ? <ErrorMessage message={chatError} /> : null}
@@ -527,6 +565,13 @@ const styles = StyleSheet.create({
   zoneBadgeText: { fontSize: 12, fontWeight: '600', color: colors.inkSecondary },
   subtle: { fontSize: 13, color: colors.inkSecondary, marginBottom: 8 },
   note: { fontSize: 12, fontWeight: '600', color: colors.warning, marginBottom: 8 },
+  reasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    marginBottom: 8,
+  },
+  reasonText: { flex: 1, fontSize: 12, color: colors.textMuted, lineHeight: 16 },
   carCard: {
     flexDirection: 'row',
     alignItems: 'center',
