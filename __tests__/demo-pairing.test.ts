@@ -255,6 +255,85 @@ describe('everyone in the cluster shares one car', () => {
   });
 });
 
+describe('driverDriveCount — the fairness rule made visible on screen', () => {
+  const SOLO_DRIVER_ID = 'e0000000-0000-4000-8000-000000000010';
+  const SOLO_RIDER_ID = 'e0000000-0000-4000-8000-000000000011';
+
+  function soloParticipant(
+    overrides: Pick<Participant, 'userId' | 'canDrive'>,
+  ): Participant {
+    return {
+      name: 'Test Parent',
+      weekday: 'mon',
+      time: '15:15',
+      zone: 'San Jose',
+      capacity: 4,
+      car: { color: 'silver', type: 'sedan', model: null, plate: null },
+      address: null,
+      ...overrides,
+    };
+  }
+
+  it("increments with each of the driver's own drives, and the rider on the same car sees the same count", () => {
+    const driver = soloParticipant({ userId: SOLO_DRIVER_ID, canDrive: true });
+    const rider = soloParticipant({ userId: SOLO_RIDER_ID, canDrive: false });
+    const engine = createRotationEngine([driver, rider]);
+
+    // DATES[0] and DATES[3] are both Mondays (see the DATES comment above),
+    // with DATES[3] ~100 school days later — many more Mondays counted by then.
+    const first = engine.assignmentsFor(DATES[0].date).get(SOLO_DRIVER_ID);
+    const later = engine.assignmentsFor(DATES[3].date).get(SOLO_DRIVER_ID);
+
+    expect(first?.role).toBe('drive');
+    expect(first?.driverDriveCount).toBe(1);
+    expect(first?.driverPickReason).toBe('fairness');
+    expect(later?.role).toBe('drive');
+    expect(later?.driverDriveCount).toBeGreaterThan(1);
+
+    // Same car, same instant — the rider's copy of the count must match the
+    // driver's own, or the UI would show two different numbers for one drive.
+    const riderAssignment = engine.assignmentsFor(DATES[0].date).get(SOLO_RIDER_ID);
+    expect(riderAssignment?.role).toBe('ride');
+    expect(riderAssignment?.driverDriveCount).toBe(first?.driverDriveCount);
+    expect(riderAssignment?.driverPickReason).toBe('fairness');
+  });
+
+  it('is null when nobody volunteers to drive (unmatched)', () => {
+    const onlyRider = soloParticipant({ userId: SOLO_RIDER_ID, canDrive: false });
+    const engine = createRotationEngine([onlyRider]);
+    const a = engine.assignmentsFor(DATES[0].date).get(SOLO_RIDER_ID);
+    expect(a?.role).toBe('unmatched');
+    expect(a?.driverDriveCount).toBeNull();
+    expect(a?.driverPickReason).toBeNull();
+  });
+
+  it("marks a cover-forced driver as 'cover', not 'fairness' — even over a willing volunteer", () => {
+    // Neither has driven yet, so on fairness alone the lower userId would win
+    // the id tie-break. COVERER hasn't even volunteered (canDrive: false) —
+    // only the cover request puts them in the running, and coverForce outranks
+    // the fairness sort entirely (lib/pairing.ts: cover acceptors sort first).
+    const VOLUNTEER_ID = 'e0000000-0000-4000-8000-000000000012';
+    const COVERER_ID = 'e0000000-0000-4000-8000-000000000013';
+    const volunteer = soloParticipant({ userId: VOLUNTEER_ID, canDrive: true });
+    const coverer = soloParticipant({ userId: COVERER_ID, canDrive: false });
+    const iso = toISO(DATES[0].date);
+    const engine = createRotationEngine(
+      [volunteer, coverer],
+      new Set(),
+      new Set(),
+      new Set([`${COVERER_ID}|${iso}`]),
+    );
+
+    const driverAssignment = engine.assignmentsFor(DATES[0].date).get(COVERER_ID);
+    expect(driverAssignment?.role).toBe('drive');
+    expect(driverAssignment?.driverPickReason).toBe('cover');
+
+    const riderAssignment = engine.assignmentsFor(DATES[0].date).get(VOLUNTEER_ID);
+    expect(riderAssignment?.role).toBe('ride');
+    expect(riderAssignment?.driverPickReason).toBe('cover');
+  });
+});
+
 describe('the presenter who has not set a schedule yet', () => {
   it('still sees a full car at the 15:15 fallback', async () => {
     __resetStore();
